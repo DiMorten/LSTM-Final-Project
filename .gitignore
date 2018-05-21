@@ -64,3 +64,4 @@ data/
 original_dataset/
 *.pyc
 *.npy
+*.aux.xml*

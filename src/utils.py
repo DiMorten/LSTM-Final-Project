@@ -19,9 +19,12 @@ import matplotlib.pyplot as plt
 import cv2
 #data_path="../data/"
 
-def im_store_npy(path,name,band_n):
+def im_store_npy(path,name,band_n,out_path,in_rgb=False):
 	im = load_landsat(path,band_n)
-	np.save(name,im)
+	np.save(out_path+name,im)
+	if in_rgb:
+		rgb=im[:,:,0:3]
+		cv2.imwrite("rgb_"+name+".png")
 # -----------------------------
 # new added functions for pix2pix
 def load_landsat(path,band_n):
@@ -48,9 +51,13 @@ def load_tiff_image(patch):
     return img
 
 conf={"band_n": 6, "path": "../data/"}
+conf["out_path"]=conf["path"]+"results/"
+conf["in_npy_path"]=conf["path"]+"in_npy/"
+conf["in_rgb_path"]=conf["path"]+"in_rgb/"
+
 names=["im1_190800","im2_200900","im3_221000","im4_190201","im5_230301","im6_080401","im7_020501","im8_110601","im9_050701"]
 for name in names:
-	im_store_npy(conf["path"]+name+"/",name,conf["band_n"])
+	im_store_npy(conf["path"]+name+"/",name,conf["band_n"],out_path=conf["in_npy_path"],in_rgb=True)
 
 #im = load_landsat(conf["path"]+"im1_190800/",conf["band_n"])
 #im_rgb = im[:,:,0:3]
