@@ -63,3 +63,4 @@ target/
 data/
 original_dataset/
 *.pyc
+*.npy
