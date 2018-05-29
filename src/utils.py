@@ -184,7 +184,7 @@ def im_patches_labelsonehot_load(conf,data,data_whole,debug=1):
 		count=count+1
 	data["labels_onehot"]=np.zeros((data["n"],conf["class_n"]))
 	data["labels_onehot"][np.arange(data["n"]),data["labels"]]=1
-	del data["labels"]
+	#del data["labels"]
 	return data
 def im_store_npy(path,name,band_n,out_path,in_rgb=False,patches_extract_flag=True):
 	im = load_landsat(path+name+"/",band_n)
@@ -243,6 +243,16 @@ def data_normalize_per_band(conf,data):
 		data["train"]["ims"][:,:,:,:,i]=(data["train"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
 		data["test"]["ims"][:,:,:,:,i]=(data["test"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
 	return data
+def data_balance(conf, data, samples_per_class):
+	balance={}
+	balance["unique"]={}
+#	classes = range(0,conf["class_n"])
+	classes,counts=np.unique(data["train"]["labels"],return_counts=True)
+	#balance["unique"]=dict(zip(unique, counts))
+	#print(balance["unique"])
+	for clss in classes:
+		data["train"]["im"]
+		data["train"]["im"]
 
 
 conf={"band_n": 6, "t_len":9, "path": "../data/", "class_n":9}
@@ -256,6 +266,7 @@ conf["patch"]["ims_path"]=conf["patch"]["out_npy_path"]+"patches_all/"
 conf["patch"]["labels_path"]=conf["patch"]["out_npy_path"]+"labels_all/"
 conf['patch']['center_pixel']=int(np.around(conf["patch"]["size"]/2))
 conf["subdata"]={"flag":True,"n":3000}
+conf["subdata"]={"flag":True,"n":500}
 #conf["subdata"]={"flag":True,"n":1000}
 conf["summaries_path"]=conf["path"]+"summaries/"
 print(conf)
