@@ -169,6 +169,7 @@ def sess_run_train(n,minimize,error,data,train_input,train_output,test_input,tes
 	sess.close()
 
 if __name__ == "__main__":
+	utils.conf["subdata"]["n"]=50
 	if conf["mode"]==1:
 		n,X,y=data_create()    
 		n_train,train_input,train_output,test_input,test_output=data_split(X, y)
@@ -181,6 +182,6 @@ if __name__ == "__main__":
 		mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
 		error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
 
-		dataset=utils.im_patches_npy_multitemporal_from_npy_from_folder_load(utils.conf,1)
+		dataset=utils.im_patches_npy_multitemporal_from_npy_from_folder_load(utils.conf,1,subdata_flag=utils.conf["subdata"]["flag"],subdata_n=utils.conf["subdata"]["n"])
 		#sess_run_train(n,minimize,error,data,train_input,train_output,test_input,test_output)
-		sess_run_train(dataset["train"]["n"],minimize,error,data,dataset["train"]["ims"],dataset["train"]["labels_onehot"],test_input,test_output)
+		sess_run_train(dataset["train"]["n"],minimize,error,data,dataset["train"]["ims"],dataset["train"]["labels_onehot"],dataset["test"]["ims"],dataset["train"]["labels_onehot"])
