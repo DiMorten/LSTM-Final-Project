@@ -243,8 +243,13 @@ conf['patch']['center_pixel']=int(np.around(conf["patch"]["size"]/2))
 conf["subdata"]={"flag":True,"n":10}
 print(conf)
 if __name__ == "__main__":
-	conf["utils_main_mode"]=3
+	conf["utils_main_mode"]=4
+	if conf["utils_main_mode"]==4:
+		names=["im1_190800","im2_200900","im3_221000","im4_190201","im5_230301","im6_080401","im7_020501","im8_110601","im9_050701"]
+		for name in names:
+			im_store_npy(conf["path"],name,conf["band_n"],out_path=conf["in_npy_path"],in_rgb=True)
 
+		im_patches_npy_multitemporal_from_npy_from_folder_store(conf)	
 	if conf["utils_main_mode"]==2:
 		im_patches_npy_multitemporal_from_npy_from_folder_store(conf)
 	elif conf["utils_main_mode"]==1:
