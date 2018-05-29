@@ -122,7 +122,7 @@ def im_patches_npy_multitemporal_from_npy_from_folder_store(conf):
 def im_patches_npy_multitemporal_from_npy_from_folder_load(conf,train_test_split=True,train_percentage=0.05,load=True,debug=1,subdata_flag=True,subdata_n=300):
 	fname=sys._getframe().f_code.co_name
 	
-	train_percentage=0.5
+	train_percentage=0.75
 	#ims["full"]=[]
 	data={"train_test_split":train_test_split,"im_n":3769}
 	data["index"]=np.arange(0,data["im_n"])

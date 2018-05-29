@@ -34,7 +34,7 @@ channels = 6
 filters = 12
 n_classes=9
 
-
+np.set_printoptions(suppress=True)
 data_dim=(9,32,32,6)
 ims={}
 #print(utils.conf)
@@ -145,11 +145,11 @@ def sess_run_train(minimize,error,data,train_input,train_output,test_input,test_
 	sess.run(init_op)
 
 	# Begin training process
-	batch_size = 300
+	batch_size = 20
 	no_of_batches = int((n_train)/batch_size)
 	deb.prints(no_of_batches,fname)
 	
-	epoch = 100
+	epoch = 10
 	deb.prints(epoch)
 	for i in range(epoch):
 		ptr = 0
@@ -164,11 +164,51 @@ def sess_run_train(minimize,error,data,train_input,train_output,test_input,test_
 		print('Epoch {:2d} error {:3.1f}%'.format(i + 1, 100 * incorrect))
 
 	# One single string
-	#print sess.run(model.prediction,{data: [[[1],[0],[0],[1],[1],[0],[1],[1],[1],[0],[1],[0],[0],[1],[1],[0],[1],[1],[1],[0]]]})
+	print("train results")
+	count=1
+	print(np.around(sess.run(prediction,{data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+	deb.prints(dataset["train"]["labels_onehot"][count])
+	count=count+1
+	print(np.around(sess.run(prediction,{data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+	deb.prints(dataset["train"]["labels_onehot"][count])
+	count=count+1
+	print(np.around(sess.run(prediction,{data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+	deb.prints(dataset["train"]["labels_onehot"][count])
+	count=count+1
+	print(np.around(sess.run(prediction,{data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+	deb.prints(dataset["train"]["labels_onehot"][count])
+	count=count+1
+	print(np.around(sess.run(prediction,{data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+	deb.prints(dataset["train"]["labels_onehot"][count])
+	count=count+1
+	print(np.around(sess.run(prediction,{data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+	deb.prints(dataset["train"]["labels_onehot"][count])
+	count=count+1
+	
+	print("test results")
+	count=1
+	print(np.around(sess.run(prediction,{data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+	deb.prints(dataset["test"]["labels_onehot"][count])
+	count=count+1
+	print(np.around(sess.run(prediction,{data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+	deb.prints(dataset["test"]["labels_onehot"][count])
+	count=count+1
+	print(np.around(sess.run(prediction,{data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+	deb.prints(dataset["test"]["labels_onehot"][count])
+	count=count+1
+	print(np.around(sess.run(prediction,{data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+	deb.prints(dataset["test"]["labels_onehot"][count])
+	count=count+1
+	print(np.around(sess.run(prediction,{data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+	deb.prints(dataset["test"]["labels_onehot"][count])
+	count=count+1
+
 	sess.close()
 data_mode=1
 if __name__ == "__main__":
-	utils.conf["subdata"]["n"]=3760
+	#utils.conf["subdata"]["n"]=3760
+	utils.conf["subdata"]["n"]=100
+	
 	if conf["mode"]==1:
 		n,X,y=data_create()    
 		n_train,train_input,train_output,test_input,test_output=data_split(X, y)
