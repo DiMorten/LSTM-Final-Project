@@ -75,7 +75,7 @@ def model_define(debug=1):
 	target = tf.placeholder(tf.float32, [None, n_classes])
 	if debug: print("target",target.get_shape())
 
-	filters = 32
+	filters = 64
 	cell = tf.contrib.rnn.ConvLSTMCell(2,shape + [channels], filters, kernel)
 
 	val, state = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
@@ -86,7 +86,11 @@ def model_define(debug=1):
 
 	pool1 = tf.layers.max_pooling2d(inputs=last, pool_size=[2, 2], strides=2)
 	if debug: print("pool1",pool1.get_shape())
-	fc1 = tf.contrib.layers.flatten(pool1)
+
+	# Convolution Layer with 32 filters and a kernel size of 5
+	conv1 = tf.layers.conv2d(pool1, 32, 3, activation=tf.nn.relu,strides=(2,2))
+
+	fc1 = tf.contrib.layers.flatten(conv1)
 
 
 	#n_hidden = 100
