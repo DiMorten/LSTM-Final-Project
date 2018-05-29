@@ -145,7 +145,7 @@ def sess_run_train(minimize,error,data,train_input,train_output,test_input,test_
 	sess.run(init_op)
 
 	# Begin training process
-	batch_size = 10
+	batch_size = 300
 	no_of_batches = int((n_train)/batch_size)
 	deb.prints(no_of_batches,fname)
 	
@@ -168,7 +168,7 @@ def sess_run_train(minimize,error,data,train_input,train_output,test_input,test_
 	sess.close()
 data_mode=1
 if __name__ == "__main__":
-	utils.conf["subdata"]["n"]=150
+	utils.conf["subdata"]["n"]=3760
 	if conf["mode"]==1:
 		n,X,y=data_create()    
 		n_train,train_input,train_output,test_input,test_output=data_split(X, y)
@@ -188,6 +188,6 @@ if __name__ == "__main__":
 			deb.prints(dataset["test"]["ims"].shape)
 			deb.prints(dataset["test"]["labels_onehot"].shape)
 			#sess_run_train(n,minimize,error,data,train_input,train_output,test_input,test_output)
-			sess_run_train(minimize,error,data,dataset["train"]["ims"],dataset["train"]["labels_onehot"],dataset["test"]["ims"],dataset["train"]["labels_onehot"])
+			sess_run_train(minimize,error,data,dataset["train"]["ims"],dataset["train"]["labels_onehot"],dataset["test"]["ims"],dataset["test"]["labels_onehot"])
 		elif data_mode==0:
 			sess_run_train(minimize,error,data,train_input,train_output,test_input,test_output)
