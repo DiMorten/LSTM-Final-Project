@@ -147,7 +147,8 @@ def im_patches_npy_multitemporal_from_npy_from_folder_load(conf,train_test_split
 	if debug>=1: deb.prints(data["test"]["index"].shape)
 	data["test"]["n"]=data["test"]["index"].shape[0]
 
-	if debug>=1: print(data["train"]["index"]), print(data["test"]["n"])
+	if debug>=1: print(data["train"]["index"])
+	if debug>=1: print(data["test"]["n"])
 	if debug>=1: deb.prints(conf["patch"]["ims_path"])
 	if load:
 		data["train"]=im_patches_labelsonehot_load(conf,data["train"],data,debug=debug)
