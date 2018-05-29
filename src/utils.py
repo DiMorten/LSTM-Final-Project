@@ -116,24 +116,38 @@ def im_patches_npy_multitemporal_from_npy_from_folder_store(conf):
 	#return ims
 
 
-def im_patches_npy_multitemporal_from_npy_from_folder_load(conf,train_test_split=True,train_percentage=0.1):
+def im_patches_npy_multitemporal_from_npy_from_folder_load(conf,train_test_split=True,train_percentage=0.01,load=True,debug=1):
 	#ims["full"]=[]
 	data={"train_test_split":train_test_split,"im_n":3769}
 	data["index"]=np.arange(0,data["im_n"])
-	print("data[index]",data["index"].shape)
+	if debug>=1: print("data[index]",data["index"].shape)
 	data["index_shuffle"]=data["index"].copy()
 	np.random.shuffle(data["index_shuffle"])
-	print("data[index]shufflle",data["index_shuffle"].shape)
+	if debug>=2: print("data[index]shufflle",data["index_shuffle"].shape)
 
 	data["train"]={"n":int(np.around(data["im_n"]*train_percentage))}
 
 	data["train"]["index"]=data["index_shuffle"][0:data["train"]["n"]]
-	print(data["train"]["index"])
-	print("iafoep",conf["patch"]["ims_path"])
-	for i in data["train"]["index"]:
-		print("i",i)
-		im_name=glob.glob(conf["patch"]["ims_path"]+'/patch_'+str(i)+'_*')[0]
-		#im=np.load(im_name)
+	np.save("data.npy",data) # Save indexes for further use with the test set
+	if debug>=1: print(data["train"]["index"])
+	if debug>=1: print("Patches location",conf["patch"]["ims_path"])
+	if load:
+		data["train"]["ims"]=np.zeros((data["train"]["n"],conf["t_len"],conf["patch"]["size"],conf["patch"]["size"],conf["band_n"]))
+		data["train"]["labels"]=np.zeros((data["train"]["n"])).astype(np.int)
+		count=0
+		for i in data["train"]["index"]:
+			#print("i",i)
+			im_name=glob.glob(conf["patch"]["ims_path"]+'/patch_'+str(i)+'_*')[0]
+			data["train"]["ims"][count,:,:,:,:]=np.load(im_name)
+			
+			label_name=glob.glob(conf["patch"]["labels_path"]+'/patch_'+str(i)+'_*')[0]
+			data["train"]["labels"][count]=int(np.load(label_name)[conf["t_len"]-1,conf["patch"]["center_pixel"],conf["patch"]["center_pixel"]])
+			if debug>=2: print("train_labels[count]",train_labels[count])
+			
+			count=count+1
+	else:
+		train_ims=[]
+	return data	
 		
 		#print(im_name)
 		#print(im.shape)
@@ -192,7 +206,7 @@ conf["patch"]={}
 conf["patch"]={"size":32, "stride":16, "out_npy_path":conf["path"]+"patches_npy/"}
 conf["patch"]["ims_path"]=conf["patch"]["out_npy_path"]+"patches_all"
 conf["patch"]["labels_path"]=conf["patch"]["out_npy_path"]+"labels_all"
-
+conf['patch']['center_pixel']=int(np.around(conf["patch"]["size"]/2))
 print(conf)
 if __name__ == "__main__":
 	conf["utils_main_mode"]=3
@@ -206,16 +220,5 @@ if __name__ == "__main__":
 	elif conf["utils_main_mode"]==3:
 		#aa=np.load(conf["patch"]["out_npy_path"]+"labels_all/patch_0_0_0.npy")
 		#print(aa.shape)
-		im_patches_npy_multitemporal_from_npy_from_folder_load(conf,1)
-#im_store_patches_npy_from_npy_from_folder(conf)
-#aa=cv2.imread("../data/labels/2.tif")
-#print(aa.shape)
-##if __name__ == "__main__":
-##	names=["im1_190800","im2_200900","im3_221000","im4_190201","im5_230301","im6_080401","im7_020501","im8_110601","im9_050701"]
-##	for name in names:
-##		im_store_npy(conf["path"],name,conf["band_n"],out_path=conf["in_npy_path"],in_rgb=True)
-
-#im = load_landsat(conf["path"]+"im1_190800/",conf["band_n"])
-#im_rgb = im[:,:,0:3]
-#print(im_rgb.shape)
-#cv2.imwrite("im_rgb.png",im_rgb.astype(np.uint16))
+		data=im_patches_npy_multitemporal_from_npy_from_folder_load(conf,1)
+		#pass
