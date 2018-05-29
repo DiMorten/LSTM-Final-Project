@@ -154,6 +154,7 @@ def im_patches_npy_multitemporal_from_npy_from_folder_load(conf,train_test_split
 		data["test"]=im_patches_labelsonehot_load(conf,data["test"],data,debug=debug)
 	else:
 		train_ims=[]
+	deb.prints(list(iter(data["train"])))
 	np.save(conf["path"]+"data.npy",data) # Save indexes and data for further use with the train/ test set/labels
 
 	return data	
