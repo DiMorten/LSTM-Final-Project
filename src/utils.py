@@ -21,7 +21,7 @@ import pathlib2
 from sklearn.feature_extraction.image import extract_patches_2d
 from skimage.util import view_as_windows
 import sys
-
+import pickle
 # Local
 import deb
 
@@ -156,7 +156,7 @@ def im_patches_npy_multitemporal_from_npy_from_folder_load(conf,train_test_split
 	else:
 		train_ims=[]
 	deb.prints(list(iter(data["train"])))
-	np.save(conf["path"]+"data.npy",data) # Save indexes and data for further use with the train/ test set/labels
+	#np.save(conf["path"]+"data.npy",data) # Save indexes and data for further use with the train/ test set/labels
 
 	return data	
 		
@@ -230,6 +230,20 @@ def load_landsat(path,band_n):
 def patches_extract(im,patch_size):
 
 	return 0
+def data_normalize_per_band(conf,data):
+	whole_data={}
+	whole_data["value"]=np.concatenate((data["train"]["ims"],data["test"]["ims"]),axis=0)
+	data["normalize"]={}
+	data["normalize"]["avg"]=np.zeros(conf["band_n"])
+	data["normalize"]["std"]=np.zeros(conf["band_n"])
+	print(data["train"]["ims"].dtype)
+	for i in range(0,conf["band_n"]):
+		data["normalize"]["avg"][i]=np.average(whole_data["value"][:,:,:,:,i])
+		data["normalize"]["std"][i]=np.std(whole_data["value"][:,:,:,:,i])
+		data["train"]["ims"][:,:,:,:,i]=(data["train"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
+		data["test"]["ims"][:,:,:,:,i]=(data["test"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
+	return data
+
 
 conf={"band_n": 6, "t_len":9, "path": "../data/", "class_n":9}
 conf["out_path"]=conf["path"]+"results/"
@@ -241,10 +255,10 @@ conf["patch"]={"size":32, "stride":16, "out_npy_path":conf["path"]+"patches_npy/
 conf["patch"]["ims_path"]=conf["patch"]["out_npy_path"]+"patches_all/"
 conf["patch"]["labels_path"]=conf["patch"]["out_npy_path"]+"labels_all/"
 conf['patch']['center_pixel']=int(np.around(conf["patch"]["size"]/2))
-conf["subdata"]={"flag":True,"n":10}
+conf["subdata"]={"flag":True,"n":1000}
 print(conf)
 if __name__ == "__main__":
-	conf["utils_main_mode"]=3
+	conf["utils_main_mode"]=5
 	if conf["utils_main_mode"]==4:
 		names=["im1_190800","im2_200900","im3_221000","im4_190201","im5_230301","im6_080401","im7_020501","im8_110601","im9_050701"]
 		for name in names:
@@ -262,4 +276,10 @@ if __name__ == "__main__":
 		#aa=np.load(conf["patch"]["out_npy_path"]+"labels_all/patch_0_0_0.npy")
 		#print(aa.shape)
 		data=im_patches_npy_multitemporal_from_npy_from_folder_load(conf,1,subdata_flag=conf["subdata"]["flag"],subdata_n=conf["subdata"]["n"])
-		#pass
+		data=data_normalize_per_band(conf,data)
+		with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
+	elif conf["utils_main_mode"]==5:
+	
+		with open(conf["path"]+'data.pkl', 'rb') as handle: data2 = pickle.load(handle)
+		list(iter(data2))
+		#print(data2["train"])

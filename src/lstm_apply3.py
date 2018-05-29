@@ -138,12 +138,14 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 		# Begin training process
 		batch_size = 752
 		batch_size = 300
+		batch_size = 150
+		
 		print("n_train",n_train)
 		no_of_batches = int(np.round(float(n_train)/float(batch_size)))
 		#no_of_batches=5
 		deb.prints(no_of_batches,fname)
 		
-		epoch = 1000
+		epoch = 10
 		deb.prints(epoch)
 		deb.prints(train_input.shape)
 		deb.prints(train_output.shape)
@@ -169,7 +171,7 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 			sess=tf.Session()
 			saver.restore(sess,tf.train.latest_checkpoint('./'))
 			#saver.restore(sess, "./model.ckpt")
-	  		print("Model restored.")
+			print("Model restored.")
 			# One single string
 	print("train results")
 	count=1
@@ -214,8 +216,8 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 data_mode=1
 if __name__ == "__main__":
 	#utils.conf["subdata"]["n"]=3760
-	utils.conf["subdata"]["n"]=2000
-	
+	#utils.conf["subdata"]["n"]=2000
+	#utils.conf["subdata"]["n"]=1000
 	if conf["mode"]==1:
 		n,X,y=data_create()    
 		n_train,train_input,train_output,test_input,test_output=data_split(X, y)
@@ -230,8 +232,10 @@ if __name__ == "__main__":
 		print("trainable parameters",np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
 		saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=2)
 		if data_mode==1:
-			#dataset=utils.im_patches_npy_multitemporal_from_npy_from_folder_load(utils.conf,1,subdata_flag=utils.conf["subdata"]["flag"],subdata_n=utils.conf["subdata"]["n"])
+			#utils.im_patches_npy_multitemporal_from_npy_from_folder_load(utils.conf,1,subdata_flag=utils.conf["subdata"]["flag"],subdata_n=utils.conf["subdata"]["n"])
 			dataset=np.load(utils.conf["path"]+"data.npy")
+
+			with open(utils.conf["path"]+'data.pkl', 'rb') as handle: dataset=pickle.load(handle)
 			deb.prints(dataset["train"]["ims"].shape)
 			deb.prints(dataset["train"]["labels_onehot"].shape)
 			deb.prints(dataset["test"]["ims"].shape)

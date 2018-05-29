@@ -68,3 +68,4 @@ original_dataset/
 
 *ckpt*
 checkpoint
+*.pkl
