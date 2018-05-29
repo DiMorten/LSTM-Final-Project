@@ -40,9 +40,9 @@ data_dim=(9,32,32,6)
 ims={}
 #print(utils.conf)
 conf={'mode':1}
-#conf["stage"]="train"
+conf["stage"]="train"
 
-conf["stage"]="test"
+#conf["stage"]="test"
 
 #ims=data_load(conf,ims)
 #print(len(ims["full"]))
@@ -72,28 +72,21 @@ def model_define(debug=1):
 	# Input data: 20x1 is the string sequence length
 	data = tf.placeholder(tf.float32, [None] +[timesteps] + shape + [channels])
 	print("data",data.get_shape())
+	target = tf.placeholder(tf.float32, [None, n_classes])
+	if debug: print("target",target.get_shape())
+
 	filters = 32
 	cell = tf.contrib.rnn.ConvLSTMCell(2,shape + [channels], filters, kernel)
 
 	val, state = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
 
-	target = tf.placeholder(tf.float32, [None, n_classes])
-	print("target",target.get_shape())
-
-	if debug:
-		print("val",val.get_shape())
-		#print("state",state.get_shape())
-
-	# Apparently transpose output and then 
-	# take the output at sequence's last input
-	#val = tf.transpose(val, [1, 0, 2])
-	if debug: print("val_transpose",val.get_shape())
+	if debug: print("val",val.get_shape())
 	last = tf.gather(val, int(val.get_shape()[1]) - 1,axis=1)
 	if debug: print("last",last.get_shape())
 
 	pool1 = tf.layers.max_pooling2d(inputs=last, pool_size=[2, 2], strides=2)
 	if debug: print("pool1",pool1.get_shape())
-	fc1 = tf.contrib.layers.flatten(last)
+	fc1 = tf.contrib.layers.flatten(pool1)
 
 
 	#n_hidden = 100
@@ -136,6 +129,7 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 		init_op = tf.initialize_all_variables()
 		sess = tf.Session()
 		sess.run(init_op)
+		writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph()))
 
 		# Begin training process
 		batch_size = 752
@@ -147,7 +141,7 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 		#no_of_batches=5
 		deb.prints(no_of_batches,fname)
 		
-		epoch = 10
+		epoch = 300
 		deb.prints(epoch)
 		deb.prints(train_input.shape)
 		deb.prints(train_output.shape)
@@ -160,12 +154,13 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 				if debug>=3: print(ptr,inp.shape,out.shape)
 				ptr+=batch_size
 				if debug>=3: print(ptr,inp.shape,out.shape)
-				sess.run(minimize,{data: inp, target: out})
+				summary,_ = sess.run([merged,minimize],{data: inp, target: out})
 				if debug>=1: print("Step - ",str(j))
 			if i%10==0:
 				# Save the variables to disk.
 				  save_path = saver.save(sess, "./model.ckpt")
 				  print("Model saved in path: %s" % save_path)
+				  writer.add_summary(summary,i+j)
 			print("Epoch - ",str(i))
 			incorrect = sess.run(error,{data: test_input, target: test_output})
 			print('Epoch {:2d} error {:3.1f}%'.format(i + 1, 100 * incorrect))
@@ -230,9 +225,12 @@ if __name__ == "__main__":
 		# Count of how many sequences in the test dataset were classified
 		# incorrectly. 
 		mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
-		error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
+		with tf.name_scope('summaries'):
+			error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
 		print("trainable parameters",np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
 		saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=2)
+		merged = tf.summary.merge_all()
+		
 		if data_mode==1:
 			#utils.im_patches_npy_multitemporal_from_npy_from_folder_load(utils.conf,1,subdata_flag=utils.conf["subdata"]["flag"],subdata_n=utils.conf["subdata"]["n"])
 			dataset=np.load(utils.conf["path"]+"data.npy")
