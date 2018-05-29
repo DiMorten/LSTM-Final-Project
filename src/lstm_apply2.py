@@ -29,7 +29,8 @@ from random import shuffle
 
 #from tensorflow.contrib.rnn import ConvLSTMCell
 
-
+from utils import conf
+import glob
 
 batch_size = 10
 timesteps = 9
@@ -41,6 +42,15 @@ n_classes=8
 
 
 data_dim=(9,32,32,6)
+ims={}
+def data_load(conf,ims):
+	ims["full"]=[]
+	for i in range(1,10):
+		im_name=glob.glob(conf["in_npy_path"]+'im'+str(i)+'*')[0]
+		ims["full"].append(np.load(im_name))
+	return ims
+ims=data_load(conf,ims)
+print(len(ims["full"]))
 def data_create():
 	#train_input=np.ones((58*65,9,32,32,6))
 	#train_input=np.ones((20,9,32,32,6)) #10 multitemporal samples
