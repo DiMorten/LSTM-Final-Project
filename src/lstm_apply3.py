@@ -1,4 +1,4 @@
- 
+
 """
 Some codes from https://github.com/Newmu/dcgan_code
 """
@@ -129,7 +129,7 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 		init_op = tf.initialize_all_variables()
 		sess = tf.Session()
 		sess.run(init_op)
-		writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph()))
+		writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph())
 
 		# Begin training process
 		batch_size = 752
@@ -228,6 +228,7 @@ if __name__ == "__main__":
 		with tf.name_scope('summaries'):
 			error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
 		print("trainable parameters",np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
+		tf.summary.scalar("errated", error)
 		saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=2)
 		merged = tf.summary.merge_all()
 		
