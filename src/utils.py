@@ -17,7 +17,7 @@ from skimage.transform import resize
 from sklearn import preprocessing as pre
 import matplotlib.pyplot as plt
 import cv2
-import pathlib
+import pathlib2
 from sklearn.feature_extraction.image import extract_patches_2d
 from skimage.util import view_as_windows
 import sys
@@ -27,14 +27,14 @@ import deb
 
 def im_store_patches_npy(path,name,band_n,out_path,in_rgb=False):
 	im = load_landsat(path,band_n)
-	pathlib.Path(path+"patches/"+name).mkdir(parents=True, exist_ok=True) 
+	pathlib2.Path(path+"patches/"+name).mkdir(parents=True, exist_ok=True) 
 
 
 def im_patches_npy_multitemporal_from_npy_store(conf,names):
 	patch_shape=(conf["patch"]["size"],conf["patch"]["size"],conf["band_n"])
 	label_shape=(conf["patch"]["size"],conf["patch"]["size"])
-	pathlib.Path(conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
-	pathlib.Path(conf["patch"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
+	pathlib2.Path(conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
+	pathlib2.Path(conf["patch"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
 	patches_all=np.zeros((58,65,conf["t_len"])+patch_shape)
 	label_patches_all=np.zeros((58,65,conf["t_len"])+label_shape)
 	
@@ -82,8 +82,8 @@ def im_store_patches_npy_from_npy(conf,name):
 	label_patches=np.squeeze(label_patches)
 	
 	print(out_path["patches"])
-	pathlib.Path(out_path["patches"]).mkdir(parents=True, exist_ok=True) 
-	pathlib.Path(out_path["labels"]).mkdir(parents=True, exist_ok=True) 
+	pathlib2.Path(out_path["patches"]).mkdir(parents=True, exist_ok=True) 
+	pathlib2.Path(out_path["labels"]).mkdir(parents=True, exist_ok=True) 
 	print("patches",patches.shape)
 	print("label_patches.s",label_patches.shape)
 	
@@ -196,7 +196,7 @@ def im_store_npy(path,name,band_n,out_path,in_rgb=False,patches_extract_flag=Tru
 		patches=np.squeeze(view_as_windows(im,patch_shape,step=16))
 		patches_path=path+name+"/"+"patches/"
 		print(patches_path)
-		pathlib.Path(patches_path).mkdir(parents=True, exist_ok=True) 
+		pathlib2.Path(patches_path).mkdir(parents=True, exist_ok=True) 
 		
 		print(patches.shape)
 		for i in range(patches.shape[0]):
