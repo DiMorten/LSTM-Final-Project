@@ -29,7 +29,7 @@ from random import shuffle
 
 #from tensorflow.contrib.rnn import ConvLSTMCell
 
-from utils import conf
+import utils
 import glob
 
 batch_size = 10
@@ -43,14 +43,16 @@ n_classes=8
 
 data_dim=(9,32,32,6)
 ims={}
+print(utils.conf)
+conf={'mode':2}
 def data_load(conf,ims):
 	ims["full"]=[]
 	for i in range(1,10):
 		im_name=glob.glob(conf["in_npy_path"]+'im'+str(i)+'*')[0]
 		ims["full"].append(np.load(im_name))
 	return ims
-ims=data_load(conf,ims)
-print(len(ims["full"]))
+#ims=data_load(conf,ims)
+#print(len(ims["full"]))
 def data_create():
 	#train_input=np.ones((58*65,9,32,32,6))
 	#train_input=np.ones((20,9,32,32,6)) #10 multitemporal samples
@@ -171,16 +173,17 @@ def sess_run_train(n,minimize,error,data,train_input,train_output,test_input,tes
 	#print sess.run(model.prediction,{data: [[[1],[0],[0],[1],[1],[0],[1],[1],[1],[0],[1],[0],[0],[1],[1],[0],[1],[1],[1],[0]]]})
 	sess.close()
 
+if __name__ == "__main__":
+	if conf["mode"]==1:
+		n,X,y=data_create()    
+		n_train,train_input,train_output,test_input,test_output=data_split(X, y)
+		## Design the model 
+		data,target,prediction=model_define()
+		minimize=loss_optimizer_set(target,prediction)
+		# Calculating the error on test data
+		# Count of how many sequences in the test dataset were classified
+		# incorrectly. 
+		mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
+		error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
 
-n,X,y=data_create()    
-n_train,train_input,train_output,test_input,test_output=data_split(X, y)
-## Design the model 
-data,target,prediction=model_define()
-minimize=loss_optimizer_set(target,prediction)
-# Calculating the error on test data
-# Count of how many sequences in the test dataset were classified
-# incorrectly. 
-mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
-error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
-
-sess_run_train(n,minimize,error,data,train_input,train_output,test_input,test_output)
+		sess_run_train(n,minimize,error,data,train_input,train_output,test_input,test_output)
