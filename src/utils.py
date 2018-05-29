@@ -255,7 +255,7 @@ conf["patch"]={"size":32, "stride":16, "out_npy_path":conf["path"]+"patches_npy/
 conf["patch"]["ims_path"]=conf["patch"]["out_npy_path"]+"patches_all/"
 conf["patch"]["labels_path"]=conf["patch"]["out_npy_path"]+"labels_all/"
 conf['patch']['center_pixel']=int(np.around(conf["patch"]["size"]/2))
-conf["subdata"]={"flag":True,"n":1000}
+conf["subdata"]={"flag":True,"n":3000}
 #conf["subdata"]={"flag":True,"n":1000}
 conf["summaries_path"]=conf["path"]+"summaries/"
 print(conf)
