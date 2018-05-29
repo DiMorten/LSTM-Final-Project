@@ -22,10 +22,11 @@ from random import shuffle
 #from tensorflow.contrib.rnn import ConvLSTMCell
 import glob
 import sys
+import pickle
+
 # Local
 import utils
 import deb
-
 batch_size = 10
 timesteps = 9
 shape = [32, 32]
@@ -39,8 +40,9 @@ data_dim=(9,32,32,6)
 ims={}
 #print(utils.conf)
 conf={'mode':1}
-conf["stage"]="train"
-#conf["stage"]="test"
+#conf["stage"]="train"
+
+conf["stage"]="test"
 
 #ims=data_load(conf,ims)
 #print(len(ims["full"]))

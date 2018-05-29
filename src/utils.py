@@ -277,6 +277,10 @@ if __name__ == "__main__":
 		#print(aa.shape)
 		data=im_patches_npy_multitemporal_from_npy_from_folder_load(conf,1,subdata_flag=conf["subdata"]["flag"],subdata_n=conf["subdata"]["n"])
 		data=data_normalize_per_band(conf,data)
+		
+		filename = conf["path"]+'data.pkl'
+		#os.makedirs(os.path.dirname(filename), exist_ok=True)
+	
 		with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
 	elif conf["utils_main_mode"]==5:
 	
