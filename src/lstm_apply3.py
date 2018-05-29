@@ -129,6 +129,7 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 		init_op = tf.initialize_all_variables()
 		sess = tf.Session()
 		sess.run(init_op)
+		writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph()))
 
 		# Begin training process
 		batch_size = 752
@@ -153,13 +154,13 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 				if debug>=3: print(ptr,inp.shape,out.shape)
 				ptr+=batch_size
 				if debug>=3: print(ptr,inp.shape,out.shape)
-				summary, _ = sess.run(minimize,{data: inp, target: out})
+				summary,_ = sess.run([merged,minimize],{data: inp, target: out})
 				if debug>=1: print("Step - ",str(j))
 			if i%10==0:
 				# Save the variables to disk.
 				  save_path = saver.save(sess, "./model.ckpt")
 				  print("Model saved in path: %s" % save_path)
-				  writer.add_summary(summary,i)
+				  writer.add_summary(summary,i+j)
 			print("Epoch - ",str(i))
 			incorrect = sess.run(error,{data: test_input, target: test_output})
 			print('Epoch {:2d} error {:3.1f}%'.format(i + 1, 100 * incorrect))
@@ -228,8 +229,8 @@ if __name__ == "__main__":
 			error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
 		print("trainable parameters",np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
 		saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=2)
-		writer = tf.summary.FileWriter(utils.conf["summaries_path"])
-
+		merged = tf.summary.merge_all()
+		
 		if data_mode==1:
 			#utils.im_patches_npy_multitemporal_from_npy_from_folder_load(utils.conf,1,subdata_flag=utils.conf["subdata"]["flag"],subdata_n=utils.conf["subdata"]["n"])
 			dataset=np.load(utils.conf["path"]+"data.npy")
