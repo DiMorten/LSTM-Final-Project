@@ -22,7 +22,7 @@ import tensorflow as tf
 
 # Define task: given a binary string of length 20, 
 # determine the count of 1s in a binary string.
-# For example “01010010011011100110” has 11 ones
+# For example 01010010011011100110 has 11 ones
 
 import numpy as np
 from random import shuffle

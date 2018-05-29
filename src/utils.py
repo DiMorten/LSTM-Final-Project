@@ -20,7 +20,6 @@ import cv2
 import pathlib
 from sklearn.feature_extraction.image import extract_patches_2d
 from skimage.util import view_as_windows
-#data_path="../data/"
 
 
 def im_store_patches_npy(path,name,band_n,out_path,in_rgb=False):
@@ -54,12 +53,13 @@ def im_store_multitemporal_patches_npy_from_npy(conf,names):
 	print(out_path["patches"])
 	print("patches",patches_all.shape)
 	print("label_patches.s",label_patches_all.shape)
-		
+	count=0
 	for i in range(patches.shape[0]):
 		for k in range(patches.shape[1]):
 			#pass
-			np.save(out_path["patches"]+"patch_"+str(i)+"_"+str(k)+".npy",patches_all[i,k,:,:,:,:])
-			np.save(out_path["labels"]+"patch_"+str(i)+"_"+str(k)+".npy",label_patches_all[i,k,:,:,:])
+			np.save(out_path["patches"]+"patch_"+str(count)+"_"+str(i)+"_"+str(k)+".npy",patches_all[i,k,:,:,:,:])
+			np.save(out_path["labels"]+"patch_"+str(count)+"_"+str(i)+"_"+str(k)+".npy",label_patches_all[i,k,:,:,:])
+			count=count+1
 
 def im_store_patches_npy_from_npy(conf,name):
 	out_path={"patches":conf["patch"]["out_npy_path"]+"im/"+name+"/","labels":conf["patch"]["out_npy_path"]+"labels/"+name+"/"}
