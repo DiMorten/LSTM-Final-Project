@@ -65,3 +65,6 @@ original_dataset/
 *.pyc
 *.npy
 *.aux.xml*
+
+*ckpt*
+checkpoint
