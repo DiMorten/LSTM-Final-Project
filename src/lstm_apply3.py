@@ -108,8 +108,8 @@ def model_define(debug=1):
 	#fc1 = tf.reshape(last,[-1, shape1[1] , shape1[2] * shape1[3]])
 	print(fc1.shape)
 	print("fc1",fc1)
-	fc1 = tf.layers.dense(fc1, n_hidden,activation=tf.nn.tanh)
-	if debug: print("fc1",fc1.get_shape())
+	#fc1 = tf.layers.dense(fc1, n_hidden,activation=tf.nn.tanh)
+	#if debug: print("fc1",fc1.get_shape())
 	prediction = tf.layers.dense(fc1, n_classes,activation=tf.nn.softmax)
 	if debug: print("prediction",prediction.get_shape())
 	
@@ -136,7 +136,7 @@ def loss_optimizer_set(target,prediction):
 	minimize = optimizer.minimize(cross_entropy)
 	return minimize
 
-def sess_run_train(minimize,error,data,train_input,train_output,test_input,test_output):
+def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_input,test_output,debug=1):
 	fname=sys._getframe().f_code.co_name
 
 	# Done designing. Execute model:
@@ -145,20 +145,28 @@ def sess_run_train(minimize,error,data,train_input,train_output,test_input,test_
 	sess.run(init_op)
 
 	# Begin training process
-	batch_size = 20
-	no_of_batches = int((n_train)/batch_size)
+	batch_size = 752
+	batch_size = 300
+	print("n_train",n_train)
+	no_of_batches = int(np.round(float(n_train)/float(batch_size)))
+	#no_of_batches=5
 	deb.prints(no_of_batches,fname)
 	
-	epoch = 10
+	epoch = 1000
 	deb.prints(epoch)
+	deb.prints(train_input.shape)
+	deb.prints(train_output.shape)
+	
 	for i in range(epoch):
 		ptr = 0
 		for j in range(no_of_batches):
 			#print("ptr,epoch_i,j",ptr,i,j,no_of_batches)
 			inp, out = train_input[ptr:ptr+batch_size,:,:,:,:], train_output[ptr:ptr+batch_size,:]
+			if debug>=3: print(ptr,inp.shape,out.shape)
 			ptr+=batch_size
+			if debug>=3: print(ptr,inp.shape,out.shape)
 			sess.run(minimize,{data: inp, target: out})
-			print("Step - ",str(j))
+			if debug>=1: print("Step - ",str(j))
 		print("Epoch - ",str(i))
 		incorrect = sess.run(error,{data: test_input, target: test_output})
 		print('Epoch {:2d} error {:3.1f}%'.format(i + 1, 100 * incorrect))
@@ -207,7 +215,7 @@ def sess_run_train(minimize,error,data,train_input,train_output,test_input,test_
 data_mode=1
 if __name__ == "__main__":
 	#utils.conf["subdata"]["n"]=3760
-	utils.conf["subdata"]["n"]=100
+	utils.conf["subdata"]["n"]=2000
 	
 	if conf["mode"]==1:
 		n,X,y=data_create()    
@@ -220,6 +228,7 @@ if __name__ == "__main__":
 		# incorrectly. 
 		mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
 		error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
+		print("trainable parameters",np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
 		if data_mode==1:
 			dataset=utils.im_patches_npy_multitemporal_from_npy_from_folder_load(utils.conf,1,subdata_flag=utils.conf["subdata"]["flag"],subdata_n=utils.conf["subdata"]["n"])
 			#dataset=np.load(utils.conf["path"]+"data.npy")
@@ -228,6 +237,6 @@ if __name__ == "__main__":
 			deb.prints(dataset["test"]["ims"].shape)
 			deb.prints(dataset["test"]["labels_onehot"].shape)
 			#sess_run_train(n,minimize,error,data,train_input,train_output,test_input,test_output)
-			sess_run_train(minimize,error,data,dataset["train"]["ims"],dataset["train"]["labels_onehot"],dataset["test"]["ims"],dataset["test"]["labels_onehot"])
+			sess_run_train(dataset["train"]["ims"].shape[0],minimize,error,data,dataset["train"]["ims"],dataset["train"]["labels_onehot"],dataset["test"]["ims"],dataset["test"]["labels_onehot"])
 		elif data_mode==0:
-			sess_run_train(minimize,error,data,train_input,train_output,test_input,test_output)
+			sess_run_train(n_train,minimize,error,data,train_input,train_output,test_input,test_output)
