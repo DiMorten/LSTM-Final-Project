@@ -116,7 +116,7 @@ def im_patches_npy_multitemporal_from_npy_from_folder_store(conf):
 	#return ims
 
 
-def im_patches_npy_multitemporal_from_npy_from_folder_load(conf,train_test_split=True,train_percentage=0.01,load=True,debug=1):
+def im_patches_npy_multitemporal_from_npy_from_folder_load(conf,train_test_split=True,train_percentage=0.05,load=True,debug=1):
 	#ims["full"]=[]
 	data={"train_test_split":train_test_split,"im_n":3769}
 	data["index"]=np.arange(0,data["im_n"])
@@ -125,34 +125,51 @@ def im_patches_npy_multitemporal_from_npy_from_folder_load(conf,train_test_split
 	np.random.shuffle(data["index_shuffle"])
 	if debug>=2: print("data[index]shufflle",data["index_shuffle"].shape)
 
-	data["train"]={"n":int(np.around(data["im_n"]*train_percentage))}
+	data["subdata"]={"n":300}
 
+	data["train"]={"n":int(np.around(data["im_n"]*train_percentage))}
+	data["test"]={}
+	
 	data["train"]["index"]=data["index_shuffle"][0:data["train"]["n"]]
-	np.save("data.npy",data) # Save indexes for further use with the test set
-	if debug>=1: print(data["train"]["index"])
+	data["test"]["index"]=data["index_shuffle"][data["train"]["n"]::]
+
+	data["test"]["n"]=data["im_n"]-data["train"]["n"]
+
+	if debug>=1: print(data["train"]["index"]), print(data["test"]["n"])
 	if debug>=1: print("Patches location",conf["patch"]["ims_path"])
 	if load:
-		data["train"]["ims"]=np.zeros((data["train"]["n"],conf["t_len"],conf["patch"]["size"],conf["patch"]["size"],conf["band_n"]))
-		data["train"]["labels"]=np.zeros((data["train"]["n"])).astype(np.int)
-		count=0
-		for i in data["train"]["index"]:
-			#print("i",i)
-			im_name=glob.glob(conf["patch"]["ims_path"]+'/patch_'+str(i)+'_*')[0]
-			data["train"]["ims"][count,:,:,:,:]=np.load(im_name)
-			
-			label_name=glob.glob(conf["patch"]["labels_path"]+'/patch_'+str(i)+'_*')[0]
-			data["train"]["labels"][count]=int(np.load(label_name)[conf["t_len"]-1,conf["patch"]["center_pixel"],conf["patch"]["center_pixel"]])
-			if debug>=2: print("train_labels[count]",train_labels[count])
-			
-			count=count+1
+		data["train"]=im_patches_labelsonehot_load(conf,data["train"],data,debug=debug)
+		data["test"]=im_patches_labelsonehot_load(conf,data["test"],data,debug=debug)
 	else:
 		train_ims=[]
+	np.save(conf["in_labels_path"]+"data.npy",data) # Save indexes for further use with the test set
+
 	return data	
 		
 		#print(im_name)
 		#print(im.shape)
 	#print(im_names)
+
+def im_patches_labelsonehot_load(conf,data,data_whole,debug=1):
 	
+	data["ims"]=np.zeros((data["n"],conf["t_len"],conf["patch"]["size"],conf["patch"]["size"],conf["band_n"]))
+	data["labels"]=np.zeros((data["n"])).astype(np.int)
+		
+	count=0
+	for i in data["index"]:
+		#print("i",i)
+		im_name=glob.glob(conf["patch"]["ims_path"]+'/patch_'+str(i)+'_*')[0]
+		data["ims"][count,:,:,:,:]=np.load(im_name)
+		
+		label_name=glob.glob(conf["patch"]["labels_path"]+'/patch_'+str(i)+'_*')[0]
+		data["labels"][count]=int(np.load(label_name)[conf["t_len"]-1,conf["patch"]["center_pixel"],conf["patch"]["center_pixel"]])
+		if debug>=2: print("train_labels[count]",data["labels"][count])
+		
+		count=count+1
+	data["labels_onehot"]=np.zeros((data["n"],conf["class_n"]))
+	data["labels_onehot"][np.arange(data["n"]),data["labels"]]=1
+	del data["labels"]
+	return data
 def im_store_npy(path,name,band_n,out_path,in_rgb=False,patches_extract_flag=True):
 	im = load_landsat(path+name+"/",band_n)
 	mask = cv2.imread(path+"labels/"+name[3]+".tif")
@@ -198,10 +215,11 @@ def patches_extract(im,patch_size):
 
 	return 0
 
-conf={"band_n": 6, "t_len":9, "path": "../data/"}
+conf={"band_n": 6, "t_len":9, "path": "../data/", "class_n":9}
 conf["out_path"]=conf["path"]+"results/"
 conf["in_npy_path"]=conf["path"]+"in_npy/"
 conf["in_rgb_path"]=conf["path"]+"in_rgb/"
+conf["in_labels_path"]=conf["path"]+"labels/"
 conf["patch"]={}
 conf["patch"]={"size":32, "stride":16, "out_npy_path":conf["path"]+"patches_npy/"}
 conf["patch"]["ims_path"]=conf["patch"]["out_npy_path"]+"patches_all"

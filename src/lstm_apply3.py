@@ -181,6 +181,6 @@ if __name__ == "__main__":
 		mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
 		error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
 
-		#dataset=utils.im_patches_npy_multitemporal_from_npy_from_folder_load(utils.conf,1)
-		sess_run_train(n,minimize,error,data,train_input,train_output,test_input,test_output)
-		#sess_run_train(dataset["train"]["n"],minimize,error,data,dataset["train"]["ims"],train_output,test_input,test_output)
+		dataset=utils.im_patches_npy_multitemporal_from_npy_from_folder_load(utils.conf,1)
+		#sess_run_train(n,minimize,error,data,train_input,train_output,test_input,test_output)
+		sess_run_train(dataset["train"]["n"],minimize,error,data,dataset["train"]["ims"],dataset["train"]["labels_onehot"],test_input,test_output)
