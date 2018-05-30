@@ -122,7 +122,7 @@ def im_patches_npy_multitemporal_from_npy_from_folder_store(conf):
 def im_patches_npy_multitemporal_from_npy_from_folder_load(conf,train_test_split=True,train_percentage=0.05,load=True,debug=1,subdata_flag=True,subdata_n=300):
 	fname=sys._getframe().f_code.co_name
 	
-	train_percentage=0.75
+	train_percentage=0.7
 	#ims["full"]=[]
 	data={"train_test_split":train_test_split,"im_n":3769}
 	data["index"]=np.arange(0,data["im_n"])
@@ -248,14 +248,46 @@ def data_balance(conf, data, samples_per_class):
 	balance["unique"]={}
 #	classes = range(0,conf["class_n"])
 	classes,counts=np.unique(data["train"]["labels"],return_counts=True)
+	num_total_samples=len(classes)*samples_per_class
+	balance["out_labels"]=np.zeros(num_total_samples)
+	deb.prints((num_total_samples,) + data["train"]["ims"].shape[1::])
+	balance["out_data"]=np.zeros((num_total_samples,) + data["train"]["ims"].shape[1::])
+	
+	print(classes,counts)
 	#balance["unique"]=dict(zip(unique, counts))
 	#print(balance["unique"])
+	k=0
 	for clss in classes:
-		data["train"]["im"]
-		data["train"]["im"]
+		deb.prints(clss)
+		balance["data"]=data["train"]["ims"][data["train"]["labels"]==clss]
+		balance["labels"]=data["train"]["labels"][data["train"]["labels"]==clss]
+		balance["num_samples"]=balance["data"].shape[0]
+		deb.prints(balance["data"].shape)
+		deb.prints(balance["labels"].shape)
+		
+		if balance["num_samples"] > samples_per_class:
+			replace=False
+		else: 
+			replace=True
+
+		index = range(balance["labels"].shape[0])
+		index = np.random.choice(index, samples_per_class, replace=replace)
+		balance["out_labels"][k*samples_per_class:k*samples_per_class + samples_per_class] = balance["labels"][index]
+		balance["out_data"][k*samples_per_class:k*samples_per_class + samples_per_class] = balance["data"][index]
+
+		k+=1
+	idx = np.random.permutation(balance["out_labels"].shape[0])
+	balance["out_data"] = balance["out_data"][idx]
+	balance["out_labels"] = balance["out_labels"][idx]
+	return balance["out_data"],balance["out_labels"]
+			
+		#data["train"]["im"]
 
 
 conf={"band_n": 6, "t_len":9, "path": "../data/", "class_n":9}
+#conf["pc_mode"]="remote"
+conf["pc_mode"]="local"
+
 conf["out_path"]=conf["path"]+"results/"
 conf["in_npy_path"]=conf["path"]+"in_npy/"
 conf["in_rgb_path"]=conf["path"]+"in_rgb/"
@@ -265,13 +297,16 @@ conf["patch"]={"size":32, "stride":16, "out_npy_path":conf["path"]+"patches_npy/
 conf["patch"]["ims_path"]=conf["patch"]["out_npy_path"]+"patches_all/"
 conf["patch"]["labels_path"]=conf["patch"]["out_npy_path"]+"labels_all/"
 conf['patch']['center_pixel']=int(np.around(conf["patch"]["size"]/2))
-conf["subdata"]={"flag":True,"n":3000}
-conf["subdata"]={"flag":True,"n":500}
+if conf["pc_mode"]=="remote":
+	conf["subdata"]={"flag":True,"n":3769}
+else:
+	conf["subdata"]={"flag":True,"n":1000}
+#conf["subdata"]={"flag":True,"n":500}
 #conf["subdata"]={"flag":True,"n":1000}
 conf["summaries_path"]=conf["path"]+"summaries/"
 print(conf)
 if __name__ == "__main__":
-	conf["utils_main_mode"]=5
+	conf["utils_main_mode"]=3
 	if conf["utils_main_mode"]==4:
 		names=["im1_190800","im2_200900","im3_221000","im4_190201","im5_230301","im6_080401","im7_020501","im8_110601","im9_050701"]
 		for name in names:
@@ -290,13 +325,21 @@ if __name__ == "__main__":
 		#print(aa.shape)
 		data=im_patches_npy_multitemporal_from_npy_from_folder_load(conf,1,subdata_flag=conf["subdata"]["flag"],subdata_n=conf["subdata"]["n"])
 		data=data_normalize_per_band(conf,data)
-		
+		if conf["pc_mode"]=="remote":
+			samples_per_class=500
+		else:
+			samples_per_class=150
+		data["train"]["ims"],data["train"]["labels"]=data_balance(conf,data,samples_per_class)
+		data["train"]["n"]=data["train"]["ims"].shape[0]
 		filename = conf["path"]+'data.pkl'
 		#os.makedirs(os.path.dirname(filename), exist_ok=True)
 	
 		with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
 	elif conf["utils_main_mode"]==5:
 	
-		with open(conf["path"]+'data.pkl', 'rb') as handle: data2 = pickle.load(handle)
-		list(iter(data2))
+		with open(conf["path"]+'data.pkl', 'rb') as handle: data = pickle.load(handle)
+		list(iter(data))
+		#data["train"]["ims"],data["train"]["labels"]=data_balance(conf,data,200)
+		#data["train"]["n"]=data["train"]["ims"].shape[0]
+		#data2["train"][""]
 		#print(data2["train"])
