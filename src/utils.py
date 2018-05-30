@@ -38,6 +38,10 @@ def im_patches_npy_multitemporal_from_npy_store(conf,names):
 	patches_all=np.zeros((58,65,conf["t_len"])+patch_shape)
 	label_patches_all=np.zeros((58,65,conf["t_len"])+label_shape)
 	
+
+	# Check 
+
+	
 	for i in range(1,10):
 		im = np.load(conf["in_npy_path"]+names[i-1]+".npy")
 		print(names[i-1])
@@ -299,6 +303,9 @@ conf["patch"]={"size":32, "stride":16, "out_npy_path":conf["path"]+"patches_npy/
 conf["patch"]["ims_path"]=conf["patch"]["out_npy_path"]+"patches_all/"
 conf["patch"]["labels_path"]=conf["patch"]["out_npy_path"]+"labels_all/"
 conf['patch']['center_pixel']=int(np.around(conf["patch"]["size"]/2))
+conf["train"]["mask"]={}
+conf["train"]["mask"]["dir"]=conf["path"]+"TrainTestMask.tif"
+
 if conf["pc_mode"]=="remote":
 	conf["subdata"]={"flag":True,"n":3768}
 else:
