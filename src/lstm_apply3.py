@@ -136,17 +136,24 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 		writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph())
 
 		# Begin training process
-		batch_size = 752
-		batch_size = 300
-		batch_size = 150
-		batch_size = 50
-		
+		#batch_size = 752
+		#batch_size = 300
+		#batch_size = 150
+		#batch_size = 50
+		if utils.conf["pc_mode"]=="remote":
+			#batch_size=314
+			batch_size=157
+			epoch = 300
+			
+		else:
+			batch_size=210
+			epoch = 30
 		print("n_train",n_train)
 		no_of_batches = int(np.round(float(n_train)/float(batch_size)))
 		#no_of_batches=5
 		deb.prints(no_of_batches,fname)
 		
-		epoch = 300
+		
 		deb.prints(epoch)
 		deb.prints(train_input.shape)
 		deb.prints(train_output.shape)

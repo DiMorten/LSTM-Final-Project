@@ -279,7 +279,9 @@ def data_balance(conf, data, samples_per_class):
 	idx = np.random.permutation(balance["out_labels"].shape[0])
 	balance["out_data"] = balance["out_data"][idx]
 	balance["out_labels"] = balance["out_labels"][idx]
-	return balance["out_data"],balance["out_labels"]
+	balance["labels_onehot"]=np.zeros((num_total_samples,conf["class_n"]))
+	balance["labels_onehot"][np.arange(num_total_samples),balance["out_labels"].astype(np.int)]=1
+	return balance["out_data"],balance["out_labels"],balance["labels_onehot"]
 			
 		#data["train"]["im"]
 
@@ -298,7 +300,7 @@ conf["patch"]["ims_path"]=conf["patch"]["out_npy_path"]+"patches_all/"
 conf["patch"]["labels_path"]=conf["patch"]["out_npy_path"]+"labels_all/"
 conf['patch']['center_pixel']=int(np.around(conf["patch"]["size"]/2))
 if conf["pc_mode"]=="remote":
-	conf["subdata"]={"flag":True,"n":3769}
+	conf["subdata"]={"flag":True,"n":3768}
 else:
 	conf["subdata"]={"flag":True,"n":1000}
 #conf["subdata"]={"flag":True,"n":500}
@@ -306,7 +308,7 @@ else:
 conf["summaries_path"]=conf["path"]+"summaries/"
 print(conf)
 if __name__ == "__main__":
-	conf["utils_main_mode"]=3
+	conf["utils_main_mode"]=5
 	if conf["utils_main_mode"]==4:
 		names=["im1_190800","im2_200900","im3_221000","im4_190201","im5_230301","im6_080401","im7_020501","im8_110601","im9_050701"]
 		for name in names:
@@ -329,7 +331,7 @@ if __name__ == "__main__":
 			samples_per_class=500
 		else:
 			samples_per_class=150
-		data["train"]["ims"],data["train"]["labels"]=data_balance(conf,data,samples_per_class)
+		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,samples_per_class)
 		data["train"]["n"]=data["train"]["ims"].shape[0]
 		filename = conf["path"]+'data.pkl'
 		#os.makedirs(os.path.dirname(filename), exist_ok=True)
