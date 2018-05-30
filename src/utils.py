@@ -30,17 +30,13 @@ def im_store_patches_npy(path,name,band_n,out_path,in_rgb=False):
 	pathlib2.Path(path+"patches/"+name).mkdir(parents=True, exist_ok=True) 
 
 
-def im_patches_npy_multitemporal_from_npy_store(conf,names):
+def im_patches_npy_multitemporal_from_npy_store(conf,names,train_mask_save=True):
 	patch_shape=(conf["patch"]["size"],conf["patch"]["size"],conf["band_n"])
 	label_shape=(conf["patch"]["size"],conf["patch"]["size"])
 	pathlib2.Path(conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
 	pathlib2.Path(conf["patch"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
 	patches_all=np.zeros((58,65,conf["t_len"])+patch_shape)
 	label_patches_all=np.zeros((58,65,conf["t_len"])+label_shape)
-	
-
-	# Check 
-
 	
 	for i in range(1,10):
 		im = np.load(conf["in_npy_path"]+names[i-1]+".npy")
@@ -67,6 +63,123 @@ def im_patches_npy_multitemporal_from_npy_store(conf,names):
 			np.save(conf["patch"]["labels_path"]+"patch_"+str(count)+"_"+str(i)+"_"+str(k)+".npy",label_patches_all[i,k,:,:,:])
 			count=count+1
 
+def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True):
+	patch_shape=(conf["patch"]["size"],conf["patch"]["size"],conf["band_n"])
+	label_shape=(conf["patch"]["size"],conf["patch"]["size"])
+	pathlib2.Path(conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
+	pathlib2.Path(conf["patch"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
+	patches_all=np.zeros((58,65,conf["t_len"])+patch_shape)
+	label_patches_all=np.zeros((58,65,conf["t_len"])+label_shape)
+	
+	patch={}
+	deb.prints((conf["t_len"],)+patch_shape)
+
+	#patch["values"]=np.zeros((conf["t_len"],)+patch_shape)
+	patch["full_ims"]=np.zeros((conf["t_len"],)+conf["im_3d_size"])
+	patch["full_label_ims"]=np.zeros((conf["t_len"],)+conf["im_3d_size"][0:2])
+	for t_step in range(0,conf["t_len"]):
+		deb.prints(conf["in_npy_path"]+names[t_step]+".npy")
+		patch["full_ims"][t_step] = np.load(conf["in_npy_path"]+names[t_step]+".npy")
+		patch["full_label_ims"][t_step] = cv2.imread(conf["path"]+"labels/"+names[t_step][2]+".tif",0)
+
+	deb.prints(patch["full_ims"].shape)
+	deb.prints(patch["full_label_ims"].shape)
+
+	# Load train mask
+	conf["patch"]["overlap"]=26
+	conf["train"]["ims_path"]=conf["path"]+"train_test/train/ims/"
+	conf["train"]["labels_path"]=conf["path"]+"train_test/train/labels/"
+	conf["test"]={}
+	conf["test"]["ims_path"]=conf["path"]+"train_test/test/ims/"
+	conf["test"]["labels_path"]=conf["path"]+"train_test/test/labels/"
+	
+	pathlib2.Path(conf["train"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
+	pathlib2.Path(conf["train"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
+	pathlib2.Path(conf["test"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
+	pathlib2.Path(conf["test"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
+
+	patch["train_mask"]=cv2.imread(conf["train"]["mask"]["dir"],0)
+
+	conf["train"]["n"],conf["test"]["n"]=patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"],conf["patch"]["size"],conf["patch"]["overlap"], \
+		mask=patch["train_mask"],path_train=conf["train"],path_test=conf["test"])
+
+
+		#patch["values"][t_step]
+"""
+	for i in range(1,10):
+		im = np.load(conf["in_npy_path"]+names[i-1]+".npy")
+		print(names[i-1])
+		labels = cv2.imread(conf["path"]+"labels/"+names[i-1][2]+".tif",0)
+		print("labels shape",labels.shape)
+		print("im shape",im.shape)
+		
+		patches=np.squeeze(view_as_windows(im,patch_shape,step=conf["patch"]["stride"]))
+		print("label_shape",label_shape)
+		label_patches=view_as_windows(labels,label_shape,step=conf["patch"]["stride"])
+		label_patches=np.squeeze(label_patches)
+		patches_all[:,:,i-1,:,:,:]=patches.copy()
+		label_patches_all[:,:,i-1,:,:]=label_patches.copy()
+
+	print(conf["patch"]["ims_path"])
+	print("patches",patches_all.shape)
+	print("label_patches.s",label_patches_all.shape)
+	count=0
+	for i in range(patches.shape[0]):
+		for k in range(patches.shape[1]):
+			#pass
+			np.save(conf["patch"]["ims_path"]+"patch_"+str(count)+"_"+str(i)+"_"+str(k)+".npy",patches_all[i,k,:,:,:,:])
+			np.save(conf["patch"]["labels_path"]+"patch_"+str(count)+"_"+str(i)+"_"+str(k)+".npy",label_patches_all[i,k,:,:,:])
+			count=count+1
+"""
+#def patches_multitemporal_get(img,label,window,overlap,mask,train_ims_path,train_labels_path,test_save=False,test_path=None):
+def patches_multitemporal_get(img,label,window,overlap,mask,path_train,path_test):
+	deb.prints(window)
+	deb.prints(overlap)
+	
+	#window= 256
+	#overlap= 200
+	patches_get={}
+	t_steps, h, w, channels = img.shape
+
+	gridx = range(0, w - window, window - overlap)
+	gridx = np.hstack((gridx, w - window))
+
+	gridy = range(0, h - window, window - overlap)
+	gridy = np.hstack((gridy, h - window))
+	counter=0
+	patches_get["train_n"]=0
+	patches_get["test_n"]=0
+	patches_get["test_n_limited"]=0
+	for i in range(len(gridx)):
+		for j in range(len(gridy)):
+			counter=counter+1
+			xx = gridx[i]
+			yy = gridy[j]
+			#patch_clouds=Bclouds[yy: yy + window, xx: xx + window]
+			patch = img[:,yy: yy + window, xx: xx + window,:]
+			label_patch = label[:,yy: yy + window, xx: xx + window]
+			mask_patch = mask[yy: yy + window, xx: xx + window]
+			if np.any(label_patch==0):
+				pass
+			elif np.all(mask_patch==1): # Train sample
+				patches_get["train_n"]+=1
+				np.save(path_train["ims_path"]+"patch_"+str(counter)+"_"+str(i)+"_"+str(j)+".npy",patch)
+				np.save(path_train["labels_path"]+"patch_"+str(counter)+"_"+str(i)+"_"+str(j)+".npy",label_patch)
+			elif np.all(mask_patch==2): # Test sample
+				
+				#if np.random.rand(1)[0]>=0.7:
+				test_n_limit=2000
+				patches_get["test_n"]+=1
+				if patches_get["test_n"]<=test_n_limit:
+					patches_get["test_n_limited"]+=1
+				
+					np.save(path_test["ims_path"]+"patch_"+str(counter)+"_"+str(i)+"_"+str(j)+".npy",patch)
+					np.save(path_test["labels_path"]+"patch_"+str(counter)+"_"+str(i)+"_"+str(j)+".npy",label_patch)
+				#np.random.choice(index, samples_per_class, replace=replace)
+	deb.prints(counter)
+	deb.prints(patches_get["train_n"])
+	deb.prints(patches_get["test_n"])
+	return patches_get["train_n"],patches_get["test_n_limited"]
 def im_store_patches_npy_from_npy(conf,name):
 	out_path={"patches":conf["patch"]["out_npy_path"]+"im/"+name+"/","labels":conf["patch"]["out_npy_path"]+"labels/"+name+"/"}
 	patch_shape=(conf["patch"]["size"],conf["patch"]["size"],conf["band_n"])
@@ -121,7 +234,57 @@ def im_patches_npy_multitemporal_from_npy_from_folder_store(conf):
 		
 		#ims["full"].append(np.load(im_name))
 	#return ims
+def im_patches_npy_multitemporal_from_npy_from_folder_store2(conf):
+	#ims["full"]=[]
+	im_names=[]
+	for i in range(1,10):
+		im_name=glob.glob(conf["in_npy_path"]+'im'+str(i)+'*')[0]
+		im_name=im_name[-14:-4]
+		im_names.append(im_name)
+		print(im_name)
+	print(im_names)
+	im_patches_npy_multitemporal_from_npy_store2(conf,im_names)
 
+def im_patches_npy_multitemporal_from_npy_from_folder_load2(conf,load=True,debug=1):
+	fname=sys._getframe().f_code.co_name
+	
+	train_percentage=0.7
+	#ims["full"]=[]
+	data={,"im_n":conf[""]}
+	data["index"]=np.arange(0,data["im_n"])
+	if debug>=1: deb.prints(data["index"].shape)
+	data["index_shuffle"]=data["index"].copy()
+	np.random.shuffle(data["index_shuffle"])
+	if debug>=2: deb.prints(data["index_shuffle"].shape)
+
+	data["subdata"]={}
+	if subdata_flag:
+		data["subdata"]["n"]=subdata_n
+	else:
+		data["subdata"]["n"]=data["im_n"]
+	data["train"]={"n":int(np.around(data["subdata"]["n"]*train_percentage))}
+	if debug>=1: deb.prints(data["train"]["n"])
+	
+	data["test"]={}
+	if debug>=1: deb.prints(data["index_shuffle"].shape)
+	data["train"]["index"]=data["index_shuffle"][0:data["train"]["n"]]
+	data["test"]["index"]=data["index_shuffle"][data["train"]["n"]:data["subdata"]["n"]]
+	if debug>=1: deb.prints(data["train"]["index"].shape)
+	if debug>=1: deb.prints(data["test"]["index"].shape)
+	data["test"]["n"]=data["test"]["index"].shape[0]
+
+	if debug>=1: print(data["train"]["index"])
+	if debug>=1: print(data["test"]["n"])
+	if debug>=1: deb.prints(conf["patch"]["ims_path"])
+	if load:
+		data["train"]=im_patches_labelsonehot_load(conf,data["train"],data,debug=debug)
+		data["test"]=im_patches_labelsonehot_load(conf,data["test"],data,debug=debug)
+	else:
+		train_ims=[]
+	deb.prints(list(iter(data["train"])))
+	#np.save(conf["path"]+"data.npy",data) # Save indexes and data for further use with the train/ test set/labels
+
+	return data	
 
 def im_patches_npy_multitemporal_from_npy_from_folder_load(conf,train_test_split=True,train_percentage=0.05,load=True,debug=1,subdata_flag=True,subdata_n=300):
 	fname=sys._getframe().f_code.co_name
@@ -300,12 +463,15 @@ conf["in_rgb_path"]=conf["path"]+"in_rgb/"
 conf["in_labels_path"]=conf["path"]+"labels/"
 conf["patch"]={}
 conf["patch"]={"size":32, "stride":16, "out_npy_path":conf["path"]+"patches_npy/"}
+conf["patch"]["overlap"]=16
 conf["patch"]["ims_path"]=conf["patch"]["out_npy_path"]+"patches_all/"
 conf["patch"]["labels_path"]=conf["patch"]["out_npy_path"]+"labels_all/"
 conf['patch']['center_pixel']=int(np.around(conf["patch"]["size"]/2))
+conf["train"]={}
 conf["train"]["mask"]={}
 conf["train"]["mask"]["dir"]=conf["path"]+"TrainTestMask.tif"
-
+conf["im_size"]=(948,1068)
+conf["im_3d_size"]=conf["im_size"]+(conf["band_n"],)
 if conf["pc_mode"]=="remote":
 	conf["subdata"]={"flag":True,"n":3768}
 else:
@@ -315,13 +481,8 @@ else:
 conf["summaries_path"]=conf["path"]+"summaries/"
 print(conf)
 if __name__ == "__main__":
-	conf["utils_main_mode"]=5
-	if conf["utils_main_mode"]==4:
-		names=["im1_190800","im2_200900","im3_221000","im4_190201","im5_230301","im6_080401","im7_020501","im8_110601","im9_050701"]
-		for name in names:
-			im_store_npy(conf["path"],name,conf["band_n"],out_path=conf["in_npy_path"],in_rgb=True)
+	conf["utils_main_mode"]=6
 
-		im_patches_npy_multitemporal_from_npy_from_folder_store(conf)	
 	if conf["utils_main_mode"]==2:
 		im_patches_npy_multitemporal_from_npy_from_folder_store(conf)
 	elif conf["utils_main_mode"]==1:
@@ -348,6 +509,12 @@ if __name__ == "__main__":
 	
 		with open(conf["path"]+'data.pkl', 'rb') as handle: data = pickle.load(handle)
 		list(iter(data))
+
+	elif conf["utils_main_mode"]==6:
+
+		im_patches_npy_multitemporal_from_npy_from_folder_store2(conf)
+
+
 		#data["train"]["ims"],data["train"]["labels"]=data_balance(conf,data,200)
 		#data["train"]["n"]=data["train"]["ims"].shape[0]
 		#data2["train"][""]
