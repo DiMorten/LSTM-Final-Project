@@ -63,7 +63,9 @@ def im_patches_npy_multitemporal_from_npy_store(conf,names,train_mask_save=True)
 			np.save(conf["patch"]["labels_path"]+"patch_"+str(count)+"_"+str(i)+"_"+str(k)+".npy",label_patches_all[i,k,:,:,:])
 			count=count+1
 
-def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True):
+def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True,patches_save=False):
+	fname=sys._getframe().f_code.co_name
+
 	patch_shape=(conf["patch"]["size"],conf["patch"]["size"],conf["band_n"])
 	label_shape=(conf["patch"]["size"],conf["patch"]["size"])
 	pathlib2.Path(conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
@@ -82,17 +84,12 @@ def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True
 		patch["full_ims"][t_step] = np.load(conf["in_npy_path"]+names[t_step]+".npy")
 		patch["full_label_ims"][t_step] = cv2.imread(conf["path"]+"labels/"+names[t_step][2]+".tif",0)
 
-	deb.prints(patch["full_ims"].shape)
-	deb.prints(patch["full_label_ims"].shape)
+	deb.prints(patch["full_ims"].shape,fname)
+	deb.prints(patch["full_label_ims"].shape,fname)
 
 	# Load train mask
 	conf["patch"]["overlap"]=26
-	conf["train"]["ims_path"]=conf["path"]+"train_test/train/ims/"
-	conf["train"]["labels_path"]=conf["path"]+"train_test/train/labels/"
-	conf["test"]={}
-	conf["test"]["ims_path"]=conf["path"]+"train_test/test/ims/"
-	conf["test"]["labels_path"]=conf["path"]+"train_test/test/labels/"
-	
+
 	pathlib2.Path(conf["train"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
 	pathlib2.Path(conf["train"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
 	pathlib2.Path(conf["test"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
@@ -101,7 +98,9 @@ def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True
 	patch["train_mask"]=cv2.imread(conf["train"]["mask"]["dir"],0)
 
 	conf["train"]["n"],conf["test"]["n"]=patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"],conf["patch"]["size"],conf["patch"]["overlap"], \
-		mask=patch["train_mask"],path_train=conf["train"],path_test=conf["test"])
+		mask=patch["train_mask"],path_train=conf["train"],path_test=conf["test"],patches_save=patches_save)
+	np.save(conf["path"]+"train_n.npy",conf["train"]["n"])
+	np.save(conf["path"]+"test_n.npy",conf["test"]["n"])
 
 
 		#patch["values"][t_step]
@@ -132,9 +131,10 @@ def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True
 			count=count+1
 """
 #def patches_multitemporal_get(img,label,window,overlap,mask,train_ims_path,train_labels_path,test_save=False,test_path=None):
-def patches_multitemporal_get(img,label,window,overlap,mask,path_train,path_test):
-	deb.prints(window)
-	deb.prints(overlap)
+def patches_multitemporal_get(img,label,window,overlap,mask,path_train,path_test,patches_save=False,test_n_limit=2000):
+	fname=sys._getframe().f_code.co_name
+	deb.prints(window,fname)
+	deb.prints(overlap,fname)
 	
 	#window= 256
 	#overlap= 200
@@ -160,25 +160,28 @@ def patches_multitemporal_get(img,label,window,overlap,mask,path_train,path_test
 			label_patch = label[:,yy: yy + window, xx: xx + window]
 			mask_patch = mask[yy: yy + window, xx: xx + window]
 			if np.any(label_patch==0):
-				pass
+				continue
 			elif np.all(mask_patch==1): # Train sample
 				patches_get["train_n"]+=1
-				np.save(path_train["ims_path"]+"patch_"+str(counter)+"_"+str(i)+"_"+str(j)+".npy",patch)
-				np.save(path_train["labels_path"]+"patch_"+str(counter)+"_"+str(i)+"_"+str(j)+".npy",label_patch)
+				if patches_save==True:
+					np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
+					np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch)
 			elif np.all(mask_patch==2): # Test sample
 				
 				#if np.random.rand(1)[0]>=0.7:
-				test_n_limit=2000
+				
 				patches_get["test_n"]+=1
 				if patches_get["test_n"]<=test_n_limit:
 					patches_get["test_n_limited"]+=1
-				
-					np.save(path_test["ims_path"]+"patch_"+str(counter)+"_"+str(i)+"_"+str(j)+".npy",patch)
-					np.save(path_test["labels_path"]+"patch_"+str(counter)+"_"+str(i)+"_"+str(j)+".npy",label_patch)
+					if patches_save==True:
+						np.save(path_test["ims_path"]+"patch_"+str(patches_get["test_n_limited"])+"_"+str(i)+"_"+str(j)+".npy",patch)
+						np.save(path_test["labels_path"]+"patch_"+str(patches_get["test_n_limited"])+"_"+str(i)+"_"+str(j)+".npy",label_patch)
 				#np.random.choice(index, samples_per_class, replace=replace)
-	deb.prints(counter)
-	deb.prints(patches_get["train_n"])
-	deb.prints(patches_get["test_n"])
+	deb.prints(counter,fname)
+	deb.prints(patches_get["train_n"],fname)
+	deb.prints(patches_get["test_n"],fname)
+	deb.prints(patches_get["test_n_limited"],fname)
+	
 	return patches_get["train_n"],patches_get["test_n_limited"]
 def im_store_patches_npy_from_npy(conf,name):
 	out_path={"patches":conf["patch"]["out_npy_path"]+"im/"+name+"/","labels":conf["patch"]["out_npy_path"]+"labels/"+name+"/"}
@@ -234,7 +237,7 @@ def im_patches_npy_multitemporal_from_npy_from_folder_store(conf):
 		
 		#ims["full"].append(np.load(im_name))
 	#return ims
-def im_patches_npy_multitemporal_from_npy_from_folder_store2(conf):
+def im_patches_npy_multitemporal_from_npy_from_folder_store2(conf,patches_save=False):
 	#ims["full"]=[]
 	im_names=[]
 	for i in range(1,10):
@@ -243,49 +246,49 @@ def im_patches_npy_multitemporal_from_npy_from_folder_store2(conf):
 		im_names.append(im_name)
 		print(im_name)
 	print(im_names)
-	im_patches_npy_multitemporal_from_npy_store2(conf,im_names)
+	im_patches_npy_multitemporal_from_npy_store2(conf,im_names,patches_save=patches_save)
 
 def im_patches_npy_multitemporal_from_npy_from_folder_load2(conf,load=True,debug=1):
 	fname=sys._getframe().f_code.co_name
 	
-	train_percentage=0.7
-	#ims["full"]=[]
-	data={,"im_n":conf[""]}
-	data["index"]=np.arange(0,data["im_n"])
-	if debug>=1: deb.prints(data["index"].shape)
-	data["index_shuffle"]=data["index"].copy()
-	np.random.shuffle(data["index_shuffle"])
-	if debug>=2: deb.prints(data["index_shuffle"].shape)
-
-	data["subdata"]={}
-	if subdata_flag:
-		data["subdata"]["n"]=subdata_n
-	else:
-		data["subdata"]["n"]=data["im_n"]
-	data["train"]={"n":int(np.around(data["subdata"]["n"]*train_percentage))}
-	if debug>=1: deb.prints(data["train"]["n"])
-	
+	data={}
+	data["train"]={}
 	data["test"]={}
-	if debug>=1: deb.prints(data["index_shuffle"].shape)
-	data["train"]["index"]=data["index_shuffle"][0:data["train"]["n"]]
-	data["test"]["index"]=data["index_shuffle"][data["train"]["n"]:data["subdata"]["n"]]
-	if debug>=1: deb.prints(data["train"]["index"].shape)
-	if debug>=1: deb.prints(data["test"]["index"].shape)
-	data["test"]["n"]=data["test"]["index"].shape[0]
 
-	if debug>=1: print(data["train"]["index"])
-	if debug>=1: print(data["test"]["n"])
-	if debug>=1: deb.prints(conf["patch"]["ims_path"])
 	if load:
-		data["train"]=im_patches_labelsonehot_load(conf,data["train"],data,debug=debug)
-		data["test"]=im_patches_labelsonehot_load(conf,data["test"],data,debug=debug)
+		data["train"]=im_patches_labelsonehot_load2(conf,conf["train"],data["train"],data,debug=0)
+		data["test"]=im_patches_labelsonehot_load2(conf,conf["train"],data["test"],data,debug=0)
 	else:
 		train_ims=[]
 	deb.prints(list(iter(data["train"])))
+
 	#np.save(conf["path"]+"data.npy",data) # Save indexes and data for further use with the train/ test set/labels
 
 	return data	
 
+# Use after patches_npy_multitemporal_from_npy_store2(). Probably use within patches_npy_multitemporal_from_npy_from_folder_load2()
+def im_patches_labelsonehot_load2(conf,conf_set,data,data_whole,debug=0): #data["n"], conf["patch"]["ims_path"], conf["patch"]["labels_path"]
+	fname=sys._getframe().f_code.co_name
+
+	data["ims"]=np.zeros((conf_set["n"],conf["t_len"],conf["patch"]["size"],conf["patch"]["size"],conf["band_n"]))
+	data["labels"]=np.zeros((conf_set["n"])).astype(np.int)
+		
+	count=0
+	if debug>=1: deb.prints(conf_set["ims_path"],fname)
+	for i in range(1,conf_set["n"]):
+		#print("i",i)
+		im_name=glob.glob(conf_set["ims_path"]+'patch_'+str(i)+'_*')[0]
+		data["ims"][count,:,:,:,:]=np.load(im_name)
+		
+		label_name=glob.glob(conf_set["labels_path"]+'patch_'+str(i)+'_*')[0]
+		data["labels"][count]=int(np.load(label_name)[conf["t_len"]-1,conf["patch"]["center_pixel"],conf["patch"]["center_pixel"]])
+		if debug>=2: print("train_labels[count]",data["labels"][count])
+		
+		count=count+1
+	data["labels_onehot"]=np.zeros((conf_set["n"],conf["class_n"]))
+	data["labels_onehot"][np.arange(conf_set["n"]),data["labels"]]=1
+	#del data["labels"]
+	return data
 def im_patches_npy_multitemporal_from_npy_from_folder_load(conf,train_test_split=True,train_percentage=0.05,load=True,debug=1,subdata_flag=True,subdata_n=300):
 	fname=sys._getframe().f_code.co_name
 	
@@ -410,28 +413,35 @@ def data_normalize_per_band(conf,data):
 		data["train"]["ims"][:,:,:,:,i]=(data["train"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
 		data["test"]["ims"][:,:,:,:,i]=(data["test"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
 	return data
-def data_balance(conf, data, samples_per_class):
+def data_balance(conf, data, samples_per_class,debug=1):
+	fname=sys._getframe().f_code.co_name
+
 	balance={}
 	balance["unique"]={}
 #	classes = range(0,conf["class_n"])
 	classes,counts=np.unique(data["train"]["labels"],return_counts=True)
+	print(classes,counts)
+	
+	if classes[0]==0: classes=classes[1::]
 	num_total_samples=len(classes)*samples_per_class
 	balance["out_labels"]=np.zeros(num_total_samples)
-	deb.prints((num_total_samples,) + data["train"]["ims"].shape[1::])
+	deb.prints((num_total_samples,) + data["train"]["ims"].shape[1::],fname)
 	balance["out_data"]=np.zeros((num_total_samples,) + data["train"]["ims"].shape[1::])
 	
-	print(classes,counts)
 	#balance["unique"]=dict(zip(unique, counts))
 	#print(balance["unique"])
 	k=0
 	for clss in classes:
-		deb.prints(clss)
+		if clss==0: 
+			continue
+		deb.prints(clss,fname)
 		balance["data"]=data["train"]["ims"][data["train"]["labels"]==clss]
 		balance["labels"]=data["train"]["labels"][data["train"]["labels"]==clss]
 		balance["num_samples"]=balance["data"].shape[0]
-		deb.prints(balance["data"].shape)
-		deb.prints(balance["labels"].shape)
-		
+		if debug>=1: deb.prints(balance["data"].shape,fname)
+		if debug>=2: 
+			deb.prints(balance["labels"].shape,fname)
+			deb.prints(np.unique(balance["labels"].shape),fname)
 		if balance["num_samples"] > samples_per_class:
 			replace=False
 		else: 
@@ -448,6 +458,7 @@ def data_balance(conf, data, samples_per_class):
 	balance["out_labels"] = balance["out_labels"][idx]
 	balance["labels_onehot"]=np.zeros((num_total_samples,conf["class_n"]))
 	balance["labels_onehot"][np.arange(num_total_samples),balance["out_labels"].astype(np.int)]=1
+	if debug>=1: deb.prints(np.unique(balance["out_labels"],return_counts=True),fname)
 	return balance["out_data"],balance["out_labels"],balance["labels_onehot"]
 			
 		#data["train"]["im"]
@@ -470,6 +481,12 @@ conf['patch']['center_pixel']=int(np.around(conf["patch"]["size"]/2))
 conf["train"]={}
 conf["train"]["mask"]={}
 conf["train"]["mask"]["dir"]=conf["path"]+"TrainTestMask.tif"
+conf["train"]["ims_path"]=conf["path"]+"train_test/train/ims/"
+conf["train"]["labels_path"]=conf["path"]+"train_test/train/labels/"
+conf["test"]={}
+conf["test"]["ims_path"]=conf["path"]+"train_test/test/ims/"
+conf["test"]["labels_path"]=conf["path"]+"train_test/test/labels/"
+
 conf["im_size"]=(948,1068)
 conf["im_3d_size"]=conf["im_size"]+(conf["band_n"],)
 if conf["pc_mode"]=="remote":
@@ -481,7 +498,7 @@ else:
 conf["summaries_path"]=conf["path"]+"summaries/"
 print(conf)
 if __name__ == "__main__":
-	conf["utils_main_mode"]=6
+	conf["utils_main_mode"]=7
 
 	if conf["utils_main_mode"]==2:
 		im_patches_npy_multitemporal_from_npy_from_folder_store(conf)
@@ -512,8 +529,42 @@ if __name__ == "__main__":
 
 	elif conf["utils_main_mode"]==6:
 
-		im_patches_npy_multitemporal_from_npy_from_folder_store2(conf)
+		im_patches_npy_multitemporal_from_npy_from_folder_store2(conf,patches_save=True)
+	elif conf["utils_main_mode"]==7:
 
+		conf["train"]["n"]=np.load(conf["path"]+"train_n.npy")
+		conf["test"]["n"]=np.load(conf["path"]+"test_n.npy")
+		deb.prints(conf["train"]["n"])
+		deb.prints(conf["test"]["n"])
+
+		data=im_patches_npy_multitemporal_from_npy_from_folder_load2(conf)
+		
+		classes,counts=np.unique(data["train"]["labels"],return_counts=True)
+		print(classes,counts)
+
+		data=data_normalize_per_band(conf,data)
+		if conf["pc_mode"]=="remote":
+			samples_per_class=500
+		else:
+			samples_per_class=150
+		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,samples_per_class)
+		data["train"]["n"]=data["train"]["ims"].shape[0]
+		filename = conf["path"]+'data.pkl'
+		#os.makedirs(os.path.dirname(filename), exist_ok=True)
+	
+		with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
+
+"""
+		data=im_patches_npy_multitemporal_from_npy_from_folder_load2(conf)
+		data=data_normalize_per_band(conf,data)
+		if conf["pc_mode"]=="remote":
+			samples_per_class=500
+		else:
+			samples_per_class=150
+		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,samples_per_class)
+		data["train"]["n"]=data["train"]["ims"].shape[0]
+		filename = conf["path"]+'data.pkl'
+"""
 
 		#data["train"]["ims"],data["train"]["labels"]=data_balance(conf,data,200)
 		#data["train"]["n"]=data["train"]["ims"].shape[0]
