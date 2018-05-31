@@ -148,6 +148,8 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 		else:
 			batch_size=210
 			epoch = 30
+		batch_size=50
+		epoch = 30
 		print("n_train",n_train)
 		no_of_batches = int(np.round(float(n_train)/float(batch_size)))
 		#no_of_batches=5

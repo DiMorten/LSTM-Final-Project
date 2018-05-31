@@ -88,7 +88,7 @@ def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True
 	deb.prints(patch["full_label_ims"].shape,fname)
 
 	# Load train mask
-	conf["patch"]["overlap"]=26
+	conf["patch"]["overlap"]=20
 
 	pathlib2.Path(conf["train"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
 	pathlib2.Path(conf["train"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
@@ -546,13 +546,18 @@ if __name__ == "__main__":
 		if conf["pc_mode"]=="remote":
 			samples_per_class=500
 		else:
-			samples_per_class=150
+			samples_per_class=50
 		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,samples_per_class)
 		data["train"]["n"]=data["train"]["ims"].shape[0]
+
+		for i in data["train"]["ims"][0]:
+			np.save()
+
+		#data["train"]["labels"]
 		filename = conf["path"]+'data.pkl'
 		#os.makedirs(os.path.dirname(filename), exist_ok=True)
-	
-		with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
+		print(list(iter(data)))
+		#with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
 
 """
 		data=im_patches_npy_multitemporal_from_npy_from_folder_load2(conf)
