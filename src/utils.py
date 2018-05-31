@@ -13,13 +13,13 @@ import numpy as np
 from time import gmtime, strftime
 #from osgeo import gdal
 import glob
-from skimage.transform import resize
+#from skimage.transform import resize
 from sklearn import preprocessing as pre
 import matplotlib.pyplot as plt
 import cv2
-import pathlib2
+import pathlib
 from sklearn.feature_extraction.image import extract_patches_2d
-from skimage.util import view_as_windows
+#from skimage.util import view_as_windows
 import sys
 import pickle
 # Local
@@ -27,14 +27,14 @@ import deb
 
 def im_store_patches_npy(path,name,band_n,out_path,in_rgb=False):
 	im = load_landsat(path,band_n)
-	pathlib2.Path(path+"patches/"+name).mkdir(parents=True, exist_ok=True) 
+	pathlib.Path(path+"patches/"+name).mkdir(parents=True, exist_ok=True) 
 
 
 def im_patches_npy_multitemporal_from_npy_store(conf,names,train_mask_save=True):
 	patch_shape=(conf["patch"]["size"],conf["patch"]["size"],conf["band_n"])
 	label_shape=(conf["patch"]["size"],conf["patch"]["size"])
-	pathlib2.Path(conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
-	pathlib2.Path(conf["patch"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
+	pathlib.Path(conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
+	pathlib.Path(conf["patch"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
 	patches_all=np.zeros((58,65,conf["t_len"])+patch_shape)
 	label_patches_all=np.zeros((58,65,conf["t_len"])+label_shape)
 	
@@ -68,8 +68,8 @@ def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True
 
 	patch_shape=(conf["patch"]["size"],conf["patch"]["size"],conf["band_n"])
 	label_shape=(conf["patch"]["size"],conf["patch"]["size"])
-	pathlib2.Path(conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
-	pathlib2.Path(conf["patch"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
+	pathlib.Path(conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
+	pathlib.Path(conf["patch"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
 	patches_all=np.zeros((58,65,conf["t_len"])+patch_shape)
 	label_patches_all=np.zeros((58,65,conf["t_len"])+label_shape)
 	
@@ -88,12 +88,12 @@ def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True
 	deb.prints(patch["full_label_ims"].shape,fname)
 
 	# Load train mask
-	conf["patch"]["overlap"]=20
+	conf["patch"]["overlap"]=26
 
-	pathlib2.Path(conf["train"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
-	pathlib2.Path(conf["train"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
-	pathlib2.Path(conf["test"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
-	pathlib2.Path(conf["test"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
+	pathlib.Path(conf["train"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
+	pathlib.Path(conf["train"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
+	pathlib.Path(conf["test"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
+	pathlib.Path(conf["test"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
 
 	patch["train_mask"]=cv2.imread(conf["train"]["mask"]["dir"],0)
 
@@ -131,7 +131,7 @@ def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True
 			count=count+1
 """
 #def patches_multitemporal_get(img,label,window,overlap,mask,train_ims_path,train_labels_path,test_save=False,test_path=None):
-def patches_multitemporal_get(img,label,window,overlap,mask,path_train,path_test,patches_save=False,test_n_limit=2000):
+def patches_multitemporal_get(img,label,window,overlap,mask,path_train,path_test,patches_save=False,test_n_limit=10000):
 	fname=sys._getframe().f_code.co_name
 	deb.prints(window,fname)
 	deb.prints(overlap,fname)
@@ -202,8 +202,8 @@ def im_store_patches_npy_from_npy(conf,name):
 	label_patches=np.squeeze(label_patches)
 	
 	print(out_path["patches"])
-	pathlib2.Path(out_path["patches"]).mkdir(parents=True, exist_ok=True) 
-	pathlib2.Path(out_path["labels"]).mkdir(parents=True, exist_ok=True) 
+	pathlib.Path(out_path["patches"]).mkdir(parents=True, exist_ok=True) 
+	pathlib.Path(out_path["labels"]).mkdir(parents=True, exist_ok=True) 
 	print("patches",patches.shape)
 	print("label_patches.s",label_patches.shape)
 	
@@ -366,7 +366,7 @@ def im_store_npy(path,name,band_n,out_path,in_rgb=False,patches_extract_flag=Tru
 		patches=np.squeeze(view_as_windows(im,patch_shape,step=16))
 		patches_path=path+name+"/"+"patches/"
 		print(patches_path)
-		pathlib2.Path(patches_path).mkdir(parents=True, exist_ok=True) 
+		pathlib.Path(patches_path).mkdir(parents=True, exist_ok=True) 
 		
 		print(patches.shape)
 		for i in range(patches.shape[0]):
@@ -528,7 +528,7 @@ if __name__ == "__main__":
 		list(iter(data))
 
 	elif conf["utils_main_mode"]==6:
-
+		os.system("rm -rf ../data/train_test")
 		im_patches_npy_multitemporal_from_npy_from_folder_store2(conf,patches_save=True)
 	elif conf["utils_main_mode"]==7:
 
@@ -546,18 +546,18 @@ if __name__ == "__main__":
 		if conf["pc_mode"]=="remote":
 			samples_per_class=500
 		else:
-			samples_per_class=50
+			samples_per_class=200
 		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,samples_per_class)
 		data["train"]["n"]=data["train"]["ims"].shape[0]
 
-		for i in data["train"]["ims"][0]:
-			np.save()
+		#for i in data["train"]["ims"][0]:
+		#	np.save()
 
 		#data["train"]["labels"]
 		filename = conf["path"]+'data.pkl'
 		#os.makedirs(os.path.dirname(filename), exist_ok=True)
 		print(list(iter(data)))
-		#with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
+		with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
 
 """
 		data=im_patches_npy_multitemporal_from_npy_from_folder_load2(conf)

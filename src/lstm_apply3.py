@@ -169,13 +169,13 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 				ptr+=batch_size
 				if debug>=3: print(ptr,inp.shape,out.shape)
 				summary,_ = sess.run([merged,minimize],{data: inp, target: out})
-				if debug>=1: print("Step - ",str(j))
+				if debug>=3: print("Step - ",str(j))
 			if i%10==0:
 				# Save the variables to disk.
 				  save_path = saver.save(sess, "./model.ckpt")
 				  print("Model saved in path: %s" % save_path)
 				  writer.add_summary(summary,i+j)
-			print("Epoch - ",str(i))
+			print("Epoch - {}. Steps per epoch - {}",str(i),str(j))
 			incorrect = sess.run(error,{data: test_input, target: test_output})
 			print('Epoch {:2d} error {:3.1f}%'.format(i + 1, 100 * incorrect))
 	elif conf["stage"]=="test":
@@ -248,13 +248,14 @@ if __name__ == "__main__":
 		
 		if data_mode==1:
 			#utils.im_patches_npy_multitemporal_from_npy_from_folder_load(utils.conf,1,subdata_flag=utils.conf["subdata"]["flag"],subdata_n=utils.conf["subdata"]["n"])
-			dataset=np.load(utils.conf["path"]+"data.npy")
+			#dataset=np.load(utils.conf["path"]+"data.npy")
 
 			with open(utils.conf["path"]+'data.pkl', 'rb') as handle: dataset=pickle.load(handle)
 			deb.prints(dataset["train"]["ims"].shape)
 			deb.prints(dataset["train"]["labels_onehot"].shape)
 			deb.prints(dataset["test"]["ims"].shape)
 			deb.prints(dataset["test"]["labels_onehot"].shape)
+			
 			#sess_run_train(n,minimize,error,data,train_input,train_output,test_input,test_output)
 			sess_run_train(dataset["train"]["ims"].shape[0],minimize,error,data,dataset["train"]["ims"],dataset["train"]["labels_onehot"],dataset["test"]["ims"],dataset["test"]["labels_onehot"])
 		elif data_mode==0:

@@ -4,7 +4,9 @@ export PATH=~/anaconda3/bin:$PATH
 source activate py361
 
 
-pip install Cython
-pip install tensorflow-gpu
-
+#pip install Cython
+#conda install tensorflow-gpu
+#conda install scikit-learn
+#conda install scikit-image
+#conda install -c conda-forge opencv 
 #cp cuda/include/cudnn.h /usr/local/cuda-9.2/include
