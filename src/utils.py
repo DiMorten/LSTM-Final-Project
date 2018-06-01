@@ -80,10 +80,10 @@ def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True
 	patch["full_ims"]=np.zeros((conf["t_len"],)+conf["im_3d_size"])
 	patch["full_label_ims"]=np.zeros((conf["t_len"],)+conf["im_3d_size"][0:2])
 	#for t_step in range(0,conf["t_len"]):
-	for t_step in range(3,conf["t_len"]):	
+	for t_step in range(0,conf["t_len"]):	
 		deb.prints(conf["in_npy_path"]+names[t_step]+".npy")
-		patch["full_ims"][t_step] = np.load(conf["in_npy_path"]+names[t_step]+".npy")
-		patch["full_label_ims"][t_step] = cv2.imread(conf["path"]+"labels/"+names[t_step][2]+".tif",0)
+		patch["full_ims"][t_step] = np.load(conf["in_npy_path"]+names[t_step+3]+".npy")
+		patch["full_label_ims"][t_step] = cv2.imread(conf["path"]+"labels/"+names[t_step+3][2]+".tif",0)
 
 	deb.prints(patch["full_ims"].shape,fname)
 	deb.prints(patch["full_label_ims"].shape,fname)
