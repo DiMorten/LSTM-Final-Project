@@ -67,7 +67,7 @@ def data_split(train_input, train_output):
 	train_output = train_output[:NUM_EXAMPLES,:] #till 10,000
 	return NUM_EXAMPLES,train_input,train_output,test_input,test_output
 
-def model_define(debug=1):
+def model_define(debug=1,rnn_flag=True):
 
 	# Input data: 20x1 is the string sequence length
 	data = tf.placeholder(tf.float32, [None] +[timesteps] + shape + [channels])
@@ -76,13 +76,19 @@ def model_define(debug=1):
 	if debug: print("target",target.get_shape())
 
 	filters = 32
-	cell = tf.contrib.rnn.ConvLSTMCell(2,shape + [channels], filters, kernel)
+	
+	if rnn_flag:
+		cell = tf.contrib.rnn.ConvLSTMCell(2,shape + [channels], filters, kernel)
 
-	val, state = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
+		val, state = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
 
-	if debug: print("val",val.get_shape())
-	last = tf.gather(val, int(val.get_shape()[1]) - 1,axis=1)
-	if debug: print("last",last.get_shape())
+		if debug: print("val",val.get_shape())
+		last = tf.gather(val, int(val.get_shape()[1]) - 1,axis=1)
+		if debug: print("last",last.get_shape())
+	else:
+		last2 = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
+
+		last=tf.layers.conv2d(last2, 32, 3, activation=tf.nn.tanh)
 
 	pool1 = tf.layers.max_pooling2d(inputs=last, pool_size=[2, 2], strides=2)
 	if debug: print("pool1",pool1.get_shape())
@@ -92,29 +98,11 @@ def model_define(debug=1):
 
 	fc1 = tf.contrib.layers.flatten(conv1)
 
-
-	#n_hidden = 100
-	#shape1 = last.get_shape().as_list()	
-	#fc1 = tf.reshape(last,[-1, shape1[1] , shape1[2] * shape1[3]])
 	print(fc1.shape)
 	print("fc1",fc1)
-	#fc1 = tf.layers.dense(fc1, n_hidden,activation=tf.nn.tanh)
-	#if debug: print("fc1",fc1.get_shape())
 	prediction = tf.layers.dense(fc1, n_classes,activation=tf.nn.softmax)
 	if debug: print("prediction",prediction.get_shape())
-	
-	"""
-	# Weights dimensions num_hidden X number_of_classes (21), thus 
-	# when multiplying with the output (val) the resulting dimension
-	# wil be batch_size X number_of_classes which is what we are looking
-	# for
-	weight = tf.Variable(tf.truncated_normal([num_hidden, int(target.get_shape()[1])]))
-	if debug: print("weigth",weight.get_shape())
-	bias = tf.Variable(tf.constant(0.1, shape=[target.get_shape()[1]]))
-	if debug: print("bias",bias.get_shape())
-	prediction = tf.nn.softmax(tf.matmul(last, weight) + bias)
-	if debug: print("prediction",prediction.get_shape())
-	"""
+
 	return data,target,prediction
 
 def loss_optimizer_set(target,prediction):
@@ -149,7 +137,7 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 			batch_size=210
 			epoch = 30
 		batch_size=50
-		epoch = 30
+		epoch = 200
 		print("n_train",n_train)
 		no_of_batches = int(np.round(float(n_train)/float(batch_size)))
 		#no_of_batches=5
@@ -175,7 +163,7 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 				  save_path = saver.save(sess, "./model.ckpt")
 				  print("Model saved in path: %s" % save_path)
 				  writer.add_summary(summary,i+j)
-			print("Epoch - {}. Steps per epoch - {}",str(i),str(j))
+			print("Epoch - {}. Steps per epoch - {}".format(str(i),str(j)))
 			incorrect = sess.run(error,{data: test_input, target: test_output})
 			print('Epoch {:2d} error {:3.1f}%'.format(i + 1, 100 * incorrect))
 	elif conf["stage"]=="test":
@@ -255,7 +243,17 @@ if __name__ == "__main__":
 			deb.prints(dataset["train"]["labels_onehot"].shape)
 			deb.prints(dataset["test"]["ims"].shape)
 			deb.prints(dataset["test"]["labels_onehot"].shape)
-			
+
+			index = range(dataset["test"]["ims"].shape[0])
+			test_n=500
+			index = np.random.choice(index, test_n, replace=False)
+			dataset_test_ims=dataset["test"]["ims"][index]
+			dataset_test_labels_onehot=dataset["test"]["labels_onehot"][index]
+
+			dataset["test"]["ims"]=dataset_test_ims
+			dataset["test"]["labels_onehot"]=dataset_test_labels_onehot
+			del dataset_test_labels_onehot
+			del dataset_test_ims
 			#sess_run_train(n,minimize,error,data,train_input,train_output,test_input,test_output)
 			sess_run_train(dataset["train"]["ims"].shape[0],minimize,error,data,dataset["train"]["ims"],dataset["train"]["labels_onehot"],dataset["test"]["ims"],dataset["test"]["labels_onehot"])
 		elif data_mode==0:
