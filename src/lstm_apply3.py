@@ -28,7 +28,7 @@ import pickle
 import utils
 import deb
 batch_size = 10
-timesteps = 9
+timesteps = utils.conf["t_len"]
 shape = [32, 32]
 kernel = [3, 3]
 channels = 6
