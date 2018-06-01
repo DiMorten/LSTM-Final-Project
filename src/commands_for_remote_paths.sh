@@ -10,3 +10,6 @@ source activate py361
 #conda install scikit-image
 #conda install -c conda-forge opencv 
 #cp cuda/include/cudnn.h /usr/local/cuda-9.2/include
+
+
+#overlap 30, test skip 5. goood
