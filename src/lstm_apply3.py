@@ -218,8 +218,6 @@ if __name__ == "__main__":
 	#utils.conf["subdata"]["n"]=2000
 	#utils.conf["subdata"]["n"]=1000
 	if conf["mode"]==1:
-		n,X,y=data_create()    
-		n_train,train_input,train_output,test_input,test_output=data_split(X, y)
 		## Design the model 
 		data,target,prediction=model_define()
 		minimize=loss_optimizer_set(target,prediction)
@@ -257,4 +255,7 @@ if __name__ == "__main__":
 			#sess_run_train(n,minimize,error,data,train_input,train_output,test_input,test_output)
 			sess_run_train(dataset["train"]["ims"].shape[0],minimize,error,data,dataset["train"]["ims"],dataset["train"]["labels_onehot"],dataset["test"]["ims"],dataset["test"]["labels_onehot"])
 		elif data_mode==0:
+			n,X,y=data_create()    
+			n_train,train_input,train_output,test_input,test_output=data_split(X, y)
+		
 			sess_run_train(n_train,minimize,error,data,train_input,train_output,test_input,test_output)
