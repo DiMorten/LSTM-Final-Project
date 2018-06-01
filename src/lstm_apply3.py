@@ -153,6 +153,7 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 			for j in range(no_of_batches):
 				#print("ptr,epoch_i,j",ptr,i,j,no_of_batches)
 				inp, out = train_input[ptr:ptr+batch_size,:,:,:,:], train_output[ptr:ptr+batch_size,:]
+				inp_test, out_test = test_input[ptr:ptr+batch_size,:,:,:,:], test_output[ptr:ptr+batch_size,:]
 				if debug>=3: print(ptr,inp.shape,out.shape)
 				ptr+=batch_size
 				if debug>=3: print(ptr,inp.shape,out.shape)
@@ -164,7 +165,7 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 				  print("Model saved in path: %s" % save_path)
 				  writer.add_summary(summary,i+j)
 			print("Epoch - {}. Steps per epoch - {}".format(str(i),str(j)))
-			incorrect = sess.run(error,{data: test_input, target: test_output})
+			incorrect = sess.run(error,{data: inp_test, target: out_test})
 			print('Epoch {:2d} error {:3.1f}%'.format(i + 1, 100 * incorrect))
 	elif conf["stage"]=="test":
 			sess=tf.Session()
@@ -242,7 +243,7 @@ if __name__ == "__main__":
 			deb.prints(dataset["test"]["ims"].shape)
 			deb.prints(dataset["test"]["labels_onehot"].shape)
 
-			test_set_reduce=False
+			test_set_reduce=True
 			if test_set_reduce:
 				index = range(dataset["test"]["ims"].shape[0])
 				test_n=500

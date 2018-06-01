@@ -8,7 +8,9 @@ Project: https://github.com/aymericdamien/TensorFlow-Examples/
 from __future__ import print_function
 
 import tensorflow as tf
-
+import utils
+import pickle
+import deb
 # Import MNIST data (Numpy format)
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("/tmp/data/", one_hot=True)
@@ -20,15 +22,37 @@ batch_size = 128
 display_step = 100
 
 # Network Parameters
-n_input = 784 # MNIST data input (img shape: 28*28)
-n_classes = 10 # MNIST total classes (0-9 digits)
+n_classes = 9 # MNIST total classes (0-9 digits)
 dropout = 0.75 # Dropout, probability to keep units
 
+# Load data
+with open(utils.conf["path"]+'data.pkl', 'rb') as handle: data=pickle.load(handle)
+deb.prints(data["train"]["ims"].shape)
+deb.prints(data["train"]["labels_onehot"].shape)
+deb.prints(data["test"]["ims"].shape)
+deb.prints(data["test"]["labels_onehot"].shape)
+
+t_len = data["train"]["ims"].shape[1] # MNIST data input (img shape: 28*28)
+h = data["train"]["ims"].shape[2] # MNIST data input (img shape: 28*28)
+w = data["train"]["ims"].shape[3] # MNIST data input (img shape: 28*28)
+chans = data["train"]["ims"].shape[4] # MNIST data input (img shape: 28*28)
+n_input = t_len*h*w*chans # MNIST data input (img shape: 28*28)
+
+
+data["train"]["ims"]=data["train"]["ims"].reshape(data["train"]["ims"].shape[0],t_len*h*w*chans)
+data["test"]["ims"]=data["test"]["ims"].reshape(data["test"]["ims"].shape[0],t_len*h*w*chans)
+
+deb.prints(data["train"]["ims"].shape)
+deb.prints(data["test"]["ims"].shape)
+
 sess = tf.Session()
+#deb.prints(mnist.train.images.shape)
+#deb.prints(mnist.train.labels.shape)
+
 
 # Create a dataset tensor from the images and the labels
 dataset = tf.data.Dataset.from_tensor_slices(
-    (mnist.train.images, mnist.train.labels))
+    (data["train"]["ims"], data["train"]["labels_onehot"]))
 # Create batches of data
 dataset = dataset.batch(batch_size)
 # Create an iterator, to go over the dataset
@@ -38,8 +62,8 @@ iterator = dataset.make_initializable_iterator()
 _data = tf.placeholder(tf.float32, [None, n_input])
 _labels = tf.placeholder(tf.float32, [None, n_classes])
 # Initialize the iterator
-sess.run(iterator.initializer, feed_dict={_data: mnist.train.images,
-                                          _labels: mnist.train.labels})
+sess.run(iterator.initializer, feed_dict={_data: data["train"]["ims"],
+                                          _labels: data["train"]["labels_onehot"]})
 
 # Neural Net Input
 X, Y = iterator.get_next()
@@ -57,25 +81,25 @@ def conv_net(x, n_classes, dropout, reuse, is_training):
         # MNIST data input is a 1-D vector of 784 features (28*28 pixels)
         # Reshape to match picture format [Height x Width x Channel]
         # Tensor input become 4-D: [Batch Size, Height, Width, Channel]
-        x = tf.reshape(x, shape=[-1, 28, 28, 1])
-
+        x = tf.reshape(x, shape=[-1, t_len, h, w, chans])
+        last = tf.gather(x, int(x.get_shape()[1]) - 1,axis=1)
         # Convolution Layer with 32 filters and a kernel size of 5
-        conv1 = tf.layers.conv2d(x, 32, 5, activation=tf.nn.relu)
+        conv1 = tf.layers.conv2d(last, 32, 3, activation=tf.nn.relu)
         # Max Pooling (down-sampling) with strides of 2 and kernel size of 2
         conv1 = tf.layers.max_pooling2d(conv1, 2, 2)
 
         # Convolution Layer with 32 filters and a kernel size of 5
-        conv2 = tf.layers.conv2d(conv1, 64, 3, activation=tf.nn.relu)
+        #conv2 = tf.layers.conv2d(conv1, 64, 3, activation=tf.nn.relu)
         # Max Pooling (down-sampling) with strides of 2 and kernel size of 2
-        conv2 = tf.layers.max_pooling2d(conv2, 2, 2)
+        #conv2 = tf.layers.max_pooling2d(conv2, 2, 2)
 
         # Flatten the data to a 1-D vector for the fully connected layer
-        fc1 = tf.contrib.layers.flatten(conv2)
+        fc1 = tf.contrib.layers.flatten(conv1)
 
         # Fully connected layer (in contrib folder for now)
-        fc1 = tf.layers.dense(fc1, 1024)
+        ##fc1 = tf.layers.dense(fc1, 128)
         # Apply Dropout (if is_training is False, dropout is not applied)
-        fc1 = tf.layers.dropout(fc1, rate=dropout, training=is_training)
+        ##fc1 = tf.layers.dropout(fc1, rate=dropout, training=is_training)
 
         # Output layer, class prediction
         out = tf.layers.dense(fc1, n_classes)
@@ -120,8 +144,8 @@ for step in range(1, num_steps + 1):
     except tf.errors.OutOfRangeError:
         # Reload the iterator when it reaches the end of the dataset
         sess.run(iterator.initializer,
-                 feed_dict={_data: mnist.train.images,
-                            _labels: mnist.train.labels})
+                 feed_dict={_data: data["train"]["ims"],
+                            _labels: data["train"]["labels_onehot"]})
         sess.run(train_op)
 
     if step % display_step == 0 or step == 1:
