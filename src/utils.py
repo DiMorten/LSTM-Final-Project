@@ -79,7 +79,8 @@ def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True
 	#patch["values"]=np.zeros((conf["t_len"],)+patch_shape)
 	patch["full_ims"]=np.zeros((conf["t_len"],)+conf["im_3d_size"])
 	patch["full_label_ims"]=np.zeros((conf["t_len"],)+conf["im_3d_size"][0:2])
-	for t_step in range(0,conf["t_len"]):
+	#for t_step in range(0,conf["t_len"]):
+	for t_step in range(3,conf["t_len"]):	
 		deb.prints(conf["in_npy_path"]+names[t_step]+".npy")
 		patch["full_ims"][t_step] = np.load(conf["in_npy_path"]+names[t_step]+".npy")
 		patch["full_label_ims"][t_step] = cv2.imread(conf["path"]+"labels/"+names[t_step][2]+".tif",0)
@@ -476,7 +477,7 @@ def data_balance(conf, data, samples_per_class,debug=1):
 		#data["train"]["im"]
 
 
-conf={"band_n": 6, "t_len":9, "path": "../data/", "class_n":9}
+conf={"band_n": 6, "t_len":6, "path": "../data/", "class_n":9}
 #conf["pc_mode"]="remote"
 conf["pc_mode"]="local"
 
