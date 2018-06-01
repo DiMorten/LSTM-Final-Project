@@ -89,7 +89,7 @@ def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True
 	deb.prints(patch["full_label_ims"].shape,fname)
 
 	# Load train mask
-	conf["patch"]["overlap"]=26
+	conf["patch"]["overlap"]=31
 
 	pathlib.Path(conf["train"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
 	pathlib.Path(conf["train"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
@@ -180,7 +180,7 @@ def patches_multitemporal_get(img,label,window,overlap,mask,path_train,path_test
 				if patches_get["test_n"]<=test_n_limit:
 					patches_get["test_n_limited"]+=1
 					if patches_save==True:
-						if test_counter==3:
+						if test_counter==6:
 							test_counter=0
 							test_real_count+=1
 							np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
@@ -563,7 +563,7 @@ if __name__ == "__main__":
 		if conf["pc_mode"]=="remote":
 			samples_per_class=500
 		else:
-			samples_per_class=200
+			samples_per_class=1000
 		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,samples_per_class)
 		data["train"]["n"]=data["train"]["ims"].shape[0]
 
@@ -572,7 +572,6 @@ if __name__ == "__main__":
 		
 		#for i in data["train"]["ims"][0]:
 		#	np.save()
-
 		#data["train"]["labels"]
 		filename = conf["path"]+'data.pkl'
 		#os.makedirs(os.path.dirname(filename), exist_ok=True)
