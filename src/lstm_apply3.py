@@ -136,8 +136,8 @@ def sess_run_train(n_train,minimize,error,data,train_input,train_output,test_inp
 		else:
 			batch_size=210
 			epoch = 30
-		#batch_size=50
-		batch_size=50
+		batch_size=200
+		#batch_size=300
 		
 		epoch = 200
 		print("n_train",n_train)

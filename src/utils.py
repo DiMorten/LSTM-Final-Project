@@ -132,7 +132,7 @@ def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True
 			count=count+1
 """
 #def patches_multitemporal_get(img,label,window,overlap,mask,train_ims_path,train_labels_path,test_save=False,test_path=None):
-def patches_multitemporal_get(img,label,window,overlap,mask,path_train,path_test,patches_save=False,test_n_limit=10000):
+def patches_multitemporal_get(img,label,window,overlap,mask,path_train,path_test,patches_save=False,test_n_limit=500000):
 	fname=sys._getframe().f_code.co_name
 	deb.prints(window,fname)
 	deb.prints(overlap,fname)
@@ -171,16 +171,18 @@ def patches_multitemporal_get(img,label,window,overlap,mask,path_train,path_test
 				if patches_save==True:
 					np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
 					np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch)
+
 			elif np.all(mask_patch==2): # Test sample
 				test_counter+=1
-				mask_test[yy: yy + window, xx: xx + window]=255
+				
 				#if np.random.rand(1)[0]>=0.7:
 				
 				patches_get["test_n"]+=1
 				if patches_get["test_n"]<=test_n_limit:
 					patches_get["test_n_limited"]+=1
 					if patches_save==True:
-						if test_counter==6:
+						if test_counter==30:
+							mask_test[yy: yy + window, xx: xx + window]=255
 							test_counter=0
 							test_real_count+=1
 							np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
@@ -563,7 +565,7 @@ if __name__ == "__main__":
 		if conf["pc_mode"]=="remote":
 			samples_per_class=500
 		else:
-			samples_per_class=1000
+			samples_per_class=5000
 		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,samples_per_class)
 		data["train"]["n"]=data["train"]["ims"].shape[0]
 
