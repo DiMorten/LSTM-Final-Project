@@ -1,7 +1,5 @@
 
-"""
-Some codes from https://github.com/Newmu/dcgan_code
-"""
+
 from __future__ import division
 import os
 import math
@@ -12,7 +10,6 @@ import time
 import scipy.misc
 import numpy as np
 from time import gmtime, strftime
-#from osgeo import gdal
 import glob
 from skimage.transform import resize
 from sklearn import preprocessing as pre
@@ -29,9 +26,34 @@ import pickle
 import utils
 import deb
 np.set_printoptions(suppress=True)
+class neural_network(object):
+	def average_accuracy_get(self,target,prediction):
+		correct_per_class=np.zeros(self.n_classes).astype(np.float32)
+		for clss in range(0,self.n_classes):
+			correct_per_class[clss]=float(np.count_nonzero(np.equal(target[:,clss],prediction[:,clss])))/float(target.shape[0])
+		correct_per_class_average = np.average(correct_per_class)
+
+		return correct_per_class_average
+	def layer_lstm_get(self,data,filters,kernel):
+		#filters=64
+		cell = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel)
+		val, state = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
+		if self.debug: deb.prints(val.get_shape)
+		last = tf.gather(val, int(val.get_shape()[1]) - 1,axis=1)
+		if self.debug: deb.prints(last.get_shape())
+		return last
+	def loss_optimizer_set(self,target,prediction):
+		# Estimate loss from prediction and target
+		cross_entropy = -tf.reduce_sum(target * tf.log(tf.clip_by_value(prediction,1e-10,1.0)))
+
+		# Prepare the optimization function
+		optimizer = tf.train.AdamOptimizer()
+		minimize = optimizer.minimize(cross_entropy)
+		return minimize
 
 
-class conv_lstm(object):
+
+class conv_lstm(neural_network):
 	def __init__(self, sess, batch_size=50, epoch=200, train_size=1e8,
                         timesteps=utils.conf["t_len"], shape=[32,32],
                         kernel=[3,3], channels=6, filters=32, n_classes=9,
@@ -50,7 +72,6 @@ class conv_lstm(object):
 		self.checkpoint_dir = checkpoint_dir
 		self.conf={'mode':1}
 		self.debug=1
-		#utils.conf["stage"]="train"
 		self.model_build()
 	def model_build(self):
 		self.data = tf.placeholder(tf.float32, [None] +[self.timesteps] + self.shape + [self.channels])
@@ -66,21 +87,12 @@ class conv_lstm(object):
 		
 		self.error_sum = tf.summary.scalar("error", self.error)
 
-		#self.error_per_class = self.average_accuracy_get(self.target,self.prediction)
-
 		t_vars = tf.trainable_variables()
 
 		self.saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=2)
 		self.merged = tf.summary.merge_all()
 
 		if self.debug: print("trainable parameters",np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
-	def average_accuracy_get(self,target,prediction):
-		#self.mistakes_per_class=tf.placeholder(tf.float32,[None, self.n_classes])
-		#self.mistakes_per_class=np.zeros(self.n_classes)
-		#for clss in range(0,self.n_classes):
-		#	self.mistakes_per_class[:,clss] = tf.not_equal(self.target[clss], self.prediction[clss])
-		#return tf.reduce_mean(tf.cast(self.mistakes_per_class, tf.float32))
-		pass
 
 	def train(self, args):
 		#init_op = tf.initialize_all_variables()
@@ -111,13 +123,12 @@ class conv_lstm(object):
 				self.writer.add_summary(summary, counter)
 				counter += 1
 				self.incorrect = self.sess.run(self.error,{self.data: data["test"]["ims"], self.target: data["test"]["labels"]})
-				print('Epoch {:2d} overall accuracy {:3.1f}%'.format(epoch + 1, 100 - 100 * self.incorrect))
-			#if np.mod(epoch, 2) == 0:
+				print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
 			save_path = self.saver.save(self.sess, "./model.ckpt")
 			print("Model saved in path: %s" % save_path)
 			
 			prediction = np.around(self.sess.run(self.prediction,{self.data: data["test"]["ims"]}),decimals=2)
-			average_accuracy = self.test_average_accuracy_get(data["test"]["labels"],prediction)
+			average_accuracy = self.average_accuracy_get(data["test"]["labels"],prediction)
 			deb.prints(average_accuracy)
 	
 			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch_idxs,time.time() - start_time))
@@ -141,16 +152,9 @@ class conv_lstm(object):
 		
 		prediction = np.around(self.sess.run(self.prediction,{self.data: data["test"]["ims"]}),decimals=2)
 		deb.prints(data["test"]["labels"])
-		average_accuracy = self.test_average_accuracy_get(data["test"]["labels"],prediction)
+		average_accuracy = self.average_accuracy_get(data["test"]["labels"],prediction)
 		deb.prints(average_accuracy)
 		self.model_test_on_samples(data)
-	def test_average_accuracy_get(self,target,prediction):
-		correct_per_class=np.zeros(self.n_classes).astype(np.float32)
-		for clss in range(0,self.n_classes):
-			correct_per_class[clss]=float(np.count_nonzero(np.equal(target[:,clss],prediction[:,clss])))/float(target.shape[0])
-		correct_per_class_average = np.average(correct_per_class)
-
-		return correct_per_class_average
 
 	def model_test_on_samples(self,dataset):
 
@@ -198,24 +202,7 @@ class conv_lstm(object):
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		return graph_pipeline
 
-	def layer_lstm_get(self,data,filters,kernel):
-		#filters=64
-		cell = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel)
-		val, state = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
-		if self.debug: deb.prints(val.get_shape)
-		last = tf.gather(val, int(val.get_shape()[1]) - 1,axis=1)
-		if self.debug: deb.prints(last.get_shape())
-		return last
 
-
-	def loss_optimizer_set(self,target,prediction):
-		# Estimate loss from prediction and target
-		cross_entropy = -tf.reduce_sum(target * tf.log(tf.clip_by_value(prediction,1e-10,1.0)))
-
-		# Prepare the optimization function
-		optimizer = tf.train.AdamOptimizer()
-		minimize = optimizer.minimize(cross_entropy)
-		return minimize
 
 
 
