@@ -153,44 +153,17 @@ class conv_lstm(object):
 		return correct_per_class_average
 
 	def model_test_on_samples(self,dataset):
+
 		print("train results")
-		count=1
-		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
-		deb.prints(dataset["train"]["labels"][count])
-		count=count+1
-		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
-		deb.prints(dataset["train"]["labels"][count])
-		count=count+1
-		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
-		deb.prints(dataset["train"]["labels"][count])
-		count=count+1
-		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
-		deb.prints(dataset["train"]["labels"][count])
-		count=count+1
-		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
-		deb.prints(dataset["train"]["labels"][count])
-		count=count+1
-		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
-		deb.prints(dataset["train"]["labels"][count])
-		count=count+1
-			
+		
+		sample_range=range(15,20)
+		print(np.around(self.sess.run(self.prediction,{self.data: dataset["train"]["ims"][sample_range]}),decimals=4))
+		deb.prints(dataset["train"]["labels"][sample_range])
+		
 		print("test results")
-		count=1
-		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
-		deb.prints(dataset["test"]["labels"][count])
-		count=count+1
-		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
-		deb.prints(dataset["test"]["labels"][count])
-		count=count+1
-		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
-		deb.prints(dataset["test"]["labels"][count])
-		count=count+1
-		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
-		deb.prints(dataset["test"]["labels"][count])
-		count=count+1
-		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
-		deb.prints(dataset["test"]["labels"][count])
-		count=count+1
+		
+		print(np.around(self.sess.run(self.prediction,{self.data: dataset["test"]["ims"][sample_range]}),decimals=4))
+		deb.prints(dataset["test"]["labels"][sample_range])
 
 	def data_load(self, conf):
 
