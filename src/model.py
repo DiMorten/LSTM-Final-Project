@@ -99,14 +99,16 @@ class conv_lstm(object):
 				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch_images, self.target: batch_labels})
 				self.writer.add_summary(summary, counter)
 				counter += 1
-				print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch_idxs,time.time() - start_time))
-
-				if np.mod(counter, 10) == 0:
-					save_path = self.saver.save(self.sess, "./model.ckpt")
-					print("Model saved in path: %s" % save_path)
-				print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
 				incorrect = self.sess.run(self.error,{self.data: data["test"]["ims"], self.target: data["test"]["labels"]})
 				print('Epoch {:2d} error {:3.1f}%'.format(epoch + 1, 100 * incorrect))
+			if np.mod(epoch, 2) == 0:
+				save_path = self.saver.save(self.sess, "./model.ckpt")
+				print("Model saved in path: %s" % save_path)
+				
+			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch_idxs,time.time() - start_time))
+
+			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
+			
 	def test(self, args):
 		self.sess = tf.Session()
 		self.saver.restore(self.sess,tf.train.latest_checkpoint('./'))
@@ -182,6 +184,8 @@ class conv_lstm(object):
 		return data
 	def model_graph_get(self,data):
 		graph_pipeline=self.layer_lstm_get(data,self.filters,self.kernel)
+		
+		if self.debug: deb.prints(graph_pipeline.get_shape())
 		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
 		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh)
 		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
