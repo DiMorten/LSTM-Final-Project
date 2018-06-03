@@ -606,7 +606,7 @@ if __name__ == "__main__":
 			samples_per_class=500
 		else:
 			samples_per_class=600
-		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,samples_per_class)
+		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,conf["balanced"]["samples_per_class"])
 		data["train"]["n"]=data["train"]["ims"].shape[0]
 
 		deb.prints(data["train"]["ims"].shape)
