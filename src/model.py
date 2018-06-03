@@ -183,18 +183,21 @@ class conv_lstm(object):
 		data["test"]["ims"]=[np.load(im_path) for im_path in data["test"]["im_paths"]]
 		return data
 	def model_graph_get(self,data):
-		graph_pipeline=self.layer_lstm_get(data,self.filters,self.kernel)
+		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=self.kernel)
 		
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
 		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh)
 		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
 		graph_pipeline = tf.layers.dense(graph_pipeline, 128,activation=tf.nn.tanh)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
 		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		return graph_pipeline
 
 	def layer_lstm_get(self,data,filters,kernel):
+		#filters=64
 		cell = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel)
 		val, state = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
 		if self.debug: deb.prints(val.get_shape)

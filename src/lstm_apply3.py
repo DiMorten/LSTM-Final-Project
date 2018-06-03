@@ -75,7 +75,7 @@ def model_define(debug=1,rnn_flag=True):
 	target = tf.placeholder(tf.float32, [None, n_classes])
 	if debug: print("target",target.get_shape())
 
-	filters = 32
+	filters = 64
 	
 	if rnn_flag:
 		cell = tf.contrib.rnn.ConvLSTMCell(2,shape + [channels], filters, kernel)
