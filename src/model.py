@@ -84,7 +84,12 @@ class conv_lstm(object):
 		data["train"]={}
 		data["test"]={}
 		data["train"]["im_paths"] = glob.glob(utils.conf["train"]["balanced_path_ims"]+'/*.npy')
+		data["train"]["im_paths"] = sorted(data["train"]["im_paths"], key=lambda x: int(x.split('_')[1][:-4]))
+
+		print(data["train"]["im_paths"])
 		data["test"]["im_paths"] = glob.glob(utils.conf["test"]["balanced_path_ims"]+'/*.npy')
+		data["test"]["im_paths"] = sorted(data["test"]["im_paths"], key=lambda x: int(x.split('_')[1][:-4]))
+
 		deb.prints(len(data["train"]["im_paths"]))
 		batch_idxs = min(len(data["train"]["im_paths"]), args.train_size) // self.batch_size
 		data["train"]["labels"] = np.load(utils.conf["train"]["balanced_path_label"]+"labels.npy")
