@@ -81,7 +81,7 @@ def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True
 	patch["full_label_ims"]=np.zeros((conf["t_len"],)+conf["im_3d_size"][0:2])
 	#for t_step in range(0,conf["t_len"]):
 	for t_step in range(0,conf["t_len"]):	
-		deb.prints(conf["in_npy_path"]+names[t_step]+".npy")
+		deb.prints(conf["in_npy_path"]+names[t_step+3]+".npy")
 		patch["full_ims"][t_step] = np.load(conf["in_npy_path"]+names[t_step+3]+".npy")
 		patch["full_label_ims"][t_step] = cv2.imread(conf["path"]+"labels/"+names[t_step+3][2]+".tif",0)
 
@@ -181,7 +181,7 @@ def patches_multitemporal_get(img,label,window,overlap,mask,path_train,path_test
 				if patches_get["test_n"]<=test_n_limit:
 					patches_get["test_n_limited"]+=1
 					if patches_save==True:
-						if test_counter==conf["extract"]["test_skip"]:
+						if test_counter>=conf["extract"]["test_skip"]:
 							mask_test[yy: yy + window, xx: xx + window]=255
 							test_counter=0
 							test_real_count+=1
@@ -495,7 +495,7 @@ conf["in_npy_path"]=conf["path"]+"in_npy/"
 conf["in_rgb_path"]=conf["path"]+"in_rgb/"
 conf["in_labels_path"]=conf["path"]+"labels/"
 conf["patch"]={}
-conf["patch"]={"size":32, "stride":16, "out_npy_path":conf["path"]+"patches_npy/"}
+conf["patch"]={"size":5, "stride":5, "out_npy_path":conf["path"]+"patches_npy/"}
 conf["patch"]["ims_path"]=conf["patch"]["out_npy_path"]+"patches_all/"
 conf["patch"]["labels_path"]=conf["patch"]["out_npy_path"]+"labels_all/"
 conf['patch']['center_pixel']=int(np.around(conf["patch"]["size"]/2))
@@ -515,7 +515,7 @@ conf["test"]["balanced_path"]=conf["path"]+"balanced/test/"
 conf["extract"]={}
 
 #conf["patch"]["overlap"]=26
-conf["patch"]["overlap"]=31
+conf["patch"]["overlap"]=2
 
 if conf["patch"]["overlap"]==26:
 	conf["extract"]["test_skip"]=4
@@ -526,7 +526,9 @@ elif conf["patch"]["overlap"]==30:
 elif conf["patch"]["overlap"]==31:
 	conf["extract"]["test_skip"]=24
 	conf["balanced"]["samples_per_class"]=5000
-
+elif conf["patch"]["overlap"]>=0 or conf["patch"]["overlap"]<=5:
+	conf["extract"]["test_skip"]=8
+	conf["balanced"]["samples_per_class"]=100
 if conf["pc_mode"]=="remote":
 	conf["subdata"]={"flag":True,"n":3768}
 else:
@@ -538,8 +540,8 @@ conf["summaries_path"]=conf["path"]+"summaries/"
 pathlib.Path(conf["train"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 pathlib.Path(conf["test"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 
-conf["utils_main_mode"]=6
-conf["utils_flag_store"]=False
+conf["utils_main_mode"]=7
+conf["utils_flag_store"]=True
 print(conf)
 
 if __name__ == "__main__":
@@ -575,7 +577,7 @@ if __name__ == "__main__":
 	elif conf["utils_main_mode"]==6:
 		os.system("rm -rf ../data/train_test")
 
-		im_patches_npy_multitemporal_from_npy_from_folder_store2(conf,patches_save=if conf["utils_flag_store"]:)
+		im_patches_npy_multitemporal_from_npy_from_folder_store2(conf,patches_save=conf["utils_flag_store"])
 	elif conf["utils_main_mode"]==7:
 
 		conf["train"]["n"]=np.load(conf["path"]+"train_n.npy")

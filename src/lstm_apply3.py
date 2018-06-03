@@ -29,7 +29,7 @@ import utils
 import deb
 batch_size = 10
 timesteps = utils.conf["t_len"]
-shape = [32, 32]
+shape = [utils.conf["patch"]["size"], utils.conf["patch"]["size"]]
 kernel = [3, 3]
 channels = 6
 filters = 12
