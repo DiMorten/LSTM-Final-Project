@@ -80,33 +80,21 @@ class conv_lstm(object):
 		self.sess.run(init_op)
 #		self.writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph())
 		self.writer = tf.summary.FileWriter(utils.conf["summaries_path"], self.sess.graph)
-		data={}
-		data["train"]={}
-		data["test"]={}
-		data["train"]["im_paths"] = glob.glob(utils.conf["train"]["balanced_path_ims"]+'/*.npy')
-		data["train"]["im_paths"] = sorted(data["train"]["im_paths"], key=lambda x: int(x.split('_')[1][:-4]))
 
-		print(data["train"]["im_paths"])
-		data["test"]["im_paths"] = glob.glob(utils.conf["test"]["balanced_path_ims"]+'/*.npy')
-		data["test"]["im_paths"] = sorted(data["test"]["im_paths"], key=lambda x: int(x.split('_')[1][:-4]))
-
-		deb.prints(len(data["train"]["im_paths"]))
+		data = self.data_load(utils.conf)
 		batch_idxs = min(len(data["train"]["im_paths"]), args.train_size) // self.batch_size
-		data["train"]["labels"] = np.load(utils.conf["train"]["balanced_path_label"]+"labels.npy")
-		
-		data["test"]["labels"] = np.load(utils.conf["test"]["balanced_path_label"]+"labels.npy")
 		deb.prints(data["train"]["labels"].shape)
 		deb.prints(data["test"]["labels"].shape)
 		deb.prints(batch_idxs)
-		data["test"]["ims"]=[np.load(im_path) for im_path in data["test"]["im_paths"]] 
+		 
 		counter = 1
 		start_time = time.time()
 		for epoch in range(args.epoch):
 			#np.random.shuffle(data)
 			for idx in range(0, batch_idxs):
-				batch_files = data["train"]["im_paths"][idx*self.batch_size:(idx+1)*self.batch_size]
+				batch_file_paths = data["train"]["im_paths"][idx*self.batch_size:(idx+1)*self.batch_size]
 				batch_labels = data["train"]["labels"][idx*self.batch_size:(idx+1)*self.batch_size]
-				batch_images = [np.load(batch_file) for batch_file in batch_files] # Load files from path
+				batch_images = [np.load(batch_file_path) for batch_file_path in batch_file_paths] # Load files from path
 
 				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch_images, self.target: batch_labels})
 				self.writer.add_summary(summary, counter)
@@ -119,6 +107,79 @@ class conv_lstm(object):
 				print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
 				incorrect = self.sess.run(self.error,{self.data: data["test"]["ims"], self.target: data["test"]["labels"]})
 				print('Epoch {:2d} error {:3.1f}%'.format(epoch + 1, 100 * incorrect))
+	def test(self, args):
+		self.sess = tf.Session()
+		self.saver.restore(self.sess,tf.train.latest_checkpoint('./'))
+		print("Model restored.")
+		data = self.data_load(utils.conf)
+		batch_idxs = min(len(data["train"]["im_paths"]), args.train_size) // self.batch_size
+		idx=1
+		batch_file_paths = data["train"]["im_paths"][idx*self.batch_size:(idx+1)*self.batch_size]
+		data["test"]["ims"] = np.asarray(data["test"]["ims"])
+		data["train"]["ims"] = np.asarray([np.load(batch_file_path) for batch_file_path in batch_file_paths]) # Load files from path
+		deb.prints(data["train"]["ims"].shape)
+		data["train"]["labels"] = data["train"]["labels"][idx*self.batch_size:(idx+1)*self.batch_size]
+		self.model_test_on_samples(data)
+
+	def model_test_on_samples(self,dataset):
+		print("train results")
+		count=1
+		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+		deb.prints(dataset["train"]["labels"][count])
+		count=count+1
+		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+		deb.prints(dataset["train"]["labels"][count])
+		count=count+1
+		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+		deb.prints(dataset["train"]["labels"][count])
+		count=count+1
+		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+		deb.prints(dataset["train"]["labels"][count])
+		count=count+1
+		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+		deb.prints(dataset["train"]["labels"][count])
+		count=count+1
+		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["train"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+		deb.prints(dataset["train"]["labels"][count])
+		count=count+1
+			
+		print("test results")
+		count=1
+		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+		deb.prints(dataset["test"]["labels"][count])
+		count=count+1
+		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+		deb.prints(dataset["test"]["labels"][count])
+		count=count+1
+		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+		deb.prints(dataset["test"]["labels"][count])
+		count=count+1
+		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+		deb.prints(dataset["test"]["labels"][count])
+		count=count+1
+		print(np.around(self.sess.run(self.prediction,{self.data: np.expand_dims(dataset["test"]["ims"][count,:,:,:,:],axis=0)}),decimals=5))
+		deb.prints(dataset["test"]["labels"][count])
+		count=count+1
+
+	def data_load(self, conf):
+
+		data={}
+		data["train"]={}
+		data["test"]={}
+		data["train"]["im_paths"] = glob.glob(conf["train"]["balanced_path_ims"]+'/*.npy')
+		data["train"]["im_paths"] = sorted(data["train"]["im_paths"], key=lambda x: int(x.split('_')[1][:-4]))
+
+		#print(data["train"]["im_paths"])
+		data["test"]["im_paths"] = glob.glob(conf["test"]["balanced_path_ims"]+'/*.npy')
+		data["test"]["im_paths"] = sorted(data["test"]["im_paths"], key=lambda x: int(x.split('_')[1][:-4]))
+
+		deb.prints(len(data["train"]["im_paths"]))
+		
+		data["train"]["labels"] = np.load(conf["train"]["balanced_path_label"]+"labels.npy")
+		
+		data["test"]["labels"] = np.load(conf["test"]["balanced_path_label"]+"labels.npy")
+		data["test"]["ims"]=[np.load(im_path) for im_path in data["test"]["im_paths"]]
+		return data
 	def model_graph_get(self,data):
 		graph_pipeline=self.layer_lstm_get(data,self.filters,self.kernel)
 		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
