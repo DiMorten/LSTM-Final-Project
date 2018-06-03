@@ -89,7 +89,7 @@ def im_patches_npy_multitemporal_from_npy_store2(conf,names,train_mask_save=True
 	deb.prints(patch["full_label_ims"].shape,fname)
 
 	# Load train mask
-	conf["patch"]["overlap"]=31
+	#conf["patch"]["overlap"]=26
 
 	pathlib.Path(conf["train"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
 	pathlib.Path(conf["train"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
@@ -181,7 +181,7 @@ def patches_multitemporal_get(img,label,window,overlap,mask,path_train,path_test
 				if patches_get["test_n"]<=test_n_limit:
 					patches_get["test_n_limited"]+=1
 					if patches_save==True:
-						if test_counter==30:
+						if test_counter==conf["extract"]["test_skip"]:
 							mask_test[yy: yy + window, xx: xx + window]=255
 							test_counter=0
 							test_real_count+=1
@@ -477,6 +477,13 @@ def data_balance(conf, data, samples_per_class,debug=1):
 	return balance["out_data"],balance["out_labels"],balance["labels_onehot"]
 			
 		#data["train"]["im"]
+def data_save_to_npy(conf,data):
+	pathlib.Path(conf["balanced_path"]+"label/").mkdir(parents=True, exist_ok=True) 
+	pathlib.Path(conf["balanced_path"]+"ims/").mkdir(parents=True, exist_ok=True) 
+	
+	for i in range(0,data["ims"].shape[0]):
+		np.save(conf["balanced_path"]+"ims/"+"patch_"+str(i)+".npy",data["ims"][i])
+	np.save(conf["balanced_path"]+"label/labels.npy",data["labels_onehot"])
 
 
 conf={"band_n": 6, "t_len":6, "path": "../data/", "class_n":9}
@@ -489,7 +496,6 @@ conf["in_rgb_path"]=conf["path"]+"in_rgb/"
 conf["in_labels_path"]=conf["path"]+"labels/"
 conf["patch"]={}
 conf["patch"]={"size":32, "stride":16, "out_npy_path":conf["path"]+"patches_npy/"}
-conf["patch"]["overlap"]=16
 conf["patch"]["ims_path"]=conf["patch"]["out_npy_path"]+"patches_all/"
 conf["patch"]["labels_path"]=conf["patch"]["out_npy_path"]+"labels_all/"
 conf['patch']['center_pixel']=int(np.around(conf["patch"]["size"]/2))
@@ -501,9 +507,26 @@ conf["train"]["labels_path"]=conf["path"]+"train_test/train/labels/"
 conf["test"]={}
 conf["test"]["ims_path"]=conf["path"]+"train_test/test/ims/"
 conf["test"]["labels_path"]=conf["path"]+"train_test/test/labels/"
-
 conf["im_size"]=(948,1068)
 conf["im_3d_size"]=conf["im_size"]+(conf["band_n"],)
+conf["balanced"]={}
+conf["train"]["balanced_path"]=conf["path"]+"balanced/train/"
+conf["test"]["balanced_path"]=conf["path"]+"balanced/test/"
+conf["extract"]={}
+
+#conf["patch"]["overlap"]=26
+conf["patch"]["overlap"]=31
+
+if conf["patch"]["overlap"]==26:
+	conf["extract"]["test_skip"]=4
+	conf["balanced"]["samples_per_class"]=150
+elif conf["patch"]["overlap"]==30:
+	conf["extract"]["test_skip"]=10
+	conf["balanced"]["samples_per_class"]=1500
+elif conf["patch"]["overlap"]==31:
+	conf["extract"]["test_skip"]=24
+	conf["balanced"]["samples_per_class"]=5000
+
 if conf["pc_mode"]=="remote":
 	conf["subdata"]={"flag":True,"n":3768}
 else:
@@ -511,7 +534,12 @@ else:
 #conf["subdata"]={"flag":True,"n":500}
 #conf["subdata"]={"flag":True,"n":1000}
 conf["summaries_path"]=conf["path"]+"summaries/"
+
+pathlib.Path(conf["train"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
+pathlib.Path(conf["test"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
+
 print(conf)
+
 if __name__ == "__main__":
 	conf["utils_main_mode"]=7
 
@@ -571,7 +599,12 @@ if __name__ == "__main__":
 
 		deb.prints(data["train"]["ims"].shape)
 		deb.prints(data["test"]["ims"].shape)
-		
+
+		# Store data train, test ims and labels_one_hot
+		os.system("rm -rf ../data/balanced")
+		data_save_to_npy(conf["train"],data["train"])
+		data_save_to_npy(conf["test"],data["test"])
+
 		#for i in data["train"]["ims"][0]:
 		#	np.save()
 		#data["train"]["labels"]
