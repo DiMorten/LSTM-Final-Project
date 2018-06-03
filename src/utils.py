@@ -534,15 +534,12 @@ else:
 #conf["subdata"]={"flag":True,"n":500}
 #conf["subdata"]={"flag":True,"n":1000}
 conf["summaries_path"]=conf["path"]+"summaries/"
-<<<<<<< Updated upstream
 
 pathlib.Path(conf["train"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 pathlib.Path(conf["test"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 
-=======
 conf["utils_main_mode"]=6
 conf["utils_flag_store"]=False
->>>>>>> Stashed changes
 print(conf)
 
 if __name__ == "__main__":
@@ -606,10 +603,7 @@ if __name__ == "__main__":
 		deb.prints(data["train"]["ims"].shape)
 		deb.prints(data["test"]["ims"].shape)
 
-		# Store data train, test ims and labels_one_hot
-		os.system("rm -rf ../data/balanced")
-		data_save_to_npy(conf["train"],data["train"])
-		data_save_to_npy(conf["test"],data["test"])
+
 
 		#for i in data["train"]["ims"][0]:
 		#	np.save()
@@ -618,6 +612,10 @@ if __name__ == "__main__":
 		#os.makedirs(os.path.dirname(filename), exist_ok=True)
 		print(list(iter(data)))
 		if conf["utils_flag_store"]:
+			# Store data train, test ims and labels_one_hot
+			os.system("rm -rf ../data/balanced")
+			data_save_to_npy(conf["train"],data["train"])
+			data_save_to_npy(conf["test"],data["test"])
 			with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
 
 """
