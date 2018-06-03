@@ -95,6 +95,8 @@ class conv_lstm(object):
 		deb.prints(data["train"]["labels"].shape)
 		deb.prints(data["test"]["labels"].shape)
 		deb.prints(batch_idxs)
+		data["train"]["labels_int"]=[ np.where(r==1)[0][0] for r in data["train"]["labels"] ]
+		print("train classes",np.unique(data["train"]["labels_int"],return_counts=True))
 		 
 		counter = 1
 		start_time = time.time()
@@ -108,12 +110,16 @@ class conv_lstm(object):
 				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch_images, self.target: batch_labels})
 				self.writer.add_summary(summary, counter)
 				counter += 1
-				self.incorrect = self.sess.run(self.error_per_class,{self.data: data["test"]["ims"], self.target: data["test"]["labels"]})
-				print('Epoch {:2d} error {:3.1f}%'.format(epoch + 1, 100 * self.incorrect))
-			if np.mod(epoch, 2) == 0:
-				save_path = self.saver.save(self.sess, "./model.ckpt")
-				print("Model saved in path: %s" % save_path)
-				
+				self.incorrect = self.sess.run(self.error,{self.data: data["test"]["ims"], self.target: data["test"]["labels"]})
+				print('Epoch {:2d} overall accuracy {:3.1f}%'.format(epoch + 1, 100 - 100 * self.incorrect))
+			#if np.mod(epoch, 2) == 0:
+			save_path = self.saver.save(self.sess, "./model.ckpt")
+			print("Model saved in path: %s" % save_path)
+			
+			prediction = np.around(self.sess.run(self.prediction,{self.data: data["test"]["ims"]}),decimals=2)
+			average_accuracy = self.test_average_accuracy_get(data["test"]["labels"],prediction)
+			deb.prints(average_accuracy)
+	
 			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch_idxs,time.time() - start_time))
 
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
@@ -133,12 +139,11 @@ class conv_lstm(object):
 		deb.prints(data["train"]["ims"].shape)
 		data["train"]["labels"] = data["train"]["labels"][idx*self.batch_size:(idx+1)*self.batch_size]
 		
-		ranged=range(0,15)
 		prediction = np.around(self.sess.run(self.prediction,{self.data: data["test"]["ims"]}),decimals=2)
 		deb.prints(data["test"]["labels"])
 		average_accuracy = self.test_average_accuracy_get(data["test"]["labels"],prediction)
 		deb.prints(average_accuracy)
-		#self.model_test_on_samples(data)
+		self.model_test_on_samples(data)
 	def test_average_accuracy_get(self,target,prediction):
 		correct_per_class=np.zeros(self.n_classes).astype(np.float32)
 		for clss in range(0,self.n_classes):
