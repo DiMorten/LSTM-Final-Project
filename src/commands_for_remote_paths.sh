@@ -12,4 +12,4 @@ source activate py361
 #cp cuda/include/cudnn.h /usr/local/cuda-9.2/include
 
 
-#overlap 30, test skip 5. goood
+#overlap 30, test skip 5. goood. 1000 balance samples per class. 1500 balance samples per class better.

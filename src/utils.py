@@ -534,14 +534,19 @@ else:
 #conf["subdata"]={"flag":True,"n":500}
 #conf["subdata"]={"flag":True,"n":1000}
 conf["summaries_path"]=conf["path"]+"summaries/"
+<<<<<<< Updated upstream
 
 pathlib.Path(conf["train"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 pathlib.Path(conf["test"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 
+=======
+conf["utils_main_mode"]=6
+conf["utils_flag_store"]=False
+>>>>>>> Stashed changes
 print(conf)
 
 if __name__ == "__main__":
-	conf["utils_main_mode"]=7
+	
 
 	if conf["utils_main_mode"]==2:
 		im_patches_npy_multitemporal_from_npy_from_folder_store(conf)
@@ -563,7 +568,7 @@ if __name__ == "__main__":
 		data["train"]["n"]=data["train"]["ims"].shape[0]
 		filename = conf["path"]+'data.pkl'
 		#os.makedirs(os.path.dirname(filename), exist_ok=True)
-	
+		
 		with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
 	elif conf["utils_main_mode"]==5:
 	
@@ -572,7 +577,8 @@ if __name__ == "__main__":
 
 	elif conf["utils_main_mode"]==6:
 		os.system("rm -rf ../data/train_test")
-		im_patches_npy_multitemporal_from_npy_from_folder_store2(conf,patches_save=True)
+
+		im_patches_npy_multitemporal_from_npy_from_folder_store2(conf,patches_save=if conf["utils_flag_store"]:)
 	elif conf["utils_main_mode"]==7:
 
 		conf["train"]["n"]=np.load(conf["path"]+"train_n.npy")
@@ -611,7 +617,8 @@ if __name__ == "__main__":
 		filename = conf["path"]+'data.pkl'
 		#os.makedirs(os.path.dirname(filename), exist_ok=True)
 		print(list(iter(data)))
-		with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
+		if conf["utils_flag_store"]:
+			with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
 
 """
 		data=im_patches_npy_multitemporal_from_npy_from_folder_load2(conf)
