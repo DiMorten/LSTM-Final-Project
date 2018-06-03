@@ -300,6 +300,8 @@ def im_patches_labelsonehot_load2(conf,conf_set,data,data_whole,debug=0): #data[
 		if debug>=2: print("train_labels[count]",data["labels"][count])
 		
 		count=count+1
+		if i % 1000==0:
+			print("file ID",i)
 	data["labels_onehot"]=np.zeros((conf_set["n"],conf["class_n"]))
 	data["labels_onehot"][np.arange(conf_set["n"]),data["labels"]]=1
 	#del data["labels"]
@@ -526,9 +528,12 @@ elif conf["patch"]["overlap"]==30:
 elif conf["patch"]["overlap"]==31:
 	conf["extract"]["test_skip"]=24
 	conf["balanced"]["samples_per_class"]=5000
-elif conf["patch"]["overlap"]>=0 or conf["patch"]["overlap"]<=5:
+elif conf["patch"]["overlap"]==2:
 	conf["extract"]["test_skip"]=8
-	conf["balanced"]["samples_per_class"]=100
+	conf["balanced"]["samples_per_class"]=1500
+elif conf["patch"]["overlap"]==4:
+	conf["extract"]["test_skip"]=10
+	conf["balanced"]["samples_per_class"]=5000
 if conf["pc_mode"]=="remote":
 	conf["subdata"]={"flag":True,"n":3768}
 else:
@@ -540,7 +545,7 @@ conf["summaries_path"]=conf["path"]+"summaries/"
 pathlib.Path(conf["train"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 pathlib.Path(conf["test"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 
-conf["utils_main_mode"]=6
+conf["utils_main_mode"]=7
 conf["utils_flag_store"]=True
 
 print(conf)
@@ -580,7 +585,7 @@ if __name__ == "__main__":
 
 		im_patches_npy_multitemporal_from_npy_from_folder_store2(conf,patches_save=conf["utils_flag_store"])
 	elif conf["utils_main_mode"]==7:
-
+		print("heeere")
 		conf["train"]["n"]=np.load(conf["path"]+"train_n.npy")
 		conf["test"]["n"]=np.load(conf["path"]+"test_n.npy")
 		deb.prints(conf["train"]["n"])
@@ -600,7 +605,7 @@ if __name__ == "__main__":
 			samples_per_class=500
 		else:
 			samples_per_class=1500
-		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,samples_per_class)
+		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,conf["balanced"]["samples_per_class"])
 		data["train"]["n"]=data["train"]["ims"].shape[0]
 
 		deb.prints(data["train"]["ims"].shape)

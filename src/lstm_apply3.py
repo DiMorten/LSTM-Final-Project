@@ -90,16 +90,18 @@ def model_define(debug=1,rnn_flag=True):
 
 		last=tf.layers.conv2d(last2, 32, 3, activation=tf.nn.tanh)
 
-	pool1 = tf.layers.max_pooling2d(inputs=last, pool_size=[2, 2], strides=2)
+	#pool1 = tf.layers.max_pooling2d(inputs=last, pool_size=[2, 2], strides=2)
 	##if debug: print("pool1",pool1.get_shape())
 
 	# Convolution Layer with 32 filters and a kernel size of 5
-	conv1 = tf.layers.conv2d(pool1, 32, 3, activation=tf.nn.tanh)
+	#conv1 = tf.layers.conv2d(pool1, 32, 3, activation=tf.nn.tanh)
 
-	fc1 = tf.contrib.layers.flatten(conv1)
+	fc1 = tf.contrib.layers.flatten(last)
 
 	print(fc1.shape)
 	print("fc1",fc1)
+	fc1 = tf.layers.dense(fc1, 128,activation=tf.nn.tanh)
+	
 	prediction = tf.layers.dense(fc1, n_classes,activation=tf.nn.softmax)
 	if debug: print("prediction",prediction.get_shape())
 
@@ -245,10 +247,10 @@ if __name__ == "__main__":
 			deb.prints(dataset["test"]["ims"].shape)
 			deb.prints(dataset["test"]["labels_onehot"].shape)
 
-			test_set_reduce=True
+			test_set_reduce=False
 			if test_set_reduce:
 				index = range(dataset["test"]["ims"].shape[0])
-				test_n=1000
+				test_n=5409
 				index = np.random.choice(index, test_n, replace=False)
 				dataset_test_ims=dataset["test"]["ims"][index]
 				dataset_test_labels_onehot=dataset["test"]["labels_onehot"][index]
