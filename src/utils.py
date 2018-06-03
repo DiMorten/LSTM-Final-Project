@@ -513,11 +513,17 @@ conf["im_size"]=(948,1068)
 conf["im_3d_size"]=conf["im_size"]+(conf["band_n"],)
 conf["balanced"]={}
 conf["train"]["balanced_path"]=conf["path"]+"balanced/train/"
+conf["train"]["balanced_path_ims"]=conf["train"]["balanced_path"]+"ims/"
+conf["train"]["balanced_path_label"]=conf["train"]["balanced_path"]+"label/"
+
 conf["test"]["balanced_path"]=conf["path"]+"balanced/test/"
+conf["test"]["balanced_path_ims"]=conf["test"]["balanced_path"]+"ims/"
+conf["test"]["balanced_path_label"]=conf["test"]["balanced_path"]+"label/"
+
 conf["extract"]={}
 
 #conf["patch"]["overlap"]=26
-conf["patch"]["overlap"]=2
+conf["patch"]["overlap"]=0
 
 if conf["patch"]["overlap"]==26:
 	conf["extract"]["test_skip"]=4
@@ -605,7 +611,7 @@ if __name__ == "__main__":
 			samples_per_class=500
 		else:
 			samples_per_class=1500
-		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,conf["balanced"]["samples_per_class"])
+		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,samples_per_class)
 		data["train"]["n"]=data["train"]["ims"].shape[0]
 
 		deb.prints(data["train"]["ims"].shape)
