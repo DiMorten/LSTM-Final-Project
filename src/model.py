@@ -66,12 +66,21 @@ class conv_lstm(object):
 		
 		self.error_sum = tf.summary.scalar("error", self.error)
 
+		#self.error_per_class = self.average_accuracy_get(self.target,self.prediction)
+
 		t_vars = tf.trainable_variables()
 
 		self.saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=2)
 		self.merged = tf.summary.merge_all()
 
 		if self.debug: print("trainable parameters",np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
+	def average_accuracy_get(self,target,prediction):
+		#self.mistakes_per_class=tf.placeholder(tf.float32,[None, self.n_classes])
+		#self.mistakes_per_class=np.zeros(self.n_classes)
+		#for clss in range(0,self.n_classes):
+		#	self.mistakes_per_class[:,clss] = tf.not_equal(self.target[clss], self.prediction[clss])
+		#return tf.reduce_mean(tf.cast(self.mistakes_per_class, tf.float32))
+		pass
 
 	def train(self, args):
 		#init_op = tf.initialize_all_variables()
@@ -99,8 +108,8 @@ class conv_lstm(object):
 				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch_images, self.target: batch_labels})
 				self.writer.add_summary(summary, counter)
 				counter += 1
-				incorrect = self.sess.run(self.error,{self.data: data["test"]["ims"], self.target: data["test"]["labels"]})
-				print('Epoch {:2d} error {:3.1f}%'.format(epoch + 1, 100 * incorrect))
+				self.incorrect = self.sess.run(self.error_per_class,{self.data: data["test"]["ims"], self.target: data["test"]["labels"]})
+				print('Epoch {:2d} error {:3.1f}%'.format(epoch + 1, 100 * self.incorrect))
 			if np.mod(epoch, 2) == 0:
 				save_path = self.saver.save(self.sess, "./model.ckpt")
 				print("Model saved in path: %s" % save_path)
@@ -112,6 +121,8 @@ class conv_lstm(object):
 	def test(self, args):
 		self.sess = tf.Session()
 		self.saver.restore(self.sess,tf.train.latest_checkpoint('./'))
+
+
 		print("Model restored.")
 		data = self.data_load(utils.conf)
 		batch_idxs = min(len(data["train"]["im_paths"]), args.train_size) // self.batch_size
@@ -121,7 +132,20 @@ class conv_lstm(object):
 		data["train"]["ims"] = np.asarray([np.load(batch_file_path) for batch_file_path in batch_file_paths]) # Load files from path
 		deb.prints(data["train"]["ims"].shape)
 		data["train"]["labels"] = data["train"]["labels"][idx*self.batch_size:(idx+1)*self.batch_size]
-		self.model_test_on_samples(data)
+		
+		ranged=range(0,15)
+		prediction = np.around(self.sess.run(self.prediction,{self.data: data["test"]["ims"]}),decimals=2)
+		deb.prints(data["test"]["labels"])
+		average_accuracy = self.test_average_accuracy_get(data["test"]["labels"],prediction)
+		deb.prints(average_accuracy)
+		#self.model_test_on_samples(data)
+	def test_average_accuracy_get(self,target,prediction):
+		correct_per_class=np.zeros(self.n_classes).astype(np.float32)
+		for clss in range(0,self.n_classes):
+			correct_per_class[clss]=float(np.count_nonzero(np.equal(target[:,clss],prediction[:,clss])))/float(target.shape[0])
+		correct_per_class_average = np.average(correct_per_class)
+
+		return correct_per_class_average
 
 	def model_test_on_samples(self,dataset):
 		print("train results")
