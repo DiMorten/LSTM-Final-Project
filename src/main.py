@@ -65,9 +65,10 @@ def main(_):
 
         if args.phase == 'train':
             model.train(args)
-        """
+        
         elif args.phase == 'test':
             model.test(args)
+        """
         elif args.phase == 'generate_image':
             model.generate_image(args)
         elif args.phase == 'create_dataset':
