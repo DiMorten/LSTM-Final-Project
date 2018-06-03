@@ -540,8 +540,13 @@ conf["summaries_path"]=conf["path"]+"summaries/"
 pathlib.Path(conf["train"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 pathlib.Path(conf["test"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 
+<<<<<<< HEAD
 conf["utils_main_mode"]=7
 conf["utils_flag_store"]=True
+=======
+conf["utils_main_mode"]=6
+conf["utils_flag_store"]=False
+>>>>>>> master
 print(conf)
 
 if __name__ == "__main__":
