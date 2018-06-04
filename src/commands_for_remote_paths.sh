@@ -13,3 +13,4 @@ source activate py361
 
 
 #overlap 30, test skip 5. goood. 1000 balance samples per class. 1500 balance samples per class better.
+#tensorboard --logdir "../data/summaries/"

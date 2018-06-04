@@ -46,6 +46,7 @@ parser.add_argument('--filters', dest='filters', type=int, default=32, help='# t
 parser.add_argument('--n_classes', dest='n_classes', type=int, default=9, help='# timesteps used to train')
 parser.add_argument('--checkpoint_dir', dest='checkpoint_dir', default='./checkpoint', help='models are saved here')
 parser.add_argument('--model', dest='model', default='conv3d', help='models are saved here')
+parser.add_argument('--log_dir', dest='log_dir', default=utils.conf["summaries_path"], help='models are saved here')
 
 args = parser.parse_args()
 np.set_printoptions(suppress=True)
@@ -62,16 +63,16 @@ def main(_):
         os.makedirs(args.checkpoint_dir)
     
     with tf.Session() as sess:
-        if args.model=='conv_lstm':
+        if args.model=='convlstm':
             model = conv_lstm(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
                             timesteps=args.timesteps, shape=args.shape,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                            checkpoint_dir=args.checkpoint_dir)
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir)
         elif args.model=='conv3d':
             model = Conv3DMultitemp(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
                             timesteps=args.timesteps, shape=args.shape,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                            checkpoint_dir=args.checkpoint_dir)
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir)
         if args.phase == 'train':
             model.train(args)
         

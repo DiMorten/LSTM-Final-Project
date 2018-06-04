@@ -34,7 +34,7 @@ class NeuralNet(object):
 	def __init__(self, sess=tf.Session(), batch_size=50, epoch=200, train_size=1e8,
                         timesteps=utils.conf["t_len"], shape=[32,32],
                         kernel=[3,3], channels=6, filters=32, n_classes=9,
-                        checkpoint_dir='./checkpoint'):
+                        checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"]):
 		print(3)
 		self.sess = sess
 		self.batch_size = batch_size
@@ -50,11 +50,18 @@ class NeuralNet(object):
 		self.checkpoint_dir = checkpoint_dir
 		self.conf=utils.conf
 		self.debug=1
+		self.log_dir=log_dir
+		print(self.log_dir)
 
-	def layer_lstm_get(self,data,filters,kernel):
+	def layer_lstm_get(self,data,filters,kernel,name):
 		#filters=64
-		cell = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel)
+		cell = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
+		
 		val, state = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
+		kernel,bias=cell.variables
+		#self.hidden_weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, name)
+		tf.summary.histogram('convlstm', kernel)
+
 		if self.debug: deb.prints(val.get_shape)
 		last = tf.gather(val, int(val.get_shape()[1]) - 1,axis=1)
 		if self.debug: deb.prints(last.get_shape())
@@ -95,7 +102,9 @@ class NeuralNetOneHot(NeuralNet):
 		minimize = optimizer.minimize(cross_entropy)
 
 		mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
+		
 		error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
+		tf.summary.scalar('error',error)
 		return minimize, mistakes, error
 	def train(self, args):
 		#init_op = tf.initialize_all_variables()
@@ -103,7 +112,7 @@ class NeuralNetOneHot(NeuralNet):
 		self.sess = tf.Session()
 		self.sess.run(init_op)
 #		self.writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph())
-		self.writer = tf.summary.FileWriter(utils.conf["summaries_path"], self.sess.graph)
+		self.writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
 
 		data = self.data_load(self.conf)
 		batch_idxs = min(len(data["train"]["im_paths"]), args.train_size) // self.batch_size
@@ -207,15 +216,16 @@ class conv_lstm(NeuralNetOneHot):
 		self.trainable_vars_print()
 		
 	def model_graph_get(self,data):
-		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=self.kernel)
+		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=self.kernel,name='convlstm')
 		
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
 		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh)
 		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.layers.dense(graph_pipeline, 128,activation=tf.nn.tanh)
+		graph_pipeline = tf.layers.dense(graph_pipeline, 128,activation=tf.nn.tanh,name='hidden')
 		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
 		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		return graph_pipeline
@@ -240,7 +250,7 @@ class Conv3DMultitemp(NeuralNetOneHot):
 		
 	def model_graph_get(self,data):
 		#graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=self.kernel)
-		graph_pipeline=tf.layers.conv3d(data,self.filters,[1,3,3],padding='same',activation=tf.nn.tanh)
+		graph_pipeline=tf.layers.conv3d(data,self.filters,[1,3,3],padding='valid',activation=tf.nn.tanh)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		graph_pipeline=tf.layers.conv3d(data,16,[3,3,3],padding='same',activation=tf.nn.tanh)
 		
