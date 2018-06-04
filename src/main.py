@@ -29,6 +29,8 @@ import argparse
 import utils
 import deb
 from model import conv_lstm
+from model import Conv3DMultitemp
+
 #import conf
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--phase', dest='phase', default='train', help='phase')
@@ -43,6 +45,8 @@ parser.add_argument('--channels', dest='channels', type=int, default=6, help='# 
 parser.add_argument('--filters', dest='filters', type=int, default=32, help='# timesteps used to train')
 parser.add_argument('--n_classes', dest='n_classes', type=int, default=9, help='# timesteps used to train')
 parser.add_argument('--checkpoint_dir', dest='checkpoint_dir', default='./checkpoint', help='models are saved here')
+parser.add_argument('--model', dest='model', default='conv3d', help='models are saved here')
+
 args = parser.parse_args()
 np.set_printoptions(suppress=True)
 
@@ -58,11 +62,16 @@ def main(_):
         os.makedirs(args.checkpoint_dir)
     
     with tf.Session() as sess:
-        model = conv_lstm(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
-                        timesteps=args.timesteps, shape=args.shape,
-                        kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                        checkpoint_dir=args.checkpoint_dir)
-
+        if args.model=='conv_lstm':
+            model = conv_lstm(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
+                            timesteps=args.timesteps, shape=args.shape,
+                            kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
+                            checkpoint_dir=args.checkpoint_dir)
+        elif args.model=='conv3d':
+            model = Conv3DMultitemp(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
+                            timesteps=args.timesteps, shape=args.shape,
+                            kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
+                            checkpoint_dir=args.checkpoint_dir)
         if args.phase == 'train':
             model.train(args)
         

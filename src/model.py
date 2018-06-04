@@ -31,10 +31,11 @@ np.set_printoptions(suppress=True)
 # =================================== Might take onehot or image output ============================================= #
 class NeuralNet(object):
 
-	def __init__(self, sess, batch_size=50, epoch=200, train_size=1e8,
+	def __init__(self, sess=tf.Session(), batch_size=50, epoch=200, train_size=1e8,
                         timesteps=utils.conf["t_len"], shape=[32,32],
                         kernel=[3,3], channels=6, filters=32, n_classes=9,
                         checkpoint_dir='./checkpoint'):
+		print(3)
 		self.sess = sess
 		self.batch_size = batch_size
 		self.epoch = epoch
@@ -70,8 +71,14 @@ class NeuralNet(object):
 # ============================ NeuralNet takes onehot image output ============================================= #
 class NeuralNetOneHot(NeuralNet):
 	def __init__(self, *args, **kwargs):
+		print(2)
 		super().__init__(*args, **kwargs)
 
+	def placeholder_init(self,timesteps,shape,channels,n_classes):
+		data = tf.placeholder(tf.float32, [None] +[timesteps] + shape + [channels])
+		target = tf.placeholder(tf.float32, [None, n_classes])
+		if self.debug: deb.prints(target.get_shape())
+		return data,target
 	def average_accuracy_get(self,target,prediction):
 		correct_per_class=np.zeros(self.n_classes).astype(np.float32)
 		for clss in range(0,self.n_classes):
@@ -199,11 +206,6 @@ class conv_lstm(NeuralNetOneHot):
 		self.error_sum, self.saver, self.merged = self.tensorboard_saver_init(self.error)
 		self.trainable_vars_print()
 		
-	def placeholder_init(self,timesteps,shape,channels,n_classes):
-		data = tf.placeholder(tf.float32, [None] +[timesteps] + shape + [channels])
-		target = tf.placeholder(tf.float32, [None, n_classes])
-		if self.debug: deb.prints(target.get_shape())
-		return data,target
 	def model_graph_get(self,data):
 		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=self.kernel)
 		
@@ -219,3 +221,36 @@ class conv_lstm(NeuralNetOneHot):
 		return graph_pipeline
 
 
+# ================================= Implements Conv3DMultitemp ============================================== #
+class Conv3DMultitemp(NeuralNetOneHot):
+	def __init__(self, *args, **kwargs):
+		print(1)
+		super().__init__(*args, **kwargs)
+		self.kernel=[3,3,3]
+		deb.prints(self.kernel)
+		self.model_build()
+	def model_build(self):
+		self.data,self.target=self.placeholder_init(self.timesteps,self.shape,self.channels,self.n_classes)
+		self.prediction = self.model_graph_get(self.data)
+
+		# Set optimizer
+		self.minimize,self.mistakes,self.error=self.loss_optimizer_set(self.target,self.prediction)
+		self.error_sum, self.saver, self.merged = self.tensorboard_saver_init(self.error)
+		self.trainable_vars_print()
+		
+	def model_graph_get(self,data):
+		#graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=self.kernel)
+		graph_pipeline=tf.layers.conv3d(data,self.filters,self.kernel,padding='same',activation=tf.nn.tanh)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		graph_pipeline=tf.layers.max_pooling3d(inputs=graph_pipeline, pool_size=[2,1,1], strides=[2,1,1],padding='same')
+		#graph_pipeline=tf.layers.conv3d(data,self.filters,self.kernel,padding='same',activation=tf.nn.tanh)
+		
+		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
+		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh)
+		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		graph_pipeline = tf.layers.dense(graph_pipeline, 128,activation=tf.nn.tanh)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		return graph_pipeline
