@@ -240,9 +240,15 @@ class Conv3DMultitemp(NeuralNetOneHot):
 		
 	def model_graph_get(self,data):
 		#graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=self.kernel)
-		graph_pipeline=tf.layers.conv3d(data,self.filters,self.kernel,padding='same',activation=tf.nn.tanh)
+		graph_pipeline=tf.layers.conv3d(data,self.filters,[1,3,3],padding='same',activation=tf.nn.tanh)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
+		graph_pipeline=tf.layers.conv3d(data,16,[3,3,3],padding='same',activation=tf.nn.tanh)
+		
 		graph_pipeline=tf.layers.max_pooling3d(inputs=graph_pipeline, pool_size=[2,1,1], strides=[2,1,1],padding='same')
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+
+		#graph_pipeline=tf.layers.conv3d(graph_pipeline,self.filters,[],padding='same',activation=tf.nn.tanh)
+		
 		#graph_pipeline=tf.layers.conv3d(data,self.filters,self.kernel,padding='same',activation=tf.nn.tanh)
 		
 		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
