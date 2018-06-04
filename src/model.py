@@ -53,19 +53,22 @@ class NeuralNet(object):
 		self.log_dir=log_dir
 		print(self.log_dir)
 
-	def layer_lstm_get(self,data,filters,kernel,name):
+	def layer_lstm_get(self,data,filters,kernel,name="convlstm",get_last=True):
 		#filters=64
 		cell = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
 		
 		val, state = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
+		if self.debug: deb.prints(val.get_shape())
 		kernel,bias=cell.variables
 		#self.hidden_weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, name)
 		tf.summary.histogram('convlstm', kernel)
-
-		if self.debug: deb.prints(val.get_shape)
-		last = tf.gather(val, int(val.get_shape()[1]) - 1,axis=1)
-		if self.debug: deb.prints(last.get_shape())
-		return last
+		if get_last==True:
+			if self.debug: deb.prints(val.get_shape())
+			last = tf.gather(val, int(val.get_shape()[1]) - 1,axis=1)
+			if self.debug: deb.prints(last.get_shape())
+			return last
+		else:
+			return val
 
 	def tensorboard_saver_init(self, error):
 		error_sum = tf.summary.scalar("error", error)		
@@ -249,10 +252,10 @@ class Conv3DMultitemp(NeuralNetOneHot):
 		self.trainable_vars_print()
 		
 	def model_graph_get(self,data):
-		#graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=self.kernel)
-		graph_pipeline=tf.layers.conv3d(data,self.filters,[1,3,3],padding='valid',activation=tf.nn.tanh)
+		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=[3,3],get_last=False,name="convlstm")
+		#graph_pipeline=tf.layers.conv3d(graph_pipeline,self.filters,[1,3,3],padding='same',activation=tf.nn.tanh)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline=tf.layers.conv3d(data,16,[3,3,3],padding='same',activation=tf.nn.tanh)
+		graph_pipeline=tf.layers.conv3d(graph_pipeline,16,[3,3,3],padding='same',activation=tf.nn.tanh)
 		
 		graph_pipeline=tf.layers.max_pooling3d(inputs=graph_pipeline, pool_size=[2,1,1], strides=[2,1,1],padding='same')
 		if self.debug: deb.prints(graph_pipeline.get_shape())
