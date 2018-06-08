@@ -89,13 +89,24 @@ class NeuralNetOneHot(NeuralNet):
 		target = tf.placeholder(tf.float32, [None, n_classes])
 		if self.debug: deb.prints(target.get_shape())
 		return data,target
-	def average_accuracy_get(self,target,prediction):
+#	def average_accuracy_get(self,target,prediction,correct_per_class_accumulated=False,correct_per_class=None):
+	def average_accuracy_get(self,target,prediction):	
+		correct_per_class_percent=np.zeros(self.n_classes).astype(np.float32)
 		correct_per_class=np.zeros(self.n_classes).astype(np.float32)
-		for clss in range(0,self.n_classes):
-			correct_per_class[clss]=float(np.count_nonzero(np.equal(target[:,clss],prediction[:,clss])))/float(target.shape[0])
-		correct_per_class_average = np.average(correct_per_class)
+		targets_int=np.argmax(target,axis=1)
+		predictions_int=np.argmax(prediction,axis=1)
 
-		return correct_per_class_average
+		targets_label_count=np.sum(target,axis=0)
+		valid=targets_int[targets_int==predictions_int]
+		count_total=valid.shape[0]
+		deb.prints(count_total)
+		for clss in range(0,self.n_classes):
+			correct_per_class[clss]=valid[valid==clss].shape[0]
+		deb.prints(correct_per_class)
+		correct_per_class_average=np.average(np.divide(correct_per_class, targets_label_count))
+		return correct_per_class_average,correct_per_class
+
+
 	def loss_optimizer_set(self,target,prediction):
 		# Estimate loss from prediction and target
 		cross_entropy = -tf.reduce_sum(target * tf.log(tf.clip_by_value(prediction,1e-10,1.0)))
@@ -151,25 +162,48 @@ class NeuralNetOneHot(NeuralNet):
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
 			
 	def test(self, args):
+		
 		self.sess = tf.Session()
 		self.saver.restore(self.sess,tf.train.latest_checkpoint('./'))
 
 
 		print("Model restored.")
 		data = self.data_load(self.conf)
-		batch_idxs = min(len(data["train"]["im_paths"]), args.train_size) // self.batch_size
-		idx=1
-		batch_file_paths = data["train"]["im_paths"][idx*self.batch_size:(idx+1)*self.batch_size]
-		data["test"]["ims"] = np.asarray(data["test"]["ims"])
-		data["train"]["ims"] = np.asarray([np.load(batch_file_path) for batch_file_path in batch_file_paths]) # Load files from path
-		deb.prints(data["train"]["ims"].shape)
-		data["train"]["labels"] = data["train"]["labels"][idx*self.batch_size:(idx+1)*self.batch_size]
+		self.test_batch_size=100
+		self.test_size=len(data["test"]["im_paths"])
+		batch={}
+		batch["idxs"] = self.test_size // self.test_batch_size
+		deb.prints(batch["idxs"])
+		test_stats={"per_class_correct_accumulated":np.zeros(self.n_classes).astype(np.float32)}
+		test_stats["per_class_label_count"]=np.zeros(self.n_classes).astype(np.float32)
+		for idx in range(0, batch["idxs"]):
+			batch["file_paths"] = data["test"]["im_paths"][idx*self.test_batch_size:(idx+1)*self.test_batch_size]
+			batch["labels"] = data["test"]["labels"][idx*self.test_batch_size:(idx+1)*self.test_batch_size]
+			batch["images"] = np.asarray([np.load(batch_file_path) for batch_file_path in batch["file_paths"]]) # Load files from path
+			#print(batch_images.shape)
+
+			prediction = np.around(self.sess.run(self.prediction,{self.data: batch["images"]}),decimals=2)
+			#deb.prints(data["test"]["labels"])
+			#deb.prints(prediction)
+			deb.prints(prediction.shape)
+			deb.prints(batch["labels"].shape)
+			batch["label_count"]=np.sum(batch["labels"],axis=0)
+			deb.prints(batch["label_count"])
+			_,batch["correct_per_class"]=self.average_accuracy_get(batch["labels"],prediction)
+			deb.prints(batch["correct_per_class"])
+			for clss in range(0,self.n_classes):
+				test_stats["per_class_correct_accumulated"][clss]+=batch["correct_per_class"][clss]			
+			deb.prints(test_stats["per_class_correct_accumulated"])
+
+		deb.prints(test_stats["per_class_correct_accumulated"])
 		
-		prediction = np.around(self.sess.run(self.prediction,{self.data: data["test"]["ims"]}),decimals=2)
-		deb.prints(data["test"]["labels"])
-		average_accuracy = self.average_accuracy_get(data["test"]["labels"],prediction)
-		deb.prints(average_accuracy)
-		self.model_test_on_samples(data)
+		test_stats["per_class_label_count"]=np.sum(data["test"]["labels"],axis=0)
+
+		#_,test_stats["per_class_label_count"]=np.unique(data["test"]["labels"],return_counts=True)
+		deb.prints(test_stats["per_class_label_count"])
+			#average_accuracy,correct_per_class_accumulated = self.average_accuracy_get(batch_labels,prediction)
+			#deb.prints(average_accuracy)accumulated)
+			#self.model_test_on_samples(data)
 
 	def model_test_on_samples(self,dataset,sample_range=range(15,20)):
 
@@ -200,6 +234,8 @@ class NeuralNetOneHot(NeuralNet):
 		data["train"]["labels"] = np.load(conf["train"]["balanced_path_label"]+"labels.npy")
 		
 		data["test"]["labels"] = np.load(conf["test"]["balanced_path_label"]+"labels.npy")
+		
+		# Change to a subset of test
 		data["test"]["ims"]=[np.load(im_path) for im_path in data["test"]["im_paths"]]
 		return data
 

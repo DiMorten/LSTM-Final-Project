@@ -45,7 +45,7 @@ parser.add_argument('--channels', dest='channels', type=int, default=6, help='# 
 parser.add_argument('--filters', dest='filters', type=int, default=32, help='# timesteps used to train')
 parser.add_argument('--n_classes', dest='n_classes', type=int, default=9, help='# timesteps used to train')
 parser.add_argument('--checkpoint_dir', dest='checkpoint_dir', default='./checkpoint', help='models are saved here')
-parser.add_argument('--model', dest='model', default='conv3d', help='models are saved here')
+parser.add_argument('--model', dest='model', default='convlstm', help='models are saved here')
 parser.add_argument('--log_dir', dest='log_dir', default=utils.conf["summaries_path"], help='models are saved here')
 
 args = parser.parse_args()
