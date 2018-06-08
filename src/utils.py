@@ -26,19 +26,7 @@ import pickle
 import deb
 import argparse
 
-parser = argparse.ArgumentParser(description='')
-parser.add_argument('--debug', type=int, default=1, help='Debug')
-parser.add_argument('--patch_overlap', dest='patch_overlap', type=int, default=0, help='Debug')
-parser.add_argument('--im_size', dest='im_size', type=int, default=(948,1068), help='Debug')
-parser.add_argument('--band_n', dest='band_n', type=int, default=6, help='Debug')
-parser.add_argument('--t_len', dest='t_len', type=int, default=6, help='Debug')
-parser.add_argument('--path', dest='path', default="../data/", help='Data path')
-parser.add_argument('--class_n', dest='class_n', type=int, default=9, help='Class number')
-parser.add_argument('--pc_mode', dest='pc_mode', default="local", help="Class number. 'local' or 'remote'")
-parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=500000, help="Class number. 'local' or 'remote'")
 
-
-args = parser.parse_args()
 
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=9,pc_mode="local", \
@@ -401,7 +389,22 @@ class DataOneHot(DataForNet):
 		#del data["labels"]
 		return data
 
+data_creator=DataOneHot()
+conf=data_creator.conf
 if __name__ == "__main__":
+	parser = argparse.ArgumentParser(description='')
+	parser.add_argument('--debug', type=int, default=1, help='Debug')
+	parser.add_argument('-po','--patch_overlap', dest='patch_overlap', type=int, default=0, help='Debug')
+	parser.add_argument('--im_size', dest='im_size', type=int, default=(948,1068), help='Debug')
+	parser.add_argument('--band_n', dest='band_n', type=int, default=6, help='Debug')
+	parser.add_argument('--t_len', dest='t_len', type=int, default=6, help='Debug')
+	parser.add_argument('--path', dest='path', default="../data/", help='Data path')
+	parser.add_argument('--class_n', dest='class_n', type=int, default=9, help='Class number')
+	parser.add_argument('--pc_mode', dest='pc_mode', default="local", help="Class number. 'local' or 'remote'")
+	parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=500000, help="Class number. 'local' or 'remote'")
+
+	args = parser.parse_args()
+
 	data_creator=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
 		test_n_limit=args.test_n_limit)
