@@ -221,10 +221,12 @@ class DataOneHot(DataForNet):
 				elif np.all(mask_patch==1): # Train sample
 					patches_get["train_n"]+=1
 					mask_train[yy: yy + window, xx: xx + window]=255
-					if patches_save==True:
-						np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
-						np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch)
-
+					if self.data_memory_mode=="hdd":
+						if patches_save==True:
+							np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
+							np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch)
+					#elif self.data_memory_mode=="ram":
+				#		self.data["ims"]
 				elif np.all(mask_patch==2): # Test sample
 					test_counter+=1
 					
@@ -238,8 +240,9 @@ class DataOneHot(DataForNet):
 								mask_test[yy: yy + window, xx: xx + window]=255
 								test_counter=0
 								test_real_count+=1
-								np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
-								np.save(path_test["labels_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",label_patch)
+								if self.data_memory_mode=="hdd":
+									np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
+									np.save(path_test["labels_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",label_patch)
 					#np.random.choice(index, samples_per_class, replace=replace)
 		cv2.imwrite("mask_train.png",mask_train)
 		cv2.imwrite("mask_test.png",mask_test)
