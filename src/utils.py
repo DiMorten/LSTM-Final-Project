@@ -487,6 +487,51 @@ def data_save_to_npy(conf,data):
 		np.save(conf["balanced_path"]+"ims/"+"patch_"+str(i)+".npy",data["ims"][i])
 	np.save(conf["balanced_path"]+"label/labels.npy",data["labels_onehot"])
 
+def data_onehot_load_balance_store(conf):
+	print("heeere")
+	conf["train"]["n"]=np.load(conf["path"]+"train_n.npy")
+	conf["test"]["n"]=np.load(conf["path"]+"test_n.npy")
+	deb.prints(conf["train"]["n"])
+	deb.prints(conf["test"]["n"])
+
+
+	data=im_patches_npy_multitemporal_from_npy_from_folder_load2(conf)
+	
+	deb.prints(data["train"]["ims"].shape)
+	deb.prints(data["test"]["ims"].shape)
+	
+	classes,counts=np.unique(data["train"]["labels"],return_counts=True)
+	print(classes,counts)
+
+	data=data_normalize_per_band(conf,data)
+	if conf["pc_mode"]=="remote":
+		samples_per_class=500
+	else:
+		samples_per_class=5000
+
+	data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,conf["balanced"]["samples_per_class"])
+	data["train"]["n"]=data["train"]["ims"].shape[0]
+
+	deb.prints(data["train"]["ims"].shape)
+	deb.prints(data["test"]["ims"].shape)
+
+	filename = conf["path"]+'data.pkl'
+	#os.makedirs(os.path.dirname(filename), exist_ok=True)
+	print(list(iter(data)))
+	if conf["utils_flag_store"]:
+		# Store data train, test ims and labels_one_hot
+		os.system("rm -rf ../data/balanced")
+		data_save_to_npy(conf["train"],data["train"])
+		data_save_to_npy(conf["test"],data["test"])	
+def data_onehot_create(conf):
+	os.system("rm -rf ../data/train_test")
+
+	im_patches_npy_multitemporal_from_npy_from_folder_store2(conf,patches_save=conf["utils_flag_store"])
+	data_onehot_load_balance_store(conf)
+
+class DataOneHot(object):
+	def __init__():
+		
 
 conf={"band_n": 6, "t_len":6, "path": "../data/", "class_n":9}
 #conf["pc_mode"]="remote"
@@ -555,7 +600,7 @@ conf["summaries_path"]=conf["path"]+"summaries/"
 pathlib.Path(conf["train"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 pathlib.Path(conf["test"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 
-conf["utils_main_mode"]=6
+conf["utils_main_mode"]=7
 conf["utils_flag_store"]=True
 
 print(conf)
@@ -595,61 +640,4 @@ if __name__ == "__main__":
 
 		im_patches_npy_multitemporal_from_npy_from_folder_store2(conf,patches_save=conf["utils_flag_store"])
 	elif conf["utils_main_mode"]==7:
-		print("heeere")
-		conf["train"]["n"]=np.load(conf["path"]+"train_n.npy")
-		conf["test"]["n"]=np.load(conf["path"]+"test_n.npy")
-		deb.prints(conf["train"]["n"])
-		deb.prints(conf["test"]["n"])
-
-
-		data=im_patches_npy_multitemporal_from_npy_from_folder_load2(conf)
-		
-		deb.prints(data["train"]["ims"].shape)
-		deb.prints(data["test"]["ims"].shape)
-		
-		classes,counts=np.unique(data["train"]["labels"],return_counts=True)
-		print(classes,counts)
-
-		data=data_normalize_per_band(conf,data)
-		if conf["pc_mode"]=="remote":
-			samples_per_class=500
-		else:
-			samples_per_class=5000
-
-		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,conf["balanced"]["samples_per_class"])
-		data["train"]["n"]=data["train"]["ims"].shape[0]
-
-		deb.prints(data["train"]["ims"].shape)
-		deb.prints(data["test"]["ims"].shape)
-
-
-
-		#for i in data["train"]["ims"][0]:
-		#	np.save()
-		#data["train"]["labels"]
-		filename = conf["path"]+'data.pkl'
-		#os.makedirs(os.path.dirname(filename), exist_ok=True)
-		print(list(iter(data)))
-		if conf["utils_flag_store"]:
-			# Store data train, test ims and labels_one_hot
-			os.system("rm -rf ../data/balanced")
-			data_save_to_npy(conf["train"],data["train"])
-			data_save_to_npy(conf["test"],data["test"])
-			#with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
-
-"""
-		data=im_patches_npy_multitemporal_from_npy_from_folder_load2(conf)
-		data=data_normalize_per_band(conf,data)
-		if conf["pc_mode"]=="remote":
-			samples_per_class=500
-		else:
-			samples_per_class=150
-		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,samples_per_class)
-		data["train"]["n"]=data["train"]["ims"].shape[0]
-		filename = conf["path"]+'data.pkl'
-"""
-
-		#data["train"]["ims"],data["train"]["labels"]=data_balance(conf,data,200)
-		#data["train"]["n"]=data["train"]["ims"].shape[0]
-		#data2["train"][""]
-		#print(data2["train"])
+		data_onehot_create(conf)
