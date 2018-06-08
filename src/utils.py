@@ -35,14 +35,16 @@ parser.add_argument('--t_len', dest='t_len', type=int, default=6, help='Debug')
 parser.add_argument('--path', dest='path', default="../data/", help='Data path')
 parser.add_argument('--class_n', dest='class_n', type=int, default=9, help='Class number')
 parser.add_argument('--pc_mode', dest='pc_mode', default="local", help="Class number. 'local' or 'remote'")
+parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=500000, help="Class number. 'local' or 'remote'")
 
 
 args = parser.parse_args()
 
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=9,pc_mode="local", \
-		patch_length=5):
+		patch_length=5,test_n_limit=500000):
 		self.debug=debug
+		self.test_n_limit=test_n_limit
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n}
 
 		self.conf["pc_mode"]=pc_mode
@@ -107,6 +109,11 @@ class DataForNet(object):
 		#self.conf["subdata"]={"flag":True,"n":1000}
 		self.conf["summaries_path"]=self.conf["path"]+"summaries/"
 
+		deb.prints(self.conf["patch"]["overlap"])
+		deb.prints(self.conf["extract"]["test_skip"])
+		deb.prints(self.conf["balanced"]["samples_per_class"])
+		
+
 		pathlib.Path(self.conf["train"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 		pathlib.Path(self.conf["test"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 
@@ -137,7 +144,7 @@ class DataOneHot(DataForNet):
 		self.im_patches_npy_multitemporal_from_npy_store2(im_names)
 	def im_patches_npy_multitemporal_from_npy_store2(self,names,train_mask_save=True):
 		fname=sys._getframe().f_code.co_name
-
+		print('[@im_patches_npy_multitemporal_from_npy_store2]')
 		patch_shape=(self.conf["patch"]["size"],self.conf["patch"]["size"],self.conf["band_n"])
 		label_shape=(self.conf["patch"]["size"],self.conf["patch"]["size"])
 		pathlib.Path(self.conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
@@ -170,12 +177,14 @@ class DataOneHot(DataForNet):
 
 		patch["train_mask"]=cv2.imread(self.conf["train"]["mask"]["dir"],0)
 
+		
 		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"],self.conf["patch"]["size"],self.conf["patch"]["overlap"], \
 			mask=patch["train_mask"],path_train=self.conf["train"],path_test=self.conf["test"],patches_save=self.conf["utils_flag_store"])
+		deb.prints(self.conf["test"]["n"])
 		np.save(self.conf["path"]+"train_n.npy",self.conf["train"]["n"])
 		np.save(self.conf["path"]+"test_n.npy",self.conf["test"]["n"])
 
-	def patches_multitemporal_get(self,img,label,window,overlap,mask,path_train,path_test,patches_save=False,test_n_limit=500000):
+	def patches_multitemporal_get(self,img,label,window,overlap,mask,path_train,path_test,patches_save=False):
 		fname=sys._getframe().f_code.co_name
 		deb.prints(window,fname)
 		deb.prints(overlap,fname)
@@ -221,7 +230,7 @@ class DataOneHot(DataForNet):
 					#if np.random.rand(1)[0]>=0.7:
 					
 					patches_get["test_n"]+=1
-					if patches_get["test_n"]<=test_n_limit:
+					if patches_get["test_n"]<=self.test_n_limit:
 						patches_get["test_n_limited"]+=1
 						if patches_save==True:
 							if test_counter>=self.conf["extract"]["test_skip"]:
@@ -277,7 +286,19 @@ class DataOneHot(DataForNet):
 			os.system("rm -rf ../data/balanced")
 			self.data_save_to_npy(self.conf["train"],data["train"])
 			self.data_save_to_npy(self.conf["test"],data["test"])	
-
+	def data_normalize_per_band(self,data):
+		whole_data={}
+		whole_data["value"]=np.concatenate((data["train"]["ims"],data["test"]["ims"]),axis=0)
+		data["normalize"]={}
+		data["normalize"]["avg"]=np.zeros(self.conf["band_n"])
+		data["normalize"]["std"]=np.zeros(self.conf["band_n"])
+		if self.debug>=1: print(data["train"]["ims"].dtype)
+		for i in range(0,self.conf["band_n"]):
+			data["normalize"]["avg"][i]=np.average(whole_data["value"][:,:,:,:,i])
+			data["normalize"]["std"][i]=np.std(whole_data["value"][:,:,:,:,i])
+			data["train"]["ims"][:,:,:,:,i]=(data["train"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
+			data["test"]["ims"][:,:,:,:,i]=(data["test"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
+		return data
 	def im_patches_npy_multitemporal_from_npy_from_folder_load2(self,load=True,debug=1):
 		fname=sys._getframe().f_code.co_name
 		
@@ -341,16 +362,17 @@ class DataOneHot(DataForNet):
 		balance["labels_onehot"][np.arange(num_total_samples),balance["out_labels"].astype(np.int)]=1
 		if self.debug>=1: deb.prints(np.unique(balance["out_labels"],return_counts=True),fname)
 		return balance["out_data"],balance["out_labels"],balance["labels_onehot"]
-	def data_save_to_npy(self,data):
-		pathlib.Path(self.conf["balanced_path"]+"label/").mkdir(parents=True, exist_ok=True) 
-		pathlib.Path(self.conf["balanced_path"]+"ims/").mkdir(parents=True, exist_ok=True) 
+	def data_save_to_npy(self,conf_set,data):
+		pathlib.Path(conf_set["balanced_path"]+"label/").mkdir(parents=True, exist_ok=True) 
+		pathlib.Path(conf_set["balanced_path"]+"ims/").mkdir(parents=True, exist_ok=True) 
 		
 		for i in range(0,data["ims"].shape[0]):
-			np.save(self.conf["balanced_path"]+"ims/"+"patch_"+str(i)+".npy",data["ims"][i])
-		np.save(self.conf["balanced_path"]+"label/labels.npy",data["labels_onehot"])			
+			np.save(conf_set["balanced_path"]+"ims/"+"patch_"+str(i)+".npy",data["ims"][i])
+		np.save(conf_set["balanced_path"]+"label/labels.npy",data["labels_onehot"])			
 
 	# Use after patches_npy_multitemporal_from_npy_store2(). Probably use within patches_npy_multitemporal_from_npy_from_folder_load2()
 	def im_patches_labelsonehot_load2(self,conf_set,data,data_whole,debug=0): #data["n"], self.conf["patch"]["ims_path"], self.conf["patch"]["labels_path"]
+		print("[@im_patches_labelsonehot_load2]")
 		fname=sys._getframe().f_code.co_name
 
 		data["ims"]=np.zeros((conf_set["n"],self.conf["t_len"],self.conf["patch"]["size"],self.conf["patch"]["size"],self.conf["band_n"]))
@@ -377,7 +399,8 @@ class DataOneHot(DataForNet):
 
 if __name__ == "__main__":
 	data_creator=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
-		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode)
+		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
+		test_n_limit=args.test_n_limit)
 	data_creator.onehot_create()
 	conf=data_creator.conf
 	pass
