@@ -35,7 +35,7 @@ class NeuralNet(object):
                         timesteps=utils.conf["t_len"], shape=[32,32],
                         kernel=[3,3], channels=6, filters=32, n_classes=9,
                         checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"]):
-		print(3)
+		
 		self.sess = sess
 		self.batch_size = batch_size
 		self.epoch = epoch
@@ -51,6 +51,8 @@ class NeuralNet(object):
 		self.conf=utils.conf
 		self.debug=1
 		self.log_dir=log_dir
+		self.test_batch_size=100
+		if self.debug>=1: print("Initializing NeuralNet instance")
 		print(self.log_dir)
 
 	def layer_lstm_get(self,data,filters,kernel,name="convlstm",get_last=True):
@@ -81,9 +83,9 @@ class NeuralNet(object):
 # ============================ NeuralNet takes onehot image output ============================================= #
 class NeuralNetOneHot(NeuralNet):
 	def __init__(self, *args, **kwargs):
-		print(2)
 		super().__init__(*args, **kwargs)
-
+		if self.debug>=1: print("Initializing NeuralNetOneHot instance")
+		
 	def placeholder_init(self,timesteps,shape,channels,n_classes):
 		data = tf.placeholder(tf.float32, [None] +[timesteps] + shape + [channels])
 		target = tf.placeholder(tf.float32, [None, n_classes])
@@ -185,25 +187,25 @@ class NeuralNetOneHot(NeuralNet):
 
 			# For each epoch, get metrics on the entire test set
 
-			stats = self.data_stats_get(data["test"])
+			stats = self.data_stats_get(data["test"],self.test_batch_size)
 			#prediction = np.around(self.sess.run(self.prediction,{self.data: data["test"]["ims"]}),decimals=2)
 			#_,_,average_accuracy = self.average_accuracy_get(data["test"]["labels"],prediction)
 			print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
 			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
 
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
-	def data_stats_get(self,data):
+	def data_stats_get(self,data,batch_size=100):
 
-		self.test_batch_size=100
+		#
 		self.test_size=len(data["im_paths"])
 		batch={}
-		batch["idxs"] = self.test_size // self.test_batch_size
+		batch["idxs"] = self.test_size // batch_size
 		deb.prints(batch["idxs"])
 		stats={"correct_per_class":np.zeros(self.n_classes).astype(np.float32)}
 		stats["per_class_label_count"]=np.zeros(self.n_classes).astype(np.float32)
 		
 		for idx in range(0, batch["idxs"]):
-			batch=self.batch_ims_labels_get(batch,data,self.test_batch_size,idx)
+			batch=self.batch_ims_labels_get(batch,data,batch_size,idx)
 			
 			batch["prediction"] = np.around(self.sess.run(self.prediction,{self.data: batch["ims"]}),decimals=2)
 			batch["label_count"]=np.sum(batch["labels"],axis=0)
