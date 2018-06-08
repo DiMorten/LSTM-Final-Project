@@ -104,8 +104,8 @@ class NeuralNetOneHot(NeuralNet):
 		for clss in range(0,self.n_classes):
 			correct_per_class[clss]=valid[valid==clss].shape[0]
 		if debug>=2: deb.prints(correct_per_class)
-		correct_per_class_average = self.correct_per_class_average_get(correct_per_class, targets_label_count)
-		return correct_per_class_average,correct_per_class
+		correct_per_class_average, accuracy_average = self.correct_per_class_average_get(correct_per_class, targets_label_count)
+		return correct_per_class_average,correct_per_class,accuracy_average
 
 	def correct_per_class_average_get(self,correct_per_class,targets_label_count):
 		correct_per_class_average=np.divide(correct_per_class, targets_label_count)
@@ -162,7 +162,7 @@ class NeuralNetOneHot(NeuralNet):
 			print("Model saved in path: %s" % save_path)
 			
 			prediction = np.around(self.sess.run(self.prediction,{self.data: data["test"]["ims"]}),decimals=2)
-			average_accuracy,_ = self.average_accuracy_get(data["test"]["labels"],prediction)
+			_,_,average_accuracy = self.average_accuracy_get(data["test"]["labels"],prediction)
 			deb.prints(average_accuracy)
 	
 			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch_idxs,time.time() - start_time))
@@ -197,7 +197,7 @@ class NeuralNetOneHot(NeuralNet):
 				deb.prints(batch["prediction"].shape)
 				deb.prints(batch["labels"].shape)
 				deb.prints(batch["label_count"])
-			_,batch["correct_per_class"]=self.average_accuracy_get(batch["labels"],batch["prediction"])
+			_,batch["correct_per_class"],_=self.average_accuracy_get(batch["labels"],batch["prediction"])
 			test_stats["correct_per_class"]+=batch["correct_per_class"]
 			
 			if self.debug>=2:
