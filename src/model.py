@@ -90,22 +90,30 @@ class NeuralNetOneHot(NeuralNet):
 		if self.debug: deb.prints(target.get_shape())
 		return data,target
 #	def average_accuracy_get(self,target,prediction,correct_per_class_accumulated=False,correct_per_class=None):
-	def average_accuracy_get(self,target,prediction):	
-		correct_per_class_percent=np.zeros(self.n_classes).astype(np.float32)
-		correct_per_class=np.zeros(self.n_classes).astype(np.float32)
-		targets_int=np.argmax(target,axis=1)
-		predictions_int=np.argmax(prediction,axis=1)
+	def average_accuracy_get(self,target,prediction,debug=0):	
+		correct_per_class_percent = np.zeros(self.n_classes).astype(np.float32)
+		correct_per_class = np.zeros(self.n_classes).astype(np.float32)
+		targets_int = np.argmax(target,axis=1)
+		predictions_int = np.argmax(prediction,axis=1)
 
-		targets_label_count=np.sum(target,axis=0)
-		valid=targets_int[targets_int==predictions_int]
-		count_total=valid.shape[0]
-		deb.prints(count_total)
+		targets_label_count = np.sum(target,axis=0)
+		valid = targets_int[targets_int == predictions_int]
+		count_total = valid.shape[0]
+		
+		if debug>=2: deb.prints(count_total)
 		for clss in range(0,self.n_classes):
 			correct_per_class[clss]=valid[valid==clss].shape[0]
-		deb.prints(correct_per_class)
-		correct_per_class_average=np.average(np.divide(correct_per_class, targets_label_count))
+		if debug>=2: deb.prints(correct_per_class)
+		correct_per_class_average = self.correct_per_class_average_get(correct_per_class, targets_label_count)
 		return correct_per_class_average,correct_per_class
 
+	def correct_per_class_average_get(self,correct_per_class,targets_label_count):
+		correct_per_class_average=np.divide(correct_per_class, targets_label_count)
+		accuracy_average=correct_per_class_average[~np.isnan(correct_per_class_average)]
+		accuracy_average=accuracy_average[np.nonzero(accuracy_average)]
+		accuracy_average=np.average(accuracy_average)
+		
+		return correct_per_class_average, accuracy_average
 
 	def loss_optimizer_set(self,target,prediction):
 		# Estimate loss from prediction and target
@@ -154,7 +162,7 @@ class NeuralNetOneHot(NeuralNet):
 			print("Model saved in path: %s" % save_path)
 			
 			prediction = np.around(self.sess.run(self.prediction,{self.data: data["test"]["ims"]}),decimals=2)
-			average_accuracy = self.average_accuracy_get(data["test"]["labels"],prediction)
+			average_accuracy,_ = self.average_accuracy_get(data["test"]["labels"],prediction)
 			deb.prints(average_accuracy)
 	
 			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch_idxs,time.time() - start_time))
@@ -174,37 +182,41 @@ class NeuralNetOneHot(NeuralNet):
 		batch={}
 		batch["idxs"] = self.test_size // self.test_batch_size
 		deb.prints(batch["idxs"])
-		test_stats={"per_class_correct_accumulated":np.zeros(self.n_classes).astype(np.float32)}
+		test_stats={"correct_per_class":np.zeros(self.n_classes).astype(np.float32)}
 		test_stats["per_class_label_count"]=np.zeros(self.n_classes).astype(np.float32)
+		
 		for idx in range(0, batch["idxs"]):
 			batch["file_paths"] = data["test"]["im_paths"][idx*self.test_batch_size:(idx+1)*self.test_batch_size]
 			batch["labels"] = data["test"]["labels"][idx*self.test_batch_size:(idx+1)*self.test_batch_size]
 			batch["images"] = np.asarray([np.load(batch_file_path) for batch_file_path in batch["file_paths"]]) # Load files from path
-			#print(batch_images.shape)
 
-			prediction = np.around(self.sess.run(self.prediction,{self.data: batch["images"]}),decimals=2)
-			#deb.prints(data["test"]["labels"])
-			#deb.prints(prediction)
-			deb.prints(prediction.shape)
-			deb.prints(batch["labels"].shape)
+			batch["prediction"] = np.around(self.sess.run(self.prediction,{self.data: batch["images"]}),decimals=2)
 			batch["label_count"]=np.sum(batch["labels"],axis=0)
-			deb.prints(batch["label_count"])
-			_,batch["correct_per_class"]=self.average_accuracy_get(batch["labels"],prediction)
-			deb.prints(batch["correct_per_class"])
-			for clss in range(0,self.n_classes):
-				test_stats["per_class_correct_accumulated"][clss]+=batch["correct_per_class"][clss]			
-			deb.prints(test_stats["per_class_correct_accumulated"])
+			
+			if self.debug>=2:
+				deb.prints(batch["prediction"].shape)
+				deb.prints(batch["labels"].shape)
+				deb.prints(batch["label_count"])
+			_,batch["correct_per_class"]=self.average_accuracy_get(batch["labels"],batch["prediction"])
+			test_stats["correct_per_class"]+=batch["correct_per_class"]
+			
+			if self.debug>=2:
+				deb.prints(batch["correct_per_class"])
+				deb.prints(test_stats["correct_per_class"])
 
-		deb.prints(test_stats["per_class_correct_accumulated"])
+		deb.prints(test_stats["correct_per_class"])
 		
 		test_stats["per_class_label_count"]=np.sum(data["test"]["labels"],axis=0)
 
-		#_,test_stats["per_class_label_count"]=np.unique(data["test"]["labels"],return_counts=True)
 		deb.prints(test_stats["per_class_label_count"])
-			#average_accuracy,correct_per_class_accumulated = self.average_accuracy_get(batch_labels,prediction)
-			#deb.prints(average_accuracy)accumulated)
-			#self.model_test_on_samples(data)
-
+		
+		test_stats["overall_accuracy"]=np.sum(test_stats["correct_per_class"][1::])/np.sum(test_stats["per_class_label_count"][1::])# Don't take backnd (label 0) into account for overall accuracy
+		
+		test_stats["per_class_accuracy"],test_stats["average_accuracy"]=self.correct_per_class_average_get(test_stats["correct_per_class"][1::], test_stats["per_class_label_count"][1::])
+		if self.debug>=1: 
+			deb.prints(test_stats["per_class_accuracy"])
+			deb.prints(test_stats["average_accuracy"])
+				
 	def model_test_on_samples(self,dataset,sample_range=range(15,20)):
 
 		print("train results")
