@@ -136,8 +136,8 @@ class NeuralNetOneHot(NeuralNet):
 		return batch
 
 	def ims_get(self,data_im_paths):
-		out = np.asarray([np.load(file_path) for file_path in data_im_paths]) # Load files from path
-		return out
+		return np.asarray([np.load(file_path) for file_path in data_im_paths]) # Load files from path
+		
 	def data_sub_data_get(self, data,n):
 		sub_data={"n":n}
 		sub_data["index"] = np.random.choice(data["index"], sub_data["n"], replace=False)
@@ -169,7 +169,7 @@ class NeuralNetOneHot(NeuralNet):
 		start_time = time.time()
 		data["sub_test"]=self.data_sub_data_get(data["test"],1000)
 
-		data["sub_test"]["ims"]=ims_get(data["sub_test"]["im_paths"])
+		data["sub_test"]["ims"]=self.ims_get(data["sub_test"]["im_paths"])
 		for epoch in range(args.epoch):
 			for idx in range(0, batch["idxs"]):
 				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx)
@@ -185,11 +185,10 @@ class NeuralNetOneHot(NeuralNet):
 
 			# For each epoch, get metrics on the entire test set
 
-
-			prediction = np.around(self.sess.run(self.prediction,{self.data: data["test"]["ims"]}),decimals=2)
-			_,_,average_accuracy = self.average_accuracy_get(data["test"]["labels"],prediction)
-			deb.prints(average_accuracy)
-	
+			stats = self.data_stats_get(data["test"])
+			#prediction = np.around(self.sess.run(self.prediction,{self.data: data["test"]["ims"]}),decimals=2)
+			#_,_,average_accuracy = self.average_accuracy_get(data["test"]["labels"],prediction)
+			print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
 			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
 
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
@@ -219,7 +218,8 @@ class NeuralNetOneHot(NeuralNet):
 			if self.debug>=2:
 				deb.prints(batch["correct_per_class"])
 				deb.prints(stats["correct_per_class"])
-
+			
+			
 		deb.prints(stats["correct_per_class"])
 		
 		stats["per_class_label_count"]=np.sum(data["labels"],axis=0)
@@ -230,7 +230,7 @@ class NeuralNetOneHot(NeuralNet):
 		
 		stats["per_class_accuracy"],stats["average_accuracy"]=self.correct_per_class_average_get(stats["correct_per_class"][1::], stats["per_class_label_count"][1::])
 		if self.debug>=1: 
-			deb.prints(stats["per_class_accuracy"])
+			deb.prints(stats["overall_accuracy"])
 			deb.prints(stats["average_accuracy"])
 		return stats
 
