@@ -128,6 +128,26 @@ class NeuralNetOneHot(NeuralNet):
 		error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
 		tf.summary.scalar('error',error)
 		return minimize, mistakes, error
+
+	def batch_ims_labels_get(self,batch,data,batch_size,idx):
+		batch["file_paths"] = data["im_paths"][idx*batch_size:(idx+1)*batch_size]
+		batch["labels"] = data["labels"][idx*batch_size:(idx+1)*batch_size]
+		batch["ims"] = np.asarray([np.load(batch_file_path) for batch_file_path in batch["file_paths"]]) # Load files from path
+		return batch
+
+	def ims_get(self,data_im_paths):
+		out = np.asarray([np.load(file_path) for file_path in data_im_paths]) # Load files from path
+		return out
+	def data_sub_data_get(self, data,n):
+		sub_data={"n":n}
+		sub_data["index"] = np.random.choice(data["index"], sub_data["n"], replace=False)
+		deb.prints(sub_data["index"].shape)
+		deb.prints(len(data["im_paths"]))
+		sub_data["im_paths"] = [data["im_paths"][i] for i in sub_data["index"]]
+		sub_data["labels"] = data["labels"][sub_data["index"]]
+		return sub_data
+
+
 	def train(self, args):
 		#init_op = tf.initialize_all_variables()
 		init_op = tf.global_variables_initializer()
@@ -137,46 +157,57 @@ class NeuralNetOneHot(NeuralNet):
 		self.writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
 
 		data = self.data_load(self.conf)
-		batch_idxs = min(len(data["train"]["im_paths"]), args.train_size) // self.batch_size
+		batch={}
+		batch["idxs"] = min(len(data["train"]["im_paths"]), args.train_size) // self.batch_size
 		deb.prints(data["train"]["labels"].shape)
 		deb.prints(data["test"]["labels"].shape)
-		deb.prints(batch_idxs)
+		deb.prints(batch["idxs"])
 		data["train"]["labels_int"]=[ np.where(r==1)[0][0] for r in data["train"]["labels"] ]
 		print("train classes",np.unique(data["train"]["labels_int"],return_counts=True))
-		 
+
 		counter = 1
 		start_time = time.time()
-		for epoch in range(args.epoch):
-			#np.random.shuffle(data)
-			for idx in range(0, batch_idxs):
-				batch_file_paths = data["train"]["im_paths"][idx*self.batch_size:(idx+1)*self.batch_size]
-				batch_labels = data["train"]["labels"][idx*self.batch_size:(idx+1)*self.batch_size]
-				batch_images = [np.load(batch_file_path) for batch_file_path in batch_file_paths] # Load files from path
+		data["sub_test"]=self.data_sub_data_get(data["test"],1000)
 
-				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch_images, self.target: batch_labels})
+		data["sub_test"]["ims"]=ims_get(data["sub_test"]["im_paths"])
+		for epoch in range(args.epoch):
+			for idx in range(0, batch["idxs"]):
+				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx)
+
+				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels"]})
 				self.writer.add_summary(summary, counter)
 				counter += 1
-				self.incorrect = self.sess.run(self.error,{self.data: data["test"]["ims"], self.target: data["test"]["labels"]})
+				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"]})
 				print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
 			save_path = self.saver.save(self.sess, "./model.ckpt")
 			print("Model saved in path: %s" % save_path)
 			
+
+			# For each epoch, get metrics on the entire test set
+
+
 			prediction = np.around(self.sess.run(self.prediction,{self.data: data["test"]["ims"]}),decimals=2)
 			_,_,average_accuracy = self.average_accuracy_get(data["test"]["labels"],prediction)
 			deb.prints(average_accuracy)
 	
-			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch_idxs,time.time() - start_time))
+			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
 
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
-			
+	def data_stats_get(self,data):
+
 	def test(self, args):
 		
 		self.sess = tf.Session()
 		self.saver.restore(self.sess,tf.train.latest_checkpoint('./'))
 
 
+
 		print("Model restored.")
 		data = self.data_load(self.conf)
+
+		test_stats=self.data_stats_get(data["test"])
+
+
 		self.test_batch_size=100
 		self.test_size=len(data["test"]["im_paths"])
 		batch={}
@@ -186,11 +217,9 @@ class NeuralNetOneHot(NeuralNet):
 		test_stats["per_class_label_count"]=np.zeros(self.n_classes).astype(np.float32)
 		
 		for idx in range(0, batch["idxs"]):
-			batch["file_paths"] = data["test"]["im_paths"][idx*self.test_batch_size:(idx+1)*self.test_batch_size]
-			batch["labels"] = data["test"]["labels"][idx*self.test_batch_size:(idx+1)*self.test_batch_size]
-			batch["images"] = np.asarray([np.load(batch_file_path) for batch_file_path in batch["file_paths"]]) # Load files from path
-
-			batch["prediction"] = np.around(self.sess.run(self.prediction,{self.data: batch["images"]}),decimals=2)
+			batch=self.batch_ims_labels_get(batch,data["test"],self.test_batch_size,idx)
+			
+			batch["prediction"] = np.around(self.sess.run(self.prediction,{self.data: batch["ims"]}),decimals=2)
 			batch["label_count"]=np.sum(batch["labels"],axis=0)
 			
 			if self.debug>=2:
@@ -216,7 +245,7 @@ class NeuralNetOneHot(NeuralNet):
 		if self.debug>=1: 
 			deb.prints(test_stats["per_class_accuracy"])
 			deb.prints(test_stats["average_accuracy"])
-				
+		return test_stats
 	def model_test_on_samples(self,dataset,sample_range=range(15,20)):
 
 		print("train results")
@@ -229,6 +258,19 @@ class NeuralNetOneHot(NeuralNet):
 		print(np.around(self.sess.run(self.prediction,{self.data: dataset["test"]["ims"][sample_range]}),decimals=4))
 		deb.prints(dataset["test"]["labels"][sample_range])
 
+	def data_group_load(self,conf,data):
+
+		data["im_paths"] = glob.glob(conf["balanced_path_ims"]+'/*.npy')
+		data["im_paths"] = sorted(data["im_paths"], key=lambda x: int(x.split('_')[1][:-4]))
+		
+		data["labels"] = np.load(conf["balanced_path_label"]+"labels.npy")
+
+		data["n"]=len(data["im_paths"])
+		data["index"] = range(data["n"])
+
+		return data
+		
+		
 	def data_load(self, conf):
 
 		data={}
@@ -249,6 +291,8 @@ class NeuralNetOneHot(NeuralNet):
 		
 		# Change to a subset of test
 		data["test"]["ims"]=[np.load(im_path) for im_path in data["test"]["im_paths"]]
+		data["test"]["n"]=len(data["test"]["im_paths"])
+		data["test"]["index"] = range(data["test"]["n"])
 		return data
 
 # ================================= Implements ConvLSTM ============================================== #
