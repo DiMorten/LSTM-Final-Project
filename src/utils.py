@@ -24,21 +24,35 @@ import sys
 import pickle
 # Local
 import deb
+import argparse
+
+parser = argparse.ArgumentParser(description='')
+parser.add_argument('--debug', type=int, default=1, help='Debug')
+parser.add_argument('--patch_overlap', dest='patch_overlap', type=int, default=0, help='Debug')
+parser.add_argument('--im_size', dest='im_size', type=int, default=(948,1068), help='Debug')
+parser.add_argument('--band_n', dest='band_n', type=int, default=6, help='Debug')
+parser.add_argument('--t_len', dest='t_len', type=int, default=6, help='Debug')
+parser.add_argument('--path', dest='path', default="../data/", help='Data path')
+parser.add_argument('--class_n', dest='class_n', type=int, default=9, help='Class number')
+parser.add_argument('--pc_mode', dest='pc_mode', default="local", help="Class number. 'local' or 'remote'")
+
+
+args = parser.parse_args()
 
 class DataForNet(object):
-	def __init__(self,debug=1):
+	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=9,pc_mode="local", \
+		patch_length=5):
 		self.debug=debug
-		self.conf={"band_n": 6, "t_len":6, "path": "../data/", "class_n":9}
-		self.conf={"band_n": 6, "t_len":6, "path": "../data/", "class_n":9}
-		#self.conf["pc_mode"]="remote"
-		self.conf["pc_mode"]="local"
+		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n}
+
+		self.conf["pc_mode"]=pc_mode
 
 		self.conf["out_path"]=self.conf["path"]+"results/"
 		self.conf["in_npy_path"]=self.conf["path"]+"in_npy/"
 		self.conf["in_rgb_path"]=self.conf["path"]+"in_rgb/"
 		self.conf["in_labels_path"]=self.conf["path"]+"labels/"
 		self.conf["patch"]={}
-		self.conf["patch"]={"size":5, "stride":5, "out_npy_path":self.conf["path"]+"patches_npy/"}
+		self.conf["patch"]={"size":patch_length, "stride":5, "out_npy_path":self.conf["path"]+"patches_npy/"}
 		self.conf["patch"]["ims_path"]=self.conf["patch"]["out_npy_path"]+"patches_all/"
 		self.conf["patch"]["labels_path"]=self.conf["patch"]["out_npy_path"]+"labels_all/"
 		self.conf['patch']['center_pixel']=int(np.around(self.conf["patch"]["size"]/2))
@@ -50,7 +64,7 @@ class DataForNet(object):
 		self.conf["test"]={}
 		self.conf["test"]["ims_path"]=self.conf["path"]+"train_test/test/ims/"
 		self.conf["test"]["labels_path"]=self.conf["path"]+"train_test/test/labels/"
-		self.conf["im_size"]=(948,1068)
+		self.conf["im_size"]=im_size
 		self.conf["im_3d_size"]=self.conf["im_size"]+(self.conf["band_n"],)
 		self.conf["balanced"]={}
 
@@ -64,7 +78,7 @@ class DataForNet(object):
 		self.conf["extract"]={}
 
 		#self.conf["patch"]["overlap"]=26
-		self.conf["patch"]["overlap"]=0
+		self.conf["patch"]["overlap"]=patch_overlap
 
 		if self.conf["patch"]["overlap"]==26:
 			self.conf["extract"]["test_skip"]=4
@@ -362,8 +376,10 @@ class DataOneHot(DataForNet):
 		return data
 
 if __name__ == "__main__":
-	data_creator=DataOneHot()
+	data_creator=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode)
 	data_creator.onehot_create()
-	
+	conf=data_creator.conf
+	pass
 
 	
