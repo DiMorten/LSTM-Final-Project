@@ -195,29 +195,16 @@ class NeuralNetOneHot(NeuralNet):
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
 	def data_stats_get(self,data):
 
-	def test(self, args):
-		
-		self.sess = tf.Session()
-		self.saver.restore(self.sess,tf.train.latest_checkpoint('./'))
-
-
-
-		print("Model restored.")
-		data = self.data_load(self.conf)
-
-		test_stats=self.data_stats_get(data["test"])
-
-
 		self.test_batch_size=100
-		self.test_size=len(data["test"]["im_paths"])
+		self.test_size=len(data["im_paths"])
 		batch={}
 		batch["idxs"] = self.test_size // self.test_batch_size
 		deb.prints(batch["idxs"])
-		test_stats={"correct_per_class":np.zeros(self.n_classes).astype(np.float32)}
-		test_stats["per_class_label_count"]=np.zeros(self.n_classes).astype(np.float32)
+		stats={"correct_per_class":np.zeros(self.n_classes).astype(np.float32)}
+		stats["per_class_label_count"]=np.zeros(self.n_classes).astype(np.float32)
 		
 		for idx in range(0, batch["idxs"]):
-			batch=self.batch_ims_labels_get(batch,data["test"],self.test_batch_size,idx)
+			batch=self.batch_ims_labels_get(batch,data,self.test_batch_size,idx)
 			
 			batch["prediction"] = np.around(self.sess.run(self.prediction,{self.data: batch["ims"]}),decimals=2)
 			batch["label_count"]=np.sum(batch["labels"],axis=0)
@@ -227,25 +214,36 @@ class NeuralNetOneHot(NeuralNet):
 				deb.prints(batch["labels"].shape)
 				deb.prints(batch["label_count"])
 			_,batch["correct_per_class"],_=self.average_accuracy_get(batch["labels"],batch["prediction"])
-			test_stats["correct_per_class"]+=batch["correct_per_class"]
+			stats["correct_per_class"]+=batch["correct_per_class"]
 			
 			if self.debug>=2:
 				deb.prints(batch["correct_per_class"])
-				deb.prints(test_stats["correct_per_class"])
+				deb.prints(stats["correct_per_class"])
 
-		deb.prints(test_stats["correct_per_class"])
+		deb.prints(stats["correct_per_class"])
 		
-		test_stats["per_class_label_count"]=np.sum(data["test"]["labels"],axis=0)
+		stats["per_class_label_count"]=np.sum(data["labels"],axis=0)
 
-		deb.prints(test_stats["per_class_label_count"])
+		deb.prints(stats["per_class_label_count"])
 		
-		test_stats["overall_accuracy"]=np.sum(test_stats["correct_per_class"][1::])/np.sum(test_stats["per_class_label_count"][1::])# Don't take backnd (label 0) into account for overall accuracy
+		stats["overall_accuracy"]=np.sum(stats["correct_per_class"][1::])/np.sum(stats["per_class_label_count"][1::])# Don't take backnd (label 0) into account for overall accuracy
 		
-		test_stats["per_class_accuracy"],test_stats["average_accuracy"]=self.correct_per_class_average_get(test_stats["correct_per_class"][1::], test_stats["per_class_label_count"][1::])
+		stats["per_class_accuracy"],stats["average_accuracy"]=self.correct_per_class_average_get(stats["correct_per_class"][1::], stats["per_class_label_count"][1::])
 		if self.debug>=1: 
-			deb.prints(test_stats["per_class_accuracy"])
-			deb.prints(test_stats["average_accuracy"])
-		return test_stats
+			deb.prints(stats["per_class_accuracy"])
+			deb.prints(stats["average_accuracy"])
+		return stats
+
+	def test(self, args):
+		
+		self.sess = tf.Session()
+		self.saver.restore(self.sess,tf.train.latest_checkpoint('./'))
+
+		print("Model restored.")
+		data = self.data_load(self.conf)
+
+		test_stats=self.data_stats_get(data["test"])
+
 	def model_test_on_samples(self,dataset,sample_range=range(15,20)):
 
 		print("train results")
