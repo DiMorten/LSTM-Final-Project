@@ -85,7 +85,7 @@ class NeuralNetOneHot(NeuralNet):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		if self.debug>=1: print("Initializing NeuralNetOneHot instance")
-		
+
 	def placeholder_init(self,timesteps,shape,channels,n_classes):
 		data = tf.placeholder(tf.float32, [None] +[timesteps] + shape + [channels])
 		target = tf.placeholder(tf.float32, [None, n_classes])
@@ -151,7 +151,7 @@ class NeuralNetOneHot(NeuralNet):
 
 
 	def train(self, args):
-		#init_op = tf.initialize_all_variables()
+
 		init_op = tf.global_variables_initializer()
 		self.sess = tf.Session()
 		self.sess.run(init_op)
@@ -161,9 +161,10 @@ class NeuralNetOneHot(NeuralNet):
 		data = self.data_load(self.conf)
 		batch={}
 		batch["idxs"] = min(len(data["train"]["im_paths"]), args.train_size) // self.batch_size
-		deb.prints(data["train"]["labels"].shape)
-		deb.prints(data["test"]["labels"].shape)
-		deb.prints(batch["idxs"])
+		if self.debug>=1:
+			deb.prints(data["train"]["labels"].shape)
+			deb.prints(data["test"]["labels"].shape)
+			deb.prints(batch["idxs"])
 		data["train"]["labels_int"]=[ np.where(r==1)[0][0] for r in data["train"]["labels"] ]
 		print("train classes",np.unique(data["train"]["labels_int"],return_counts=True))
 
@@ -172,6 +173,7 @@ class NeuralNetOneHot(NeuralNet):
 		data["sub_test"]=self.data_sub_data_get(data["test"],1000)
 
 		data["sub_test"]["ims"]=self.ims_get(data["sub_test"]["im_paths"])
+		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
 		for epoch in range(args.epoch):
 			for idx in range(0, batch["idxs"]):
 				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx)
@@ -181,25 +183,23 @@ class NeuralNetOneHot(NeuralNet):
 				counter += 1
 				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"]})
 				print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
+			
+			# =__________________________________ Test stats get and model save  _______________________________ = #
 			save_path = self.saver.save(self.sess, "./model.ckpt")
 			print("Model saved in path: %s" % save_path)
 			
-
-			# For each epoch, get metrics on the entire test set
-
-			stats = self.data_stats_get(data["test"],self.test_batch_size)
-			#prediction = np.around(self.sess.run(self.prediction,{self.data: data["test"]["ims"]}),decimals=2)
-			#_,_,average_accuracy = self.average_accuracy_get(data["test"]["labels"],prediction)
+			stats = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
+			
+			
 			print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
 			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
 
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
 	def data_stats_get(self,data,batch_size=100):
 
-		#
-		self.test_size=len(data["im_paths"])
+		data_size=len(data["im_paths"])
 		batch={}
-		batch["idxs"] = self.test_size // batch_size
+		batch["idxs"] = data_size // batch_size
 		deb.prints(batch["idxs"])
 		stats={"correct_per_class":np.zeros(self.n_classes).astype(np.float32)}
 		stats["per_class_label_count"]=np.zeros(self.n_classes).astype(np.float32)
@@ -222,11 +222,12 @@ class NeuralNetOneHot(NeuralNet):
 				deb.prints(stats["correct_per_class"])
 			
 			
-		deb.prints(stats["correct_per_class"])
 		
 		stats["per_class_label_count"]=np.sum(data["labels"],axis=0)
 
-		deb.prints(stats["per_class_label_count"])
+		if self.debug>=2:
+			deb.prints(stats["correct_per_class"])
+			deb.prints(stats["per_class_label_count"])
 		
 		stats["overall_accuracy"]=np.sum(stats["correct_per_class"][1::])/np.sum(stats["per_class_label_count"][1::])# Don't take backnd (label 0) into account for overall accuracy
 		
@@ -234,6 +235,8 @@ class NeuralNetOneHot(NeuralNet):
 		if self.debug>=1: 
 			deb.prints(stats["overall_accuracy"])
 			deb.prints(stats["average_accuracy"])
+		if self.debug>=2:
+			deb.prints(stats["per_class_accuracy"])
 		return stats
 
 	def test(self, args):
