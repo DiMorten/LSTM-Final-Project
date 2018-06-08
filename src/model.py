@@ -55,6 +55,7 @@ class NeuralNet(object):
 		if self.debug>=1: print("Initializing NeuralNet instance")
 		print(self.log_dir)
 
+	# =_______________ Generic Layer Getters ___________________= #
 	def layer_lstm_get(self,data,filters,kernel,name="convlstm",get_last=True):
 		#filters=64
 		cell = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
@@ -72,6 +73,7 @@ class NeuralNet(object):
 		else:
 			return val
 
+	# =____________________ Debug helpers ___________________= #
 	def tensorboard_saver_init(self, error):
 		error_sum = tf.summary.scalar("error", error)		
 		saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=2)

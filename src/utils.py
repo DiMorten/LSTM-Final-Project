@@ -529,9 +529,209 @@ def data_onehot_create(conf):
 	im_patches_npy_multitemporal_from_npy_from_folder_store2(conf,patches_save=conf["utils_flag_store"])
 	data_onehot_load_balance_store(conf)
 
-class DataOneHot(object):
-	def __init__():
+class DataForNet(object):
+	def __init__(self,debug=1):
+		self.debug=debug
+		self.conf={"band_n": 6, "t_len":6, "path": "../data/", "class_n":9}
+		self.conf={"band_n": 6, "t_len":6, "path": "../data/", "class_n":9}
+		#self.conf["pc_mode"]="remote"
+		self.conf["pc_mode"]="local"
+
+		self.conf["out_path"]=self.conf["path"]+"results/"
+		self.conf["in_npy_path"]=self.conf["path"]+"in_npy/"
+		self.conf["in_rgb_path"]=self.conf["path"]+"in_rgb/"
+		self.conf["in_labels_path"]=self.conf["path"]+"labels/"
+		self.conf["patch"]={}
+		self.conf["patch"]={"size":5, "stride":5, "out_npy_path":self.conf["path"]+"patches_npy/"}
+		self.conf["patch"]["ims_path"]=self.conf["patch"]["out_npy_path"]+"patches_all/"
+		self.conf["patch"]["labels_path"]=self.conf["patch"]["out_npy_path"]+"labels_all/"
+		self.conf['patch']['center_pixel']=int(np.around(self.conf["patch"]["size"]/2))
+		self.conf["train"]={}
+		self.conf["train"]["mask"]={}
+		self.conf["train"]["mask"]["dir"]=self.conf["path"]+"TrainTestMask.tif"
+		self.conf["train"]["ims_path"]=self.conf["path"]+"train_test/train/ims/"
+		self.conf["train"]["labels_path"]=self.conf["path"]+"train_test/train/labels/"
+		self.conf["test"]={}
+		self.conf["test"]["ims_path"]=self.conf["path"]+"train_test/test/ims/"
+		self.conf["test"]["labels_path"]=self.conf["path"]+"train_test/test/labels/"
+		self.conf["im_size"]=(948,1068)
+		self.conf["im_3d_size"]=self.conf["im_size"]+(self.conf["band_n"],)
+		self.conf["balanced"]={}
+
+		self.conf["train"]["balanced_path"]=self.conf["path"]+"balanced/train/"
+		self.conf["train"]["balanced_path_ims"]=self.conf["train"]["balanced_path"]+"ims/"
+		self.conf["train"]["balanced_path_label"]=self.conf["train"]["balanced_path"]+"label/"
+		self.conf["test"]["balanced_path"]=self.conf["path"]+"balanced/test/"
+		self.conf["test"]["balanced_path_ims"]=self.conf["test"]["balanced_path"]+"ims/"
+		self.conf["test"]["balanced_path_label"]=self.conf["test"]["balanced_path"]+"label/"
+
+		self.conf["extract"]={}
+
+		#self.conf["patch"]["overlap"]=26
+		self.conf["patch"]["overlap"]=0
+
+		if self.conf["patch"]["overlap"]==26:
+			self.conf["extract"]["test_skip"]=4
+			self.conf["balanced"]["samples_per_class"]=150
+		elif self.conf["patch"]["overlap"]==30:
+			self.conf["extract"]["test_skip"]=10
+			self.conf["balanced"]["samples_per_class"]=1500
+		elif self.conf["patch"]["overlap"]==31:
+			self.conf["extract"]["test_skip"]=24
+			self.conf["balanced"]["samples_per_class"]=5000
+		elif self.conf["patch"]["overlap"]==0:
+			self.conf["extract"]["test_skip"]=0
+			self.conf["balanced"]["samples_per_class"]=1000
+
+		elif self.conf["patch"]["overlap"]>=2 or self.conf["patch"]["overlap"]<=3:
+			self.conf["extract"]["test_skip"]=8
+			self.conf["balanced"]["samples_per_class"]=1500
+		elif self.conf["patch"]["overlap"]==4:
+			self.conf["extract"]["test_skip"]=10
+			self.conf["balanced"]["samples_per_class"]=5000
+		if self.conf["pc_mode"]=="remote":
+			self.conf["subdata"]={"flag":True,"n":3768}
+		else:
+			self.conf["subdata"]={"flag":True,"n":1000}
+		#self.conf["subdata"]={"flag":True,"n":500}
+		#self.conf["subdata"]={"flag":True,"n":1000}
+		self.conf["summaries_path"]=self.conf["path"]+"summaries/"
+
+		pathlib.Path(self.conf["train"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
+		pathlib.Path(self.conf["test"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
+
+		self.conf["utils_main_mode"]=7
+		self.conf["utils_flag_store"]=True
+
+		print(self.conf)
+
+class DataOneHot(DataForNet):
+	def __init__(self,*args,**kwargs):
+		super().__init__(*args, **kwargs)
+		if self.debug>=1: print("Initializing DataNetOneHot instance")
+
+
+	def onehot_create(self):
+		os.system("rm -rf ../data/train_test")
+
+		self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
+		#self.data_onehot_load_balance_store()
+	def im_patches_npy_multitemporal_from_npy_from_folder_store2(self):
+		im_names=[]
+		for i in range(1,10):
+			im_name=glob.glob(self.conf["in_npy_path"]+'im'+str(i)+'*')[0]
+			im_name=im_name[-14:-4]
+			im_names.append(im_name)
+			print(im_name)
+		print(im_names)
+		self.im_patches_npy_multitemporal_from_npy_store2(im_names)
+	def im_patches_npy_multitemporal_from_npy_store2(self,names,train_mask_save=True):
+		fname=sys._getframe().f_code.co_name
+
+		patch_shape=(self.conf["patch"]["size"],self.conf["patch"]["size"],self.conf["band_n"])
+		label_shape=(self.conf["patch"]["size"],self.conf["patch"]["size"])
+		pathlib.Path(self.conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
+		pathlib.Path(self.conf["patch"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
+		patches_all=np.zeros((58,65,self.conf["t_len"])+patch_shape)
+		label_patches_all=np.zeros((58,65,self.conf["t_len"])+label_shape)
 		
+		patch={}
+		deb.prints((self.conf["t_len"],)+patch_shape)
+
+		#patch["values"]=np.zeros((self.conf["t_len"],)+patch_shape)
+		patch["full_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"])
+		patch["full_label_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"][0:2])
+		#for t_step in range(0,self.conf["t_len"]):
+		for t_step in range(0,self.conf["t_len"]):	
+			deb.prints(self.conf["in_npy_path"]+names[t_step+3]+".npy")
+			patch["full_ims"][t_step] = np.load(self.conf["in_npy_path"]+names[t_step+3]+".npy")
+			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step+3][2]+".tif",0)
+
+		deb.prints(patch["full_ims"].shape,fname)
+		deb.prints(patch["full_label_ims"].shape,fname)
+
+		# Load train mask
+		#self.conf["patch"]["overlap"]=26
+
+		pathlib.Path(self.conf["train"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
+		pathlib.Path(self.conf["train"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
+		pathlib.Path(self.conf["test"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
+		pathlib.Path(self.conf["test"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
+
+		patch["train_mask"]=cv2.imread(self.conf["train"]["mask"]["dir"],0)
+
+		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"],self.conf["patch"]["size"],self.conf["patch"]["overlap"], \
+			mask=patch["train_mask"],path_train=self.conf["train"],path_test=self.conf["test"],patches_save=self.conf["utils_flag_store"])
+		np.save(self.conf["path"]+"train_n.npy",self.conf["train"]["n"])
+		np.save(self.conf["path"]+"test_n.npy",self.conf["test"]["n"])
+
+	def patches_multitemporal_get(self,img,label,window,overlap,mask,path_train,path_test,patches_save=False,test_n_limit=500000):
+		fname=sys._getframe().f_code.co_name
+		deb.prints(window,fname)
+		deb.prints(overlap,fname)
+		#window= 256
+		#overlap= 200
+		patches_get={}
+		t_steps, h, w, channels = img.shape
+		mask_train=np.zeros((h,w))
+		mask_test=np.zeros((h,w))
+		
+		gridx = range(0, w - window, window - overlap)
+		gridx = np.hstack((gridx, w - window))
+
+		gridy = range(0, h - window, window - overlap)
+		gridy = np.hstack((gridy, h - window))
+		counter=0
+		patches_get["train_n"]=0
+		patches_get["test_n"]=0
+		patches_get["test_n_limited"]=0
+		test_counter=0
+		test_real_count=0
+		for i in range(len(gridx)):
+			for j in range(len(gridy)):
+				counter=counter+1
+				xx = gridx[i]
+				yy = gridy[j]
+				#patch_clouds=Bclouds[yy: yy + window, xx: xx + window]
+				patch = img[:,yy: yy + window, xx: xx + window,:]
+				label_patch = label[:,yy: yy + window, xx: xx + window]
+				mask_patch = mask[yy: yy + window, xx: xx + window]
+				if np.any(label_patch==0):
+					continue
+				elif np.all(mask_patch==1): # Train sample
+					patches_get["train_n"]+=1
+					mask_train[yy: yy + window, xx: xx + window]=255
+					if patches_save==True:
+						np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
+						np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch)
+
+				elif np.all(mask_patch==2): # Test sample
+					test_counter+=1
+					
+					#if np.random.rand(1)[0]>=0.7:
+					
+					patches_get["test_n"]+=1
+					if patches_get["test_n"]<=test_n_limit:
+						patches_get["test_n_limited"]+=1
+						if patches_save==True:
+							if test_counter>=self.conf["extract"]["test_skip"]:
+								mask_test[yy: yy + window, xx: xx + window]=255
+								test_counter=0
+								test_real_count+=1
+								np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
+								np.save(path_test["labels_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",label_patch)
+					#np.random.choice(index, samples_per_class, replace=replace)
+		cv2.imwrite("mask_train.png",mask_train)
+		cv2.imwrite("mask_test.png",mask_test)
+		
+		deb.prints(counter,fname)
+		deb.prints(patches_get["train_n"],fname)
+		deb.prints(patches_get["test_n"],fname)
+		deb.prints(patches_get["test_n_limited"],fname)
+		deb.prints(test_real_count)
+		
+		return patches_get["train_n"],test_real_count
+
 
 conf={"band_n": 6, "t_len":6, "path": "../data/", "class_n":9}
 #conf["pc_mode"]="remote"
@@ -600,44 +800,48 @@ conf["summaries_path"]=conf["path"]+"summaries/"
 pathlib.Path(conf["train"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 pathlib.Path(conf["test"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 
-conf["utils_main_mode"]=7
+conf["utils_main_mode"]=8
 conf["utils_flag_store"]=True
 
 print(conf)
+"""
+if conf["utils_main_mode"]==2:
+	im_patches_npy_multitemporal_from_npy_from_folder_store(conf)
+elif conf["utils_main_mode"]==1:
+	names=["im1_190800","im2_200900","im3_221000","im4_190201","im5_230301","im6_080401","im7_020501","im8_110601","im9_050701"]
+	
+	for name in names:
+		im_store_npy(conf["path"],name,conf["band_n"],out_path=conf["in_npy_path"],in_rgb=True)
+elif conf["utils_main_mode"]==3:
+	#aa=np.load(conf["patch"]["out_npy_path"]+"labels_all/patch_0_0_0.npy")
+	#print(aa.shape)
+	data=im_patches_npy_multitemporal_from_npy_from_folder_load(conf,1,subdata_flag=conf["subdata"]["flag"],subdata_n=conf["subdata"]["n"])
+	data=data_normalize_per_band(conf,data)
+	if conf["pc_mode"]=="remote":
+		samples_per_class=500
+	else:
+		samples_per_class=150
+	data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,samples_per_class)
+	data["train"]["n"]=data["train"]["ims"].shape[0]
+	filename = conf["path"]+'data.pkl'
+	#os.makedirs(os.path.dirname(filename), exist_ok=True)
+	
+	with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
+elif conf["utils_main_mode"]==5:
 
+	with open(conf["path"]+'data.pkl', 'rb') as handle: data = pickle.load(handle)
+	list(iter(data))
+
+elif conf["utils_main_mode"]==6:
+	os.system("rm -rf ../data/train_test")
+
+	im_patches_npy_multitemporal_from_npy_from_folder_store2(conf,patches_save=conf["utils_flag_store"])
+elif conf["utils_main_mode"]==7:
+	data_onehot_create(conf)
+"""
 if __name__ == "__main__":
+	data_creator=DataOneHot()
+	data_creator.onehot_create()
 	
 
-	if conf["utils_main_mode"]==2:
-		im_patches_npy_multitemporal_from_npy_from_folder_store(conf)
-	elif conf["utils_main_mode"]==1:
-		names=["im1_190800","im2_200900","im3_221000","im4_190201","im5_230301","im6_080401","im7_020501","im8_110601","im9_050701"]
-		
-		for name in names:
-			im_store_npy(conf["path"],name,conf["band_n"],out_path=conf["in_npy_path"],in_rgb=True)
-	elif conf["utils_main_mode"]==3:
-		#aa=np.load(conf["patch"]["out_npy_path"]+"labels_all/patch_0_0_0.npy")
-		#print(aa.shape)
-		data=im_patches_npy_multitemporal_from_npy_from_folder_load(conf,1,subdata_flag=conf["subdata"]["flag"],subdata_n=conf["subdata"]["n"])
-		data=data_normalize_per_band(conf,data)
-		if conf["pc_mode"]=="remote":
-			samples_per_class=500
-		else:
-			samples_per_class=150
-		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,samples_per_class)
-		data["train"]["n"]=data["train"]["ims"].shape[0]
-		filename = conf["path"]+'data.pkl'
-		#os.makedirs(os.path.dirname(filename), exist_ok=True)
-		
-		with open(conf["path"]+'data.pkl', 'wb') as f: pickle.dump(data, f)
-	elif conf["utils_main_mode"]==5:
 	
-		with open(conf["path"]+'data.pkl', 'rb') as handle: data = pickle.load(handle)
-		list(iter(data))
-
-	elif conf["utils_main_mode"]==6:
-		os.system("rm -rf ../data/train_test")
-
-		im_patches_npy_multitemporal_from_npy_from_folder_store2(conf,patches_save=conf["utils_flag_store"])
-	elif conf["utils_main_mode"]==7:
-		data_onehot_create(conf)
