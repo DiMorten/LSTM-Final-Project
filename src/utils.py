@@ -42,7 +42,8 @@ args = parser.parse_args()
 
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=9,pc_mode="local", \
-		patch_length=5,test_n_limit=500000):
+		patch_length=5,test_n_limit=500000,data_memory_mode="ram"):
+		self.data_memory_mode=data_memory_mode #"ram" or "hdd"
 		self.debug=debug
 		self.test_n_limit=test_n_limit
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n}
