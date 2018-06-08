@@ -523,7 +523,7 @@ conf["test"]["balanced_path_label"]=conf["test"]["balanced_path"]+"label/"
 conf["extract"]={}
 
 #conf["patch"]["overlap"]=26
-conf["patch"]["overlap"]=0
+conf["patch"]["overlap"]=4
 
 if conf["patch"]["overlap"]==26:
 	conf["extract"]["test_skip"]=4
@@ -610,7 +610,7 @@ if __name__ == "__main__":
 		if conf["pc_mode"]=="remote":
 			samples_per_class=500
 		else:
-			samples_per_class=1500
+			samples_per_class=5000
 
 		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=data_balance(conf,data,conf["balanced"]["samples_per_class"])
 		data["train"]["n"]=data["train"]["ims"].shape[0]
