@@ -615,7 +615,7 @@ class DataOneHot(DataForNet):
 		os.system("rm -rf ../data/train_test")
 
 		self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
-		#self.data_onehot_load_balance_store()
+		self.data_onehot_load_balance_store()
 	def im_patches_npy_multitemporal_from_npy_from_folder_store2(self):
 		im_names=[]
 		for i in range(1,10):
@@ -731,7 +731,139 @@ class DataOneHot(DataForNet):
 		deb.prints(test_real_count)
 		
 		return patches_get["train_n"],test_real_count
+	def data_onehot_load_balance_store(self):
+		print("heeere")
+		self.conf["train"]["n"]=np.load(self.conf["path"]+"train_n.npy")
+		self.conf["test"]["n"]=np.load(self.conf["path"]+"test_n.npy")
+		deb.prints(self.conf["train"]["n"])
+		deb.prints(self.conf["test"]["n"])
 
+
+		data=self.im_patches_npy_multitemporal_from_npy_from_folder_load2()
+		
+		deb.prints(data["train"]["ims"].shape)
+		deb.prints(data["test"]["ims"].shape)
+		
+		classes,counts=np.unique(data["train"]["labels"],return_counts=True)
+		print(classes,counts)
+
+		data=self.data_normalize_per_band(data)
+		if self.conf["pc_mode"]=="remote":
+			samples_per_class=500
+		else:
+			samples_per_class=5000
+
+		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=self.data_balance(data,self.conf["balanced"]["samples_per_class"])
+		data["train"]["n"]=data["train"]["ims"].shape[0]
+
+		deb.prints(data["train"]["ims"].shape)
+		deb.prints(data["test"]["ims"].shape)
+
+		filename = self.conf["path"]+'data.pkl'
+		#os.makedirs(os.path.dirname(filename), exist_ok=True)
+		print(list(iter(data)))
+		if self.conf["utils_flag_store"]:
+			# Store data train, test ims and labels_one_hot
+			os.system("rm -rf ../data/balanced")
+			self.data_save_to_npy(self.conf["train"],data["train"])
+			self.data_save_to_npy(self.conf["test"],data["test"])	
+
+	def im_patches_npy_multitemporal_from_npy_from_folder_load2(self,load=True,debug=1):
+		fname=sys._getframe().f_code.co_name
+		
+		data={}
+		data["train"]={}
+		data["test"]={}
+
+		if load:
+			data["train"]=self.im_patches_labelsonehot_load2(self.conf["train"],data["train"],data,debug=0)
+			data["test"]=self.im_patches_labelsonehot_load2(self.conf["test"],data["test"],data,debug=0)
+		else:
+			train_ims=[]
+		deb.prints(list(iter(data["train"])))
+
+		#np.save(self.conf["path"]+"data.npy",data) # Save indexes and data for further use with the train/ test set/labels
+		return data	
+	def data_balance(self, data, samples_per_class):
+		fname=sys._getframe().f_code.co_name
+
+		balance={}
+		balance["unique"]={}
+	#	classes = range(0,self.conf["class_n"])
+		classes,counts=np.unique(data["train"]["labels"],return_counts=True)
+		print(classes,counts)
+		
+		if classes[0]==0: classes=classes[1::]
+		num_total_samples=len(classes)*samples_per_class
+		balance["out_labels"]=np.zeros(num_total_samples)
+		deb.prints((num_total_samples,) + data["train"]["ims"].shape[1::],fname)
+		balance["out_data"]=np.zeros((num_total_samples,) + data["train"]["ims"].shape[1::])
+		
+		#balance["unique"]=dict(zip(unique, counts))
+		#print(balance["unique"])
+		k=0
+		for clss in classes:
+			if clss==0: 
+				continue
+			deb.prints(clss,fname)
+			balance["data"]=data["train"]["ims"][data["train"]["labels"]==clss]
+			balance["labels"]=data["train"]["labels"][data["train"]["labels"]==clss]
+			balance["num_samples"]=balance["data"].shape[0]
+			if self.debug>=1: deb.prints(balance["data"].shape,fname)
+			if self.debug>=2: 
+				deb.prints(balance["labels"].shape,fname)
+				deb.prints(np.unique(balance["labels"].shape),fname)
+			if balance["num_samples"] > samples_per_class:
+				replace=False
+			else: 
+				replace=True
+
+			index = range(balance["labels"].shape[0])
+			index = np.random.choice(index, samples_per_class, replace=replace)
+			balance["out_labels"][k*samples_per_class:k*samples_per_class + samples_per_class] = balance["labels"][index]
+			balance["out_data"][k*samples_per_class:k*samples_per_class + samples_per_class] = balance["data"][index]
+
+			k+=1
+		idx = np.random.permutation(balance["out_labels"].shape[0])
+		balance["out_data"] = balance["out_data"][idx]
+		balance["out_labels"] = balance["out_labels"][idx]
+		balance["labels_onehot"]=np.zeros((num_total_samples,self.conf["class_n"]))
+		balance["labels_onehot"][np.arange(num_total_samples),balance["out_labels"].astype(np.int)]=1
+		if self.debug>=1: deb.prints(np.unique(balance["out_labels"],return_counts=True),fname)
+		return balance["out_data"],balance["out_labels"],balance["labels_onehot"]
+	def data_save_to_npy(self,data):
+		pathlib.Path(self.conf["balanced_path"]+"label/").mkdir(parents=True, exist_ok=True) 
+		pathlib.Path(self.conf["balanced_path"]+"ims/").mkdir(parents=True, exist_ok=True) 
+		
+		for i in range(0,data["ims"].shape[0]):
+			np.save(self.conf["balanced_path"]+"ims/"+"patch_"+str(i)+".npy",data["ims"][i])
+		np.save(self.conf["balanced_path"]+"label/labels.npy",data["labels_onehot"])			
+
+	# Use after patches_npy_multitemporal_from_npy_store2(). Probably use within patches_npy_multitemporal_from_npy_from_folder_load2()
+	def im_patches_labelsonehot_load2(self,conf_set,data,data_whole,debug=0): #data["n"], self.conf["patch"]["ims_path"], self.conf["patch"]["labels_path"]
+		fname=sys._getframe().f_code.co_name
+
+		data["ims"]=np.zeros((conf_set["n"],self.conf["t_len"],self.conf["patch"]["size"],self.conf["patch"]["size"],self.conf["band_n"]))
+		data["labels"]=np.zeros((conf_set["n"])).astype(np.int)
+			
+		count=0
+		if self.debug>=1: deb.prints(conf_set["ims_path"],fname)
+		for i in range(1,conf_set["n"]):
+			if self.debug>=3: print("i",i)
+			im_name=glob.glob(conf_set["ims_path"]+'patch_'+str(i)+'_*')[0]
+			data["ims"][count,:,:,:,:]=np.load(im_name)
+			
+			label_name=glob.glob(conf_set["labels_path"]+'patch_'+str(i)+'_*')[0]
+			data["labels"][count]=int(np.load(label_name)[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
+			if self.debug>=2: print("train_labels[count]",data["labels"][count])
+			
+			count=count+1
+			if i % 1000==0:
+				print("file ID",i)
+		data["labels_onehot"]=np.zeros((conf_set["n"],self.conf["class_n"]))
+		data["labels_onehot"][np.arange(conf_set["n"]),data["labels"]]=1
+		#del data["labels"]
+		return data
 
 conf={"band_n": 6, "t_len":6, "path": "../data/", "class_n":9}
 #conf["pc_mode"]="remote"
