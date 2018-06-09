@@ -57,11 +57,12 @@ parser.add_argument('--path', dest='path', default="../data/", help='Data path')
 parser.add_argument('--class_n', dest='class_n', type=int, default=9, help='Class number')
 parser.add_argument('--pc_mode', dest='pc_mode', default="local", help="Class number. 'local' or 'remote'")
 parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=1000, help="Class number. 'local' or 'remote'")
-parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="ram", help="Class number. 'local' or 'remote'")
+parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="hdd", help="Class number. 'local' or 'remote'")
 
 
 args = parser.parse_args()
 np.set_printoptions(suppress=True)
+"""
 if args.memory_mode=="hdd":
     with open(utils.conf["path"]+'data.pkl', 'rb') as handle: dataset=pickle.load(handle)
     deb.prints(dataset["train"]["ims"].shape)
@@ -69,11 +70,11 @@ if args.memory_mode=="hdd":
     deb.prints(dataset["test"]["ims"].shape)
     deb.prints(dataset["test"]["labels_onehot"].shape)
     args.train_size = dataset["train"]["ims"].shape[0]
-
+"""
 def main(_):
     if not os.path.exists(args.checkpoint_dir):
         os.makedirs(args.checkpoint_dir)
-    if args.memory_mode=="hdd":
+    if args.memory_mode=="ram":
         data=utils.DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
                             band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
                             test_n_limit=args.test_n_limit)

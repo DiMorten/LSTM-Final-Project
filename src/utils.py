@@ -31,11 +31,12 @@ import argparse
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=9,pc_mode="local", \
 		patch_length=5,test_n_limit=1000,data_memory_mode="ram",flag_store=False):
-		self.data_memory_mode=data_memory_mode #"ram" or "hdd"
-		self.debug=debug
-		self.test_n_limit=test_n_limit
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n}
 
+		self.conf["memory_mode"]=data_memory_mode #"ram" or "hdd"
+		self.debug=debug
+		self.test_n_limit=test_n_limit
+		
 		self.conf["pc_mode"]=pc_mode
 
 		self.conf["out_path"]=self.conf["path"]+"results/"
@@ -144,7 +145,7 @@ class DataOneHot(DataForNet):
 	def onehot_create(self):
 		os.system("rm -rf ../data/train_test")
 
-		if self.data_memory_mode=="ram":
+		if self.conf["memory_mode"]=="ram":
 
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
 			
@@ -207,7 +208,7 @@ class DataOneHot(DataForNet):
 		
 		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
 			self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
-			path_test=self.conf["test"],patches_save=self.conf["utils_flag_store"],label_type="one_hot",memory_mode=self.data_memory_mode)
+			path_test=self.conf["test"],patches_save=self.conf["utils_flag_store"],label_type="one_hot",memory_mode=self.conf["memory_mode"])
 		deb.prints(self.conf["test"]["n"])
 		if self.conf["utils_flag_store"]:
 			np.save(self.conf["path"]+"train_n.npy",self.conf["train"]["n"])
@@ -262,7 +263,7 @@ class DataOneHot(DataForNet):
 						if patches_save==True:
 							np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
 							np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch)
-					elif self.data_memory_mode=="ram":
+					elif self.conf["memory_mode"]=="ram":
 						self.dataset["train"]=self.in_label_ram_store(self.dataset["train"],patch,label_patch,data_idx=patches_get["train_n"],label_type=label_type)
 					patches_get["train_n"]+=1	
 				elif np.all(mask_patch==2): # Test sample
@@ -276,11 +277,11 @@ class DataOneHot(DataForNet):
 						if test_counter>=self.conf["extract"]["test_skip"]:
 							mask_test[yy: yy + window, xx: xx + window]=255
 							test_counter=0
-							if self.data_memory_mode=="hdd":
+							if self.conf["memory_mode"]=="hdd":
 								if patches_save==True:
 									np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
 									np.save(path_test["labels_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",label_patch)
-							elif self.data_memory_mode=="ram":
+							elif self.conf["memory_mode"]=="ram":
 								self.dataset["test"]=self.in_label_ram_store(self.dataset["test"],patch,label_patch,data_idx=test_real_count,label_type=label_type)
 							test_real_count+=1
 					#np.random.choice(index, samples_per_class, replace=replace)
