@@ -34,7 +34,7 @@ class NeuralNet(object):
 	def __init__(self, sess=tf.Session(), batch_size=50, epoch=200, train_size=1e8,
                         timesteps=utils.conf["t_len"], shape=[32,32],
                         kernel=[3,3], channels=6, filters=32, n_classes=9,
-                        checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"]):
+                        checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None):
 		
 		self.sess = sess
 		self.batch_size = batch_size
@@ -48,7 +48,7 @@ class NeuralNet(object):
 		self.filters = filters
 		self.n_classes = n_classes
 		self.checkpoint_dir = checkpoint_dir
-		self.conf=utils.conf
+		#self.conf=utils.conf
 		self.debug=1
 		self.log_dir=log_dir
 		self.test_batch_size=100
@@ -160,7 +160,7 @@ class NeuralNetOneHot(NeuralNet):
 #		self.writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph())
 		self.writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
 
-		data = self.data_load(self.conf)
+		data = self.data_load(utils.conf)
 		batch={}
 		batch["idxs"] = min(len(data["train"]["im_paths"]), args.train_size) // self.batch_size
 		if self.debug>=1:
@@ -247,7 +247,7 @@ class NeuralNetOneHot(NeuralNet):
 		self.saver.restore(self.sess,tf.train.latest_checkpoint('./'))
 
 		print("Model restored.")
-		data = self.data_load(self.conf)
+		data = self.data_load(utils.conf)
 
 		test_stats=self.data_stats_get(data["test"])
 

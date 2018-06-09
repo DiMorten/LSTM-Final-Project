@@ -48,6 +48,17 @@ parser.add_argument('--checkpoint_dir', dest='checkpoint_dir', default='./checkp
 parser.add_argument('--model', dest='model', default='convlstm', help='models are saved here')
 parser.add_argument('--log_dir', dest='log_dir', default=utils.conf["summaries_path"], help='models are saved here')
 
+parser.add_argument('--debug', type=int, default=1, help='Debug')
+parser.add_argument('-po','--patch_overlap', dest='patch_overlap', type=int, default=0, help='Debug')
+parser.add_argument('--im_size', dest='im_size', type=int, default=(948,1068), help='Debug')
+parser.add_argument('--band_n', dest='band_n', type=int, default=6, help='Debug')
+parser.add_argument('--t_len', dest='t_len', type=int, default=6, help='Debug')
+parser.add_argument('--path', dest='path', default="../data/", help='Data path')
+parser.add_argument('--class_n', dest='class_n', type=int, default=9, help='Class number')
+parser.add_argument('--pc_mode', dest='pc_mode', default="local", help="Class number. 'local' or 'remote'")
+parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=1000, help="Class number. 'local' or 'remote'")
+
+
 args = parser.parse_args()
 np.set_printoptions(suppress=True)
 
@@ -61,18 +72,20 @@ args.train_size = dataset["train"]["ims"].shape[0]
 def main(_):
     if not os.path.exists(args.checkpoint_dir):
         os.makedirs(args.checkpoint_dir)
-    
+    data=utils.DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+                            band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
+                            test_n_limit=args.test_n_limit)
     with tf.Session() as sess:
         if args.model=='convlstm':
             model = conv_lstm(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
                             timesteps=args.timesteps, shape=args.shape,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir)
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data)
         elif args.model=='conv3d':
             model = Conv3DMultitemp(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
                             timesteps=args.timesteps, shape=args.shape,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir)
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data)
         if args.phase == 'train':
             model.train(args)
         

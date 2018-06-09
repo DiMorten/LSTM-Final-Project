@@ -144,20 +144,24 @@ class DataOneHot(DataForNet):
 	def onehot_create(self):
 		os.system("rm -rf ../data/train_test")
 
+		if self.data_memory_mode=="ram":
 
-		self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
-		
-		deb.prints(np.unique(self.dataset["train"]["labels"],return_counts=True)[1])
+			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
+			
+			deb.prints(np.unique(self.dataset["train"]["labels"],return_counts=True)[1])
 
-		self.dataset["train"]["ims"],self.dataset["train"]["labels"],self.dataset["train"]["labels_onehot"]=self.data_balance(self.dataset, \
-			self.conf["balanced"]["samples_per_class"])
+			self.dataset["train"]["ims"],self.dataset["train"]["labels"],self.dataset["train"]["labels_onehot"]=self.data_balance(self.dataset, \
+				self.conf["balanced"]["samples_per_class"])
 
-		with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.dataset, f)
+			with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.dataset, f)
 
+		else:
+			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
+			self.data_onehot_load_balance_store()
 		##self.balance_data()
 		##self.save_data()
 
-		#self.data_onehot_load_balance_store()
+		#
 	def im_patches_npy_multitemporal_from_npy_from_folder_store2(self):
 		im_names=[]
 		for i in range(1,10):
@@ -460,16 +464,18 @@ if __name__ == "__main__":
 	parser.add_argument('--class_n', dest='class_n', type=int, default=9, help='Class number')
 	parser.add_argument('--pc_mode', dest='pc_mode', default="local", help="Class number. 'local' or 'remote'")
 	parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=1000, help="Class number. 'local' or 'remote'")
+	parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="ram", help="Class number. 'local' or 'remote'")
 
 	args = parser.parse_args()
 
-	data_creator=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+	data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
-		test_n_limit=args.test_n_limit)
-	data_creator.onehot_create()
+		test_n_limit=args.test_n_limit, data_memory_mode=args.memory_mode, flag_store=True)
+	data.onehot_create()
 	#conf=data_creator.conf
 	#pass
 else:
-	data_creator=DataOneHot()
-	conf=data_creator.conf
+	data_onehot=DataOneHot()
+	#data.onehot_create()
+	conf=data_onehot.conf
 	
