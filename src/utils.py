@@ -491,7 +491,8 @@ if __name__ == "__main__":
 
 	data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
-		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, , test_get_stride=args.test_get_stride, flag_store=True)
+		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, \
+		balance_samples_per_class=args.balance_samples_per_class,test_get_stride=args.test_get_stride, flag_store=True)
 	data.onehot_create()
 	#conf=data_creator.conf
 	#pass

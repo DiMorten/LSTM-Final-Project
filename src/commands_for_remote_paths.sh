@@ -17,5 +17,5 @@ conda activate epyt
 #tensorboard --logdir "../data/summaries/"
 
 python main.py -mm="hdd" --debug=1
-python main.py -mm="ram" --debug=1
+python main.py -mm="ram" --debug=1 -ts 8 -po 3 -bs 1500
 

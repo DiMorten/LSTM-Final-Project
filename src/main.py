@@ -58,6 +58,8 @@ parser.add_argument('--class_n', dest='class_n', type=int, default=9, help='Clas
 parser.add_argument('--pc_mode', dest='pc_mode', default="local", help="Class number. 'local' or 'remote'")
 parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=1000, help="Class number. 'local' or 'remote'")
 parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="hdd", help="Class number. 'local' or 'remote'")
+parser.add_argument('-bs','--balance_samples_per_class', dest='balance_samples_per_class',type=int,default=None, help="Class number. 'local' or 'remote'")
+parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,default=8, help="Class number. 'local' or 'remote'")
 
 
 args = parser.parse_args()
@@ -77,7 +79,8 @@ def main(_):
     #if args.memory_mode=="ram":
     data=utils.DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
                             band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
-                            test_n_limit=args.test_n_limit,memory_mode=args.memory_mode)
+                            test_n_limit=args.test_n_limit,memory_mode=args.memory_mode,balance_samples_per_class=args.balance_samples_per_class, \
+                            test_get_stride=args.test_get_stride)
     if args.memory_mode=="ram":
         data.onehot_create()
         deb.prints(data.ram_data["train"]["ims"].shape)
