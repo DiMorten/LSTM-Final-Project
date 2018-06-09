@@ -280,7 +280,8 @@ class DataOneHot(DataForNet):
 					if patches_get["test_n"]<=self.test_n_limit:
 						patches_get["test_n_limited"]+=1					
 						if test_counter>=self.conf["extract"]["test_skip"]:
-							mask_test[yy: yy + window, xx: xx + window]=255
+							#mask_test[yy: yy + window, xx: xx + window]=255
+							mask_test[int(yy + window/2), int(xx + window/2)]=255
 							test_counter=0
 							if self.conf["memory_mode"]=="hdd":
 								if patches_save==True:

@@ -205,6 +205,9 @@ class NeuralNetOneHot(NeuralNet):
 		self.writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
 
 		data = self.data_load(self.conf,memory_mode=self.conf["memory_mode"])
+		deb.prints(data["train"]["n"])
+		deb.prints(args.train_size)
+		deb.prints(self.batch_size)
 		batch={}
 		batch["idxs"] = min(data["train"]["n"], args.train_size) // self.batch_size
 		if self.debug>=1:
@@ -230,14 +233,15 @@ class NeuralNetOneHot(NeuralNet):
 		for epoch in range(args.epoch):
 			for idx in range(0, batch["idxs"]):
 				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx,memory_mode=self.conf["memory_mode"])
-
-				deb.prints(batch["ims"].shape)
-				deb.prints(batch["labels_onehot"].shape)
+				if self.debug>=3:
+					deb.prints(batch["ims"].shape)
+					deb.prints(batch["labels_onehot"].shape)
 				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels_onehot"]})
 				self.writer.add_summary(summary, counter)
 				counter += 1
 				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels_onehot"]})
-				print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
+				if self.debug>=3:
+					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
 			
 			# =__________________________________ Test stats get and model save  _______________________________ = #
 			save_path = self.saver.save(self.sess, "./model.ckpt")
@@ -254,7 +258,9 @@ class NeuralNetOneHot(NeuralNet):
 
 		batch={}
 		batch["idxs"] = data["n"] // batch_size
-		deb.prints(batch["idxs"])
+		if self.debug>=2:
+			deb.prints(batch["idxs"])
+			#deb.prints()
 		stats={"correct_per_class":np.zeros(self.n_classes).astype(np.float32)}
 		stats["per_class_label_count"]=np.zeros(self.n_classes).astype(np.float32)
 		
@@ -358,6 +364,9 @@ class NeuralNetOneHot(NeuralNet):
 			data=self.hdd_data_load(conf)
 		elif memory_mode=="ram":
 			data=self.ram_data
+			data["train"]["n"]=data["train"]["ims"].shape[0]
+			data["test"]["n"]=data["test"]["ims"].shape[0]
+
 			deb.prints(self.ram_data["train"]["ims"].shape)
 			deb.prints(data["train"]["ims"].shape)
 
