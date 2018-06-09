@@ -3,17 +3,17 @@
 from __future__ import division
 import os
 import math
-import json
+#import json
 import random
-import pprint
+#import pprint
 import time
-import scipy.misc
+#import scipy.misc
 import numpy as np
 from time import gmtime, strftime
 import glob
 #from skimage.transform import resize
 #from sklearn import preprocessing as pre
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
 from random import shuffle

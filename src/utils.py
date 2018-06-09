@@ -5,17 +5,17 @@ Some codes from https://github.com/Newmu/dcgan_code
 from __future__ import division
 import os
 import math
-import json
+#import json
 import random
-import pprint
-import scipy.misc
+#import pprint
+#import scipy.misc
 import numpy as np
 from time import gmtime, strftime
 #from osgeo import gdal
 import glob
 #from skimage.transform import resize
 #from sklearn import preprocessing as pre
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import cv2
 import pathlib
 #from sklearn.feature_extraction.image import extract_patches_2d

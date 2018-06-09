@@ -1,8 +1,9 @@
 export PATH=/usr/local/cuda-9.2/bin${PATH:+:${PATH}}; export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/cuda-9.2/lib64
 export PATH=~/anaconda3/bin:$PATH
 
-source activate py361
+#source activate py361
 
+conda activate epyt
 
 #pip install Cython
 #conda install tensorflow-gpu
