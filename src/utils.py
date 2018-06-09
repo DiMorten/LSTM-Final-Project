@@ -30,7 +30,7 @@ import argparse
 
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=9,pc_mode="local", \
-		patch_length=5,test_n_limit=1000,data_memory_mode="hdd"):
+		patch_length=5,test_n_limit=1000,data_memory_mode="ram",flag_store=False):
 		self.data_memory_mode=data_memory_mode #"ram" or "hdd"
 		self.debug=debug
 		self.test_n_limit=test_n_limit
@@ -107,7 +107,7 @@ class DataForNet(object):
 		pathlib.Path(self.conf["test"]["balanced_path"]).mkdir(parents=True, exist_ok=True) 
 
 		self.conf["utils_main_mode"]=7
-		self.conf["utils_flag_store"]=True
+		self.conf["utils_flag_store"]=flag_store
 
 		print(self.conf)
 
@@ -121,7 +121,7 @@ class DataOneHot(DataForNet):
 		os.system("rm -rf ../data/train_test")
 
 		self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
-		self.data_onehot_load_balance_store()
+		#self.data_onehot_load_balance_store()
 	def im_patches_npy_multitemporal_from_npy_from_folder_store2(self):
 		im_names=[]
 		for i in range(1,10):
@@ -134,15 +134,15 @@ class DataOneHot(DataForNet):
 	def im_patches_npy_multitemporal_from_npy_store2(self,names,train_mask_save=True):
 		fname=sys._getframe().f_code.co_name
 		print('[@im_patches_npy_multitemporal_from_npy_store2]')
-		patch_shape=(self.conf["patch"]["size"],self.conf["patch"]["size"],self.conf["band_n"])
-		label_shape=(self.conf["patch"]["size"],self.conf["patch"]["size"])
+		self.patch_shape=(self.conf["patch"]["size"],self.conf["patch"]["size"],self.conf["band_n"])
+		self.label_shape=(self.conf["patch"]["size"],self.conf["patch"]["size"])
 		pathlib.Path(self.conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
 		pathlib.Path(self.conf["patch"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
-		patches_all=np.zeros((58,65,self.conf["t_len"])+patch_shape)
-		label_patches_all=np.zeros((58,65,self.conf["t_len"])+label_shape)
+		patches_all=np.zeros((58,65,self.conf["t_len"])+self.patch_shape)
+		label_patches_all=np.zeros((58,65,self.conf["t_len"])+self.label_shape)
 		
 		patch={}
-		deb.prints((self.conf["t_len"],)+patch_shape)
+		deb.prints((self.conf["t_len"],)+self.patch_shape)
 
 		#patch["values"]=np.zeros((self.conf["t_len"],)+patch_shape)
 		patch["full_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"])
@@ -167,14 +167,18 @@ class DataOneHot(DataForNet):
 		patch["train_mask"]=cv2.imread(self.conf["train"]["mask"]["dir"],0)
 
 		
-		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"],self.conf["patch"]["size"],self.conf["patch"]["overlap"], \
-			mask=patch["train_mask"],path_train=self.conf["train"],path_test=self.conf["test"],patches_save=self.conf["utils_flag_store"])
+		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
+			self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
+			path_test=self.conf["test"],patches_save=self.conf["utils_flag_store"],label_type="one_hot",memory_mode=self.data_memory_mode)
 		deb.prints(self.conf["test"]["n"])
-		np.save(self.conf["path"]+"train_n.npy",self.conf["train"]["n"])
-		np.save(self.conf["path"]+"test_n.npy",self.conf["test"]["n"])
+		if self.conf["utils_flag_store"]:
+			np.save(self.conf["path"]+"train_n.npy",self.conf["train"]["n"])
+			np.save(self.conf["path"]+"test_n.npy",self.conf["test"]["n"])
 
-	def patches_multitemporal_get(self,img,label,window,overlap,mask,path_train,path_test,patches_save=False):
+	def patches_multitemporal_get(self,img,label,window,overlap,mask,path_train,path_test,patches_save=False, \
+		label_type="one_hot",memory_mode="hdd"):
 		fname=sys._getframe().f_code.co_name
+
 		deb.prints(window,fname)
 		deb.prints(overlap,fname)
 		#window= 256
@@ -189,12 +193,25 @@ class DataOneHot(DataForNet):
 
 		gridy = range(0, h - window, window - overlap)
 		gridy = np.hstack((gridy, h - window))
+		deb.prints(gridx.shape)
+		deb.prints(gridy.shape)
+		
 		counter=0
 		patches_get["train_n"]=0
 		patches_get["test_n"]=0
 		patches_get["test_n_limited"]=0
 		test_counter=0
 		test_real_count=0
+		
+		self.dataset={"train":{},"test":{}}
+		self.dataset["train"]["in"]=np.zeros((9000,self.conf["t_len"])+self.patch_shape)
+		self.dataset["test"]["in"]=np.zeros((9000,self.conf["t_len"])+self.patch_shape)
+		
+		if label_type=="one_hot":
+			self.dataset["train"]["labels"]=np.zeros((9000,)+self.label_shape)
+			self.dataset["test"]["labels"]=np.zeros((9000,)+self.label_shape)
+
+
 		for i in range(len(gridx)):
 			for j in range(len(gridy)):
 				counter=counter+1
@@ -209,12 +226,12 @@ class DataOneHot(DataForNet):
 				elif np.all(mask_patch==1): # Train sample
 					patches_get["train_n"]+=1
 					mask_train[yy: yy + window, xx: xx + window]=255
-					if self.data_memory_mode=="hdd":
+					if memory_mode=="hdd":
 						if patches_save==True:
 							np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
 							np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch)
-					#elif self.data_memory_mode=="ram":
-				#		self.data["ims"]
+					elif self.data_memory_mode=="ram":
+						self.dataset["train"]=self.in_label_ram_store(self.dataset["train"],patch,label_patch,data_idx=patches_get["train_n"],label_type=label_type)
 				elif np.all(mask_patch==2): # Test sample
 					test_counter+=1
 					
@@ -222,15 +239,17 @@ class DataOneHot(DataForNet):
 					
 					patches_get["test_n"]+=1
 					if patches_get["test_n"]<=self.test_n_limit:
-						patches_get["test_n_limited"]+=1
-						if patches_save==True:
-							if test_counter>=self.conf["extract"]["test_skip"]:
-								mask_test[yy: yy + window, xx: xx + window]=255
-								test_counter=0
-								test_real_count+=1
-								if self.data_memory_mode=="hdd":
+						patches_get["test_n_limited"]+=1					
+						if test_counter>=self.conf["extract"]["test_skip"]:
+							mask_test[yy: yy + window, xx: xx + window]=255
+							test_counter=0
+							test_real_count+=1
+							if self.data_memory_mode=="hdd":
+								if patches_save==True:
 									np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
 									np.save(path_test["labels_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",label_patch)
+							elif self.data_memory_mode=="ram":
+								self.dataset["test"]=self.in_label_ram_store(self.dataset["test"],patch,label_patch,data_idx=patches_get["test_n"],label_type=label_type)
 					#np.random.choice(index, samples_per_class, replace=replace)
 		cv2.imwrite("mask_train.png",mask_train)
 		cv2.imwrite("mask_test.png",mask_test)
@@ -241,7 +260,16 @@ class DataOneHot(DataForNet):
 		deb.prints(patches_get["test_n_limited"],fname)
 		deb.prints(test_real_count)
 		
+		self.dataset["train"]["n"]=patches_get["train_n"]
+		self.dataset["test"]["n"]=test_real_count
+		
 		return patches_get["train_n"],test_real_count
+
+	def in_label_ram_store(self,data,patch,label_patch,data_idx,label_type):
+		data["in"][data_idx]=patch
+		if label_type=="one_hot":
+			data["labels"][data_idx]=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
+		return data
 	def data_onehot_load_balance_store(self):
 		print("heeere")
 		self.conf["train"]["n"]=np.load(self.conf["path"]+"train_n.npy")
@@ -399,7 +427,7 @@ if __name__ == "__main__":
 	parser.add_argument('--path', dest='path', default="../data/", help='Data path')
 	parser.add_argument('--class_n', dest='class_n', type=int, default=9, help='Class number')
 	parser.add_argument('--pc_mode', dest='pc_mode', default="local", help="Class number. 'local' or 'remote'")
-	parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=500000, help="Class number. 'local' or 'remote'")
+	parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=1000, help="Class number. 'local' or 'remote'")
 
 	args = parser.parse_args()
 
