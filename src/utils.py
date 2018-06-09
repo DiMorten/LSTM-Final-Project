@@ -152,7 +152,7 @@ class DataOneHot(DataForNet):
 		self.dataset["train"]["ims"],self.dataset["train"]["labels"],self.dataset["train"]["labels_onehot"]=self.data_balance(self.dataset, \
 			self.conf["balanced"]["samples_per_class"])
 
-		
+		with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.dataset, f)
 
 		##self.balance_data()
 		##self.save_data()
