@@ -30,7 +30,7 @@ import argparse
 
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=9,pc_mode="local", \
-		patch_length=5,test_n_limit=500000,data_memory_mode="ram"):
+		patch_length=5,test_n_limit=1000,data_memory_mode="hdd"):
 		self.data_memory_mode=data_memory_mode #"ram" or "hdd"
 		self.debug=debug
 		self.test_n_limit=test_n_limit
@@ -82,7 +82,7 @@ class DataForNet(object):
 			self.conf["balanced"]["samples_per_class"]=5000
 		elif self.conf["patch"]["overlap"]==0:
 			self.conf["extract"]["test_skip"]=0
-			self.conf["balanced"]["samples_per_class"]=1000
+			self.conf["balanced"]["samples_per_class"]=500
 
 		elif self.conf["patch"]["overlap"]>=2 or self.conf["patch"]["overlap"]<=3:
 			self.conf["extract"]["test_skip"]=8
@@ -389,8 +389,6 @@ class DataOneHot(DataForNet):
 		#del data["labels"]
 		return data
 
-data_creator=DataOneHot()
-conf=data_creator.conf
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='')
 	parser.add_argument('--debug', type=int, default=1, help='Debug')
@@ -409,7 +407,9 @@ if __name__ == "__main__":
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
 		test_n_limit=args.test_n_limit)
 	data_creator.onehot_create()
+	#conf=data_creator.conf
+	#pass
+else:
+	data_creator=DataOneHot()
 	conf=data_creator.conf
-	pass
-
 	
