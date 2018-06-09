@@ -30,7 +30,7 @@ import argparse
 
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=9,pc_mode="local", \
-		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None):
+		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None, test_get_stride=8):
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n}
 
 		self.conf["memory_mode"]=memory_mode #"ram" or "hdd"
@@ -54,6 +54,7 @@ class DataForNet(object):
 		self.conf["train"]["ims_path"]=self.conf["path"]+"train_test/train/ims/"
 		self.conf["train"]["labels_path"]=self.conf["path"]+"train_test/train/labels/"
 		self.conf["test"]={}
+		self.conf["test"]["get_stride"]=test_get_stride
 		self.conf["test"]["ims_path"]=self.conf["path"]+"train_test/test/ims/"
 		self.conf["test"]["labels_path"]=self.conf["path"]+"train_test/test/labels/"
 		self.conf["im_size"]=im_size
@@ -99,6 +100,8 @@ class DataForNet(object):
 		#self.conf["subdata"]={"flag":True,"n":1000}
 		self.conf["summaries_path"]=self.conf["path"]+"summaries/"
 
+
+		self.conf["extract"]["test_skip"]=self.conf["test"]["get_stride"]
 		if balance_samples_per_class:
 			self.conf["balanced"]["samples_per_class"]=balance_samples_per_class
 		deb.prints(self.conf["patch"]["overlap"])
@@ -482,12 +485,13 @@ if __name__ == "__main__":
 	parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=1000, help="Class number. 'local' or 'remote'")
 	parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="ram", help="Class number. 'local' or 'remote'")
 	parser.add_argument('-bs','--balance_samples_per_class', dest='balance_samples_per_class',type=int,default=None, help="Class number. 'local' or 'remote'")
+	parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,default=8, help="Class number. 'local' or 'remote'")
 
 	args = parser.parse_args()
 
 	data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
-		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True)
+		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, , test_get_stride=args.test_get_stride, flag_store=True)
 	data.onehot_create()
 	#conf=data_creator.conf
 	#pass
