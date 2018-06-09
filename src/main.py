@@ -86,12 +86,12 @@ def main(_):
             model = conv_lstm(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
                             timesteps=args.timesteps, shape=args.shape,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data,conf=data.conf)
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data,conf=data.conf, debug=args.debug)
         elif args.model=='conv3d':
             model = Conv3DMultitemp(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
                             timesteps=args.timesteps, shape=args.shape,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data)
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
         if args.phase == 'train':
             model.train(args)
         
