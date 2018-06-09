@@ -5,17 +5,17 @@ Some codes from https://github.com/Newmu/dcgan_code
 from __future__ import division
 import os
 import math
-import json
+#import json
 import random
-import pprint
-import scipy.misc
+#import pprint
+#import scipy.misc
 import numpy as np
 from time import gmtime, strftime
 #from osgeo import gdal
 import glob
 #from skimage.transform import resize
 #from sklearn import preprocessing as pre
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
 from random import shuffle
@@ -114,4 +114,3 @@ if __name__ == '__main__':
 
 
 
-#python main.py -mm="ram" --debug=1 -po 1 -ts 0
