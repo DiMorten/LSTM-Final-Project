@@ -30,7 +30,7 @@ import argparse
 
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=9,pc_mode="local", \
-		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None):
+		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None):
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n}
 
 		self.conf["memory_mode"]=memory_mode #"ram" or "hdd"
@@ -101,6 +101,9 @@ class DataForNet(object):
 
 		if balance_samples_per_class:
 			self.conf["balanced"]["samples_per_class"]=balance_samples_per_class
+
+		self.conf["extract"]["test_skip"]=test_get_stride
+
 		deb.prints(self.conf["patch"]["overlap"])
 		deb.prints(self.conf["extract"]["test_skip"])
 		deb.prints(self.conf["balanced"]["samples_per_class"])
@@ -299,6 +302,12 @@ class DataOneHot(DataForNet):
 		self.ram_data["train"]["n"]=patches_get["train_n"]
 		self.ram_data["test"]["n"]=test_real_count
 		
+		self.ram_data["train"]["ims"]=self.ram_data["train"]["ims"][0:self.ram_data["train"]["n"]]
+		self.ram_data["train"]["labels"]=self.ram_data["train"]["labels"][0:self.ram_data["train"]["n"]]
+		self.ram_data["test"]["ims"]=self.ram_data["test"]["ims"][0:self.ram_data["test"]["n"]]
+		self.ram_data["test"]["labels"]=self.ram_data["test"]["labels"][0:self.ram_data["test"]["n"]]
+
+
 		self.ram_data["train"]["labels_onehot"]=self.labels_onehot_get(self.ram_data["train"]["labels"], \
 			self.ram_data["train"]["n"],self.conf["class_n"])
 		self.ram_data["test"]["labels_onehot"]=self.labels_onehot_get(self.ram_data["test"]["labels"], \
@@ -391,6 +400,7 @@ class DataOneHot(DataForNet):
 		num_total_samples=len(classes)*samples_per_class
 		balance["out_labels"]=np.zeros(num_total_samples)
 		deb.prints((num_total_samples,) + data["train"]["ims"].shape[1::],fname)
+		deb.prints(num_total_samples)
 		balance["out_data"]=np.zeros((num_total_samples,) + data["train"]["ims"].shape[1::])
 		
 		#balance["unique"]=dict(zip(unique, counts))
@@ -430,6 +440,8 @@ class DataOneHot(DataForNet):
 
 	def labels_onehot_get(self,labels,n_samples,class_n):
 		out=np.zeros((n_samples,class_n))
+		deb.prints(out.shape)
+		deb.prints(labels.shape)
 		out[np.arange(n_samples),labels.astype(np.int)]=1
 		return out
 
@@ -482,12 +494,14 @@ if __name__ == "__main__":
 	parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=1000, help="Class number. 'local' or 'remote'")
 	parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="ram", help="Class number. 'local' or 'remote'")
 	parser.add_argument('-bs','--balance_samples_per_class', dest='balance_samples_per_class',type=int,default=None, help="Class number. 'local' or 'remote'")
+	parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,default=8, help="Class number. 'local' or 'remote'")
 
 	args = parser.parse_args()
 
 	data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
-		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True,balance_samples_per_class=args.balance_samples_per_class)
+		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True, \
+		balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride)
 	data.onehot_create()
 	#conf=data_creator.conf
 	#pass

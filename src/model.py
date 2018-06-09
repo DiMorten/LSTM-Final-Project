@@ -155,20 +155,24 @@ class NeuralNetOneHot(NeuralNet):
 		
 	def hdd_data_sub_data_get(self, data,n,sub_data):
 		
-		deb.prints(len(data["im_paths"]))
 		sub_data["im_paths"] = [data["im_paths"][i] for i in sub_data["index"]]
 		sub_data["labels_onehot"] = data["labels_onehot"][sub_data["index"]]
 		sub_data["ims"]=self.ims_get(sub_data["im_paths"])
 		return sub_data
 	def ram_data_sub_data_get(self, data,n,sub_data):
-		
-		deb.prints(data["ims"].shape)
+
 		sub_data["labels_onehot"] = data["labels_onehot"][sub_data["index"]]
 		sub_data["ims"]=data["ims"][sub_data["index"]]
 		return sub_data
+	def data_len_get(self,data,memory_mode):
+		if memory_mode=="hdd":
+			data_len=len(data["im_paths"])
+		elif memory_mode=="ram":
+			data_len=data["ims"].shape[0]
+		deb.prints(data_len)
+		return data_len
 	def data_sub_data_get(self, data,n,memory_mode):
-
-		sub_data={"n":n}
+		sub_data={"n":n}		
 		sub_data["index"] = np.random.choice(data["index"], sub_data["n"], replace=False)
 		deb.prints(sub_data["index"].shape)
 
@@ -212,9 +216,10 @@ class NeuralNetOneHot(NeuralNet):
 
 		counter = 1
 		start_time = time.time()
-
-		data["sub_test"]=self.data_sub_data_get(data["test"],1000,memory_mode=self.conf["memory_mode"])
-
+		if self.data_len_get(data["test"],memory_mode=self.conf["memory_mode"])>1000:
+			data["sub_test"]=self.data_sub_data_get(data["test"],1000,memory_mode=self.conf["memory_mode"])
+		else:
+			data["sub_test"]=data["test"]
 		#deb.prints(data["train"]["ims"].shape)
 		deb.prints(data["train"]["labels_onehot"].shape)
 		#deb.prints(data["test"]["ims"].shape)
