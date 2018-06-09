@@ -74,23 +74,24 @@ if args.memory_mode=="hdd":
 def main(_):
     if not os.path.exists(args.checkpoint_dir):
         os.makedirs(args.checkpoint_dir)
-    if args.memory_mode=="ram":
-        data=utils.DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+    #if args.memory_mode=="ram":
+    data=utils.DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
                             band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
-                            test_n_limit=args.test_n_limit)
-    else:
-        data=None
+                            test_n_limit=args.test_n_limit,memory_mode=args.memory_mode)
+    if args.memory_mode=="ram":
+        data.onehot_create()
+        deb.prints(data.ram_data["train"]["ims"].shape)
     with tf.Session() as sess:
         if args.model=='convlstm':
             model = conv_lstm(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
                             timesteps=args.timesteps, shape=args.shape,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data)
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data,conf=data.conf)
         elif args.model=='conv3d':
             model = Conv3DMultitemp(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
                             timesteps=args.timesteps, shape=args.shape,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data)
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data)
         if args.phase == 'train':
             model.train(args)
         

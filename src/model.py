@@ -34,8 +34,9 @@ class NeuralNet(object):
 	def __init__(self, sess=tf.Session(), batch_size=50, epoch=200, train_size=1e8,
                         timesteps=utils.conf["t_len"], shape=[32,32],
                         kernel=[3,3], channels=6, filters=32, n_classes=9,
-                        checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None):
+                        checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf):
 		
+		self.ram_data=data
 		self.sess = sess
 		self.batch_size = batch_size
 		self.epoch = epoch
@@ -48,7 +49,7 @@ class NeuralNet(object):
 		self.filters = filters
 		self.n_classes = n_classes
 		self.checkpoint_dir = checkpoint_dir
-		#self.conf=utils.conf
+		self.conf=conf
 		self.debug=1
 		self.log_dir=log_dir
 		self.test_batch_size=100
@@ -133,25 +134,64 @@ class NeuralNetOneHot(NeuralNet):
 		tf.summary.scalar('error',error)
 		return minimize, mistakes, error
 
-	def batch_ims_labels_get(self,batch,data,batch_size,idx):
+	def hdd_batch_ims_labels_get(self,batch,data,batch_size,idx):
 		batch["file_paths"] = data["im_paths"][idx*batch_size:(idx+1)*batch_size]
 		batch["labels"] = data["labels"][idx*batch_size:(idx+1)*batch_size]
 		batch["ims"] = np.asarray([np.load(batch_file_path) for batch_file_path in batch["file_paths"]]) # Load files from path
 		return batch
+	def ram_batch_ims_labels_get(self,batch,data,batch_size,idx):
+		
+		batch["ims"] = data["ims"][idx*batch_size:(idx+1)*batch_size]
+		batch["labels"] = data["labels_onehot"][idx*batch_size:(idx+1)*batch_size]
+		return batch
+	def batch_ims_labels_get(self,batch,data,batch_size,idx,memory_mode):
+		if memory_mode=="hdd":
+			return self.hdd_batch_ims_labels_get(batch,data,batch_size,idx)
+		elif memory_mode=="ram":
+			return self.ram_batch_ims_labels_get(batch,data,batch_size,idx)
 
 	def ims_get(self,data_im_paths):
 		return np.asarray([np.load(file_path) for file_path in data_im_paths]) # Load files from path
 		
-	def data_sub_data_get(self, data,n):
-		sub_data={"n":n}
-		sub_data["index"] = np.random.choice(data["index"], sub_data["n"], replace=False)
-		deb.prints(sub_data["index"].shape)
+	def hdd_data_sub_data_get(self, data,n,sub_data):
+		
 		deb.prints(len(data["im_paths"]))
 		sub_data["im_paths"] = [data["im_paths"][i] for i in sub_data["index"]]
 		sub_data["labels"] = data["labels"][sub_data["index"]]
+		sub_data["ims"]=self.ims_get(sub_data["im_paths"])
+		return sub_data
+	def ram_data_sub_data_get(self, data,n,sub_data):
+		
+		deb.prints(data["ims"].shape)
+		sub_data["labels"] = data["labels_onehot"][sub_data["index"]]
+		sub_data["ims"]=data["ims"][sub_data["index"]]
+		return sub_data
+	def data_sub_data_get(self, data,n,memory_mode):
+
+		sub_data={"n":n}
+		sub_data["index"] = np.random.choice(data["index"], sub_data["n"], replace=False)
+		deb.prints(sub_data["index"].shape)
+
+		if memory_mode=="hdd":
+			sub_data=self.hdd_data_sub_data_get(data,n,sub_data)
+		elif memory_mode=="ram":
+			sub_data=self.ram_data_sub_data_get(data,n,sub_data)
+		deb.prints(sub_data["ims"].shape)
 		return sub_data
 
+	def data_n_get(self,data,memory_mode):
+		if memory_mode=="hdd":
+			return len(data["im_paths"])
+		elif memory_mode=="ram":
+			return data["ims"].shape[0]
+		
 
+	def unique_classes_print(self,data,memory_mode):
+		if memory_mode=="hdd":
+			data["labels_int"]=[ np.where(r==1)[0][0] for r in data["labels"] ]
+			print("Unique classes",np.unique(data["labels_int"],return_counts=True))
+		elif memory_mode=="ram":
+			print("Unique classes",np.unique(data["labels"],return_counts=True))
 	def train(self, args):
 
 		init_op = tf.global_variables_initializer()
@@ -160,25 +200,25 @@ class NeuralNetOneHot(NeuralNet):
 #		self.writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph())
 		self.writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
 
-		data = self.data_load(utils.conf)
+		data = self.data_load(self.conf,memory_mode=self.conf["memory_mode"])
 		batch={}
-		batch["idxs"] = min(len(data["train"]["im_paths"]), args.train_size) // self.batch_size
+		batch["idxs"] = min(data["train"]["n"], args.train_size) // self.batch_size
 		if self.debug>=1:
 			deb.prints(data["train"]["labels"].shape)
 			deb.prints(data["test"]["labels"].shape)
 			deb.prints(batch["idxs"])
-		data["train"]["labels_int"]=[ np.where(r==1)[0][0] for r in data["train"]["labels"] ]
-		print("train classes",np.unique(data["train"]["labels_int"],return_counts=True))
+		
+		self.unique_classes_print(data["train"],memory_mode=self.conf["memory_mode"])
 
 		counter = 1
 		start_time = time.time()
-		data["sub_test"]=self.data_sub_data_get(data["test"],1000)
 
-		data["sub_test"]["ims"]=self.ims_get(data["sub_test"]["im_paths"])
+		data["sub_test"]=self.data_sub_data_get(data["test"],1000,memory_mode=self.conf["memory_mode"])
+
 		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
 		for epoch in range(args.epoch):
 			for idx in range(0, batch["idxs"]):
-				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx)
+				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx,memory_mode=self.conf["memory_mode"])
 
 				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels"]})
 				self.writer.add_summary(summary, counter)
@@ -199,15 +239,14 @@ class NeuralNetOneHot(NeuralNet):
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
 	def data_stats_get(self,data,batch_size=100):
 
-		data_size=len(data["im_paths"])
 		batch={}
-		batch["idxs"] = data_size // batch_size
+		batch["idxs"] = data["n"] // batch_size
 		deb.prints(batch["idxs"])
 		stats={"correct_per_class":np.zeros(self.n_classes).astype(np.float32)}
 		stats["per_class_label_count"]=np.zeros(self.n_classes).astype(np.float32)
 		
 		for idx in range(0, batch["idxs"]):
-			batch=self.batch_ims_labels_get(batch,data,batch_size,idx)
+			batch=self.batch_ims_labels_get(batch,data,batch_size,idx,memory_mode=self.conf["memory_mode"])
 			
 			batch["prediction"] = np.around(self.sess.run(self.prediction,{self.data: batch["ims"]}),decimals=2)
 			batch["label_count"]=np.sum(batch["labels"],axis=0)
@@ -247,7 +286,7 @@ class NeuralNetOneHot(NeuralNet):
 		self.saver.restore(self.sess,tf.train.latest_checkpoint('./'))
 
 		print("Model restored.")
-		data = self.data_load(utils.conf)
+		data = self.data_load(self.conf,memory_mode=self.conf["memory_mode"])
 
 		test_stats=self.data_stats_get(data["test"])
 
@@ -276,14 +315,14 @@ class NeuralNetOneHot(NeuralNet):
 		return data
 		
 		
-	def data_load(self, conf):
+	def hdd_data_load(self, conf):
 
 		data={}
 		data["train"]={}
 		data["test"]={}
 		data["train"]["im_paths"] = glob.glob(conf["train"]["balanced_path_ims"]+'/*.npy')
 		data["train"]["im_paths"] = sorted(data["train"]["im_paths"], key=lambda x: int(x.split('_')[1][:-4]))
-
+		data["train"]["n"]=len(data["train"]["im_paths"])
 		#print(data["train"]["im_paths"])
 		data["test"]["im_paths"] = glob.glob(conf["test"]["balanced_path_ims"]+'/*.npy')
 		data["test"]["im_paths"] = sorted(data["test"]["im_paths"], key=lambda x: int(x.split('_')[1][:-4]))
@@ -297,7 +336,21 @@ class NeuralNetOneHot(NeuralNet):
 		# Change to a subset of test
 		data["test"]["ims"]=[np.load(im_path) for im_path in data["test"]["im_paths"]]
 		data["test"]["n"]=len(data["test"]["im_paths"])
+		return data
+
+	def data_load(self,conf,memory_mode):
+		if memory_mode=="hdd":
+			data=self.hdd_data_load(conf)
+		elif memory_mode=="ram":
+			data=self.ram_data
+			deb.prints(self.ram_data["train"]["ims"].shape)
+			deb.prints(data["train"]["ims"].shape)
+
+		
+		
+		data["train"]["index"] = range(data["test"]["n"])
 		data["test"]["index"] = range(data["test"]["n"])
+
 		return data
 
 # ================================= Implements ConvLSTM ============================================== #

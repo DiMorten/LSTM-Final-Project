@@ -30,10 +30,10 @@ import argparse
 
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=9,pc_mode="local", \
-		patch_length=5,test_n_limit=1000,data_memory_mode="ram",flag_store=False):
+		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False):
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n}
 
-		self.conf["memory_mode"]=data_memory_mode #"ram" or "hdd"
+		self.conf["memory_mode"]=memory_mode #"ram" or "hdd"
 		self.debug=debug
 		self.test_n_limit=test_n_limit
 		
@@ -126,9 +126,9 @@ class DataForNet(object):
 
 
 
-		self.dataset={"train":{},"test":{}}
-		self.dataset["train"]["ims"]=np.zeros((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.patch_shape)
-		self.dataset["test"]["ims"]=np.zeros((self.conf["test"]["n_apriori"],self.conf["t_len"])+self.patch_shape)
+		self.ram_data={"train":{},"test":{}}
+		self.ram_data["train"]["ims"]=np.zeros((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.patch_shape)
+		self.ram_data["test"]["ims"]=np.zeros((self.conf["test"]["n_apriori"],self.conf["t_len"])+self.patch_shape)
 		
 		print(self.conf)
 
@@ -136,11 +136,11 @@ class DataOneHot(DataForNet):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args, **kwargs)
 		if self.debug>=1: print("Initializing DataNetOneHot instance")
-		#self.dataset["train"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
-		#self.dataset["test"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
+		#self.ram_data["train"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
+		#self.ram_data["test"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
 
-		self.dataset["train"]["labels"]=np.zeros((self.conf["train"]["n_apriori"],))
-		self.dataset["test"]["labels"]=np.zeros((self.conf["test"]["n_apriori"],))
+		self.ram_data["train"]["labels"]=np.zeros((self.conf["train"]["n_apriori"],))
+		self.ram_data["test"]["labels"]=np.zeros((self.conf["test"]["n_apriori"],))
 
 	def onehot_create(self):
 		os.system("rm -rf ../data/train_test")
@@ -149,12 +149,12 @@ class DataOneHot(DataForNet):
 
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
 			
-			deb.prints(np.unique(self.dataset["train"]["labels"],return_counts=True)[1])
+			deb.prints(np.unique(self.ram_data["train"]["labels"],return_counts=True)[1])
 
-			self.dataset["train"]["ims"],self.dataset["train"]["labels"],self.dataset["train"]["labels_onehot"]=self.data_balance(self.dataset, \
+			self.ram_data["train"]["ims"],self.ram_data["train"]["labels"],self.ram_data["train"]["labels_onehot"]=self.data_balance(self.ram_data, \
 				self.conf["balanced"]["samples_per_class"])
 
-			with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.dataset, f)
+			with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.ram_data, f)
 
 		else:
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
@@ -264,7 +264,7 @@ class DataOneHot(DataForNet):
 							np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
 							np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch)
 					elif self.conf["memory_mode"]=="ram":
-						self.dataset["train"]=self.in_label_ram_store(self.dataset["train"],patch,label_patch,data_idx=patches_get["train_n"],label_type=label_type)
+						self.ram_data["train"]=self.in_label_ram_store(self.ram_data["train"],patch,label_patch,data_idx=patches_get["train_n"],label_type=label_type)
 					patches_get["train_n"]+=1	
 				elif np.all(mask_patch==2): # Test sample
 					test_counter+=1
@@ -282,7 +282,7 @@ class DataOneHot(DataForNet):
 									np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
 									np.save(path_test["labels_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",label_patch)
 							elif self.conf["memory_mode"]=="ram":
-								self.dataset["test"]=self.in_label_ram_store(self.dataset["test"],patch,label_patch,data_idx=test_real_count,label_type=label_type)
+								self.ram_data["test"]=self.in_label_ram_store(self.ram_data["test"],patch,label_patch,data_idx=test_real_count,label_type=label_type)
 							test_real_count+=1
 					#np.random.choice(index, samples_per_class, replace=replace)
 		cv2.imwrite("mask_train.png",mask_train)
@@ -294,8 +294,8 @@ class DataOneHot(DataForNet):
 		deb.prints(patches_get["test_n_limited"],fname)
 		deb.prints(test_real_count)
 		
-		self.dataset["train"]["n"]=patches_get["train_n"]
-		self.dataset["test"]["n"]=test_real_count
+		self.ram_data["train"]["n"]=patches_get["train_n"]
+		self.ram_data["test"]["n"]=test_real_count
 		
 		return patches_get["train_n"],test_real_count
 
@@ -414,10 +414,18 @@ class DataOneHot(DataForNet):
 		idx = np.random.permutation(balance["out_labels"].shape[0])
 		balance["out_data"] = balance["out_data"][idx]
 		balance["out_labels"] = balance["out_labels"][idx]
-		balance["labels_onehot"]=np.zeros((num_total_samples,self.conf["class_n"]))
-		balance["labels_onehot"][np.arange(num_total_samples),balance["out_labels"].astype(np.int)]=1
+
+		balance["labels_onehot"]=self.labels_onehot_get(balance["out_labels"],num_total_samples,self.conf["class_n"])
+		#balance["labels_onehot"]=np.zeros((num_total_samples,self.conf["class_n"]))
+		#balance["labels_onehot"][np.arange(num_total_samples),balance["out_labels"].astype(np.int)]=1
 		if self.debug>=1: deb.prints(np.unique(balance["out_labels"],return_counts=True),fname)
 		return balance["out_data"],balance["out_labels"],balance["labels_onehot"]
+
+	def labels_onehot_get(self,labels,n_samples,class_n):
+		out=np.zeros((n_samples,class_n))
+		out[np.arange(n_samples),labels.astype(np.int)]=1
+		return out
+
 
 	def data_save_to_npy(self,conf_set,data):
 		pathlib.Path(conf_set["balanced_path"]+"label/").mkdir(parents=True, exist_ok=True) 
@@ -471,7 +479,7 @@ if __name__ == "__main__":
 
 	data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
-		test_n_limit=args.test_n_limit, data_memory_mode=args.memory_mode, flag_store=True)
+		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True)
 	data.onehot_create()
 	#conf=data_creator.conf
 	#pass
