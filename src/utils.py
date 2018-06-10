@@ -131,7 +131,7 @@ class DataForNet(object):
 		self.ram_data["train"]["ims"]=np.zeros((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.patch_shape)
 		self.ram_data["test"]["ims"]=np.zeros((self.conf["test"]["n_apriori"],self.conf["t_len"])+self.patch_shape)
 		
-		self.conf["out_mode"]="im2im"
+		self.conf["label_type"]="one_hot"
 
 		print(self.conf)
 	def im_patches_npy_multitemporal_from_npy_from_folder_store2(self):
@@ -143,51 +143,6 @@ class DataForNet(object):
 			print(im_name)
 		print(im_names)
 		self.im_patches_npy_multitemporal_from_npy_store2(im_names)
-
-class DataIm2Im(DataForNet):
-	def __init__(self,*args,**kwargs):
-		super().__init__(*args, **kwargs)
-		if self.debug>=1: print("Initializing DataIm2Im instance")
-		#self.ram_data["train"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
-		#self.ram_data["test"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
-
-		self.ram_data["train"]["labels"]=np.zeros((self.conf["train"]["n_apriori"],))
-		self.ram_data["test"]["labels"]=np.zeros((self.conf["test"]["n_apriori"],))
-
-
-
-
-class DataOneHot(DataForNet):
-	def __init__(self,*args,**kwargs):
-		super().__init__(*args, **kwargs)
-		if self.debug>=1: print("Initializing DataNetOneHot instance")
-		#self.ram_data["train"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
-		#self.ram_data["test"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
-
-		self.ram_data["train"]["labels"]=np.zeros((self.conf["train"]["n_apriori"],))
-		self.ram_data["test"]["labels"]=np.zeros((self.conf["test"]["n_apriori"],))
-
-	def onehot_create(self):
-		os.system("rm -rf ../data/train_test")
-
-		if self.conf["memory_mode"]=="ram":
-
-			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
-			
-			deb.prints(np.unique(self.ram_data["train"]["labels"],return_counts=True)[1])
-
-			self.ram_data["train"]["ims"],self.ram_data["train"]["labels"],self.ram_data["train"]["labels_onehot"]=self.data_balance(self.ram_data, \
-				self.conf["balanced"]["samples_per_class"])
-
-			with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.ram_data, f)
-
-		else:
-			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
-			self.data_onehot_load_balance_store()
-		##self.balance_data()
-		##self.save_data()
-
-		#
 
 	def im_patches_npy_multitemporal_from_npy_store2(self,names,train_mask_save=True):
 		fname=sys._getframe().f_code.co_name
@@ -225,7 +180,7 @@ class DataOneHot(DataForNet):
 		
 		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
 			self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
-			path_test=self.conf["test"],patches_save=self.conf["utils_flag_store"],label_type="one_hot",memory_mode=self.conf["memory_mode"])
+			path_test=self.conf["test"],patches_save=self.conf["utils_flag_store"],label_type=self.conf["label_type"],memory_mode=self.conf["memory_mode"])
 		deb.prints(self.conf["test"]["n"])
 		if self.conf["utils_flag_store"]:
 			np.save(self.conf["path"]+"train_n.npy",self.conf["train"]["n"])
@@ -334,7 +289,71 @@ class DataOneHot(DataForNet):
 			data["labels"][data_idx]=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
 			if data["labels"][data_idx]==0:
 				deb.prints("here")
+		elif label_type=="semantic":
+			data["labels"][data_idx]=label_patch
 		return data
+class DataIm2Im(DataForNet):
+	def __init__(self,*args,**kwargs):
+		super().__init__(*args, **kwargs)
+		if self.debug>=1: print("Initializing DataIm2Im instance")
+		#self.ram_data["train"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
+		#self.ram_data["test"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
+
+		self.ram_data["train"]["labels"]=np.zeros((self.conf["train"]["n_apriori"],))
+		self.ram_data["test"]["labels"]=np.zeros((self.conf["test"]["n_apriori"],))
+		self.conf["label_type"]="semantic"
+	def onehot_create(self):
+		os.system("rm -rf ../data/train_test")
+
+		if self.conf["memory_mode"]=="ram":
+
+			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
+			
+			#deb.prints(np.unique(self.ram_data["train"]["labels"],return_counts=True)[1])
+
+			#self.ram_data["train"]["ims"],self.ram_data["train"]["labels"],self.ram_data["train"]["labels_onehot"]=self.data_balance(self.ram_data, \
+			#	self.conf["balanced"]["samples_per_class"])
+
+			#with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.ram_data, f)
+
+		else:
+			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
+			self.data_onehot_load_balance_store()
+
+
+class DataOneHot(DataForNet):
+	def __init__(self,*args,**kwargs):
+		super().__init__(*args, **kwargs)
+		if self.debug>=1: print("Initializing DataNetOneHot instance")
+		#self.ram_data["train"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
+		#self.ram_data["test"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
+
+		self.ram_data["train"]["labels"]=np.zeros((self.conf["train"]["n_apriori"],))
+		self.ram_data["test"]["labels"]=np.zeros((self.conf["test"]["n_apriori"],))
+		self.conf["label_type"]="one_hot"
+	def create(self):
+		os.system("rm -rf ../data/train_test")
+
+		if self.conf["memory_mode"]=="ram":
+
+			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
+			
+			deb.prints(np.unique(self.ram_data["train"]["labels"],return_counts=True)[1])
+
+			self.ram_data["train"]["ims"],self.ram_data["train"]["labels"],self.ram_data["train"]["labels_onehot"]=self.data_balance(self.ram_data, \
+				self.conf["balanced"]["samples_per_class"])
+
+			with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.ram_data, f)
+
+		else:
+			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
+			self.data_onehot_load_balance_store()
+		##self.balance_data()
+		##self.save_data()
+
+		#
+
+
 	def data_onehot_load_balance_store(self):
 		print("heeere")
 		self.conf["train"]["n"]=np.load(self.conf["path"]+"train_n.npy")
@@ -515,7 +534,7 @@ if __name__ == "__main__":
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
 		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True, \
 		balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride)
-	data.onehot_create()
+	data.create()
 	#conf=data_creator.conf
 	#pass
 else:

@@ -42,7 +42,7 @@ parser.add_argument('--timesteps', dest='timesteps', type=int, default=utils.con
 parser.add_argument('--shape', dest='shape', type=int, default=[5,5], help='# timesteps used to train')
 parser.add_argument('--kernel', dest='kernel', type=int, default=[3,3], help='# timesteps used to train')
 parser.add_argument('--channels', dest='channels', type=int, default=6, help='# timesteps used to train')
-parser.add_argument('--filters', dest='filters', type=int, default=256, help='# timesteps used to train')
+parser.add_argument('--filters', dest='filters', type=int, default=32, help='# timesteps used to train')
 parser.add_argument('--n_classes', dest='n_classes', type=int, default=9, help='# timesteps used to train')
 parser.add_argument('--checkpoint_dir', dest='checkpoint_dir', default='./checkpoint', help='models are saved here')
 parser.add_argument('--model', dest='model', default='convlstm', help='models are saved here')
@@ -81,7 +81,7 @@ def main(_):
                             test_n_limit=args.test_n_limit,memory_mode=args.memory_mode, \
                             balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride)
     if args.memory_mode=="ram":
-        data.onehot_create()
+        data.create()
         deb.prints(data.ram_data["train"]["ims"].shape)
     with tf.Session() as sess:
         if args.model=='convlstm':
