@@ -30,7 +30,8 @@ import argparse
 
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=9,pc_mode="local", \
-		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None):
+		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None, \
+		n_apriori=1000000):
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n}
 
 		self.conf["memory_mode"]=memory_mode #"ram" or "hdd"
@@ -118,8 +119,8 @@ class DataForNet(object):
 		self.patch_shape=(self.conf["patch"]["size"],self.conf["patch"]["size"],self.conf["band_n"])
 		self.label_shape=(self.conf["patch"]["size"],self.conf["patch"]["size"])
 		
-		self.conf["train"]["n_apriori"]=1000000
-		self.conf["test"]["n_apriori"]=1000000
+		self.conf["train"]["n_apriori"]=n_apriori
+		self.conf["test"]["n_apriori"]=n_apriori
 		if self.conf["patch"]["overlap"]==0 and self.conf["patch"]["size"]==5:
 			self.conf["train"]["n_apriori"]=3950
 			if self.conf["extract"]["test_skip"]==0:
@@ -127,6 +128,9 @@ class DataForNet(object):
 		if self.test_n_limit<=self.conf["test"]["n_apriori"]:
 			self.conf["test"]["n_apriori"]=self.test_n_limit
 
+		deb.prints(self.conf["train"]["n_apriori"])
+		deb.prints(self.conf["test"]["n_apriori"])
+		
 		self.ram_data={"train":{},"test":{}}
 		self.ram_data["train"]["ims"]=np.zeros((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.patch_shape)
 		self.ram_data["test"]["ims"]=np.zeros((self.conf["test"]["n_apriori"],self.conf["t_len"])+self.patch_shape)
@@ -298,11 +302,16 @@ class DataIm2Im(DataForNet):
 		if self.debug>=1: print("Initializing DataIm2Im instance")
 		#self.ram_data["train"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
 		#self.ram_data["test"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
+		deb.prints((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.label_shape)
 
-		self.ram_data["train"]["labels"]=np.zeros((self.conf["train"]["n_apriori"],))
-		self.ram_data["test"]["labels"]=np.zeros((self.conf["test"]["n_apriori"],))
+		self.ram_data["train"]["labels"]=np.zeros((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.label_shape)
+		self.ram_data["test"]["labels"]=np.zeros((self.conf["test"]["n_apriori"],self.conf["t_len"])+self.label_shape)
+
 		self.conf["label_type"]="semantic"
-	def onehot_create(self):
+		deb.prints(self.ram_data["train"]["labels"].shape)
+		deb.prints(self.ram_data["test"]["labels"].shape)
+		
+	def create(self):
 		os.system("rm -rf ../data/train_test")
 
 		if self.conf["memory_mode"]=="ram":
@@ -527,14 +536,19 @@ if __name__ == "__main__":
 	parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="ram", help="Class number. 'local' or 'remote'")
 	parser.add_argument('-bs','--balance_samples_per_class', dest='balance_samples_per_class',type=int,default=None, help="Class number. 'local' or 'remote'")
 	parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,default=8, help="Class number. 'local' or 'remote'")
+	parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=1000000, help="Class number. 'local' or 'remote'")
 
 	args = parser.parse_args()
 
-	data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+	
+	#data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+	data=DataIm2Im(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
 		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True, \
-		balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride)
+		balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
+		n_apriori=args.n_apriori)
 	data.create()
+	
 	#conf=data_creator.conf
 	#pass
 else:
