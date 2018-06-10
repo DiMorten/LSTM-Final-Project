@@ -138,7 +138,7 @@ class DataForNet(object):
 		self.conf["label_type"]="one_hot"
 
 		print(self.conf)
-	def im_patches_npy_multitemporal_from_npy_from_folder_store2(self):
+	def im_patches_npy_multitemporal_from_npy_from_folder_store2(self,label_type="one_hot"):
 		im_names=[]
 		for i in range(1,10):
 			im_name=glob.glob(self.conf["in_npy_path"]+'im'+str(i)+'*')[0]
@@ -146,9 +146,9 @@ class DataForNet(object):
 			im_names.append(im_name)
 			print(im_name)
 		print(im_names)
-		self.im_patches_npy_multitemporal_from_npy_store2(im_names)
+		self.im_patches_npy_multitemporal_from_npy_store2(im_names,label_type)
 
-	def im_patches_npy_multitemporal_from_npy_store2(self,names,train_mask_save=True):
+	def im_patches_npy_multitemporal_from_npy_store2(self,names,label_type,train_mask_save=True):
 		fname=sys._getframe().f_code.co_name
 		print('[@im_patches_npy_multitemporal_from_npy_store2]')
 		pathlib.Path(self.conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
@@ -184,7 +184,7 @@ class DataForNet(object):
 		
 		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
 			self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
-			path_test=self.conf["test"],patches_save=self.conf["utils_flag_store"],label_type=self.conf["label_type"],memory_mode=self.conf["memory_mode"])
+			path_test=self.conf["test"],patches_save=self.conf["utils_flag_store"],label_type=label_type,memory_mode=self.conf["memory_mode"])
 		deb.prints(self.conf["test"]["n"])
 		if self.conf["utils_flag_store"]:
 			np.save(self.conf["path"]+"train_n.npy",self.conf["train"]["n"])
@@ -280,10 +280,7 @@ class DataForNet(object):
 		self.ram_data["test"]["labels"]=self.ram_data["test"]["labels"][0:self.ram_data["test"]["n"]]
 
 
-		self.ram_data["train"]["labels_onehot"]=self.labels_onehot_get(self.ram_data["train"]["labels"], \
-			self.ram_data["train"]["n"],self.conf["class_n"])
-		self.ram_data["test"]["labels_onehot"]=self.labels_onehot_get(self.ram_data["test"]["labels"], \
-			self.ram_data["test"]["n"],self.conf["class_n"])
+
 		
 		return patches_get["train_n"],test_real_count
 
@@ -316,7 +313,8 @@ class DataIm2Im(DataForNet):
 
 		if self.conf["memory_mode"]=="ram":
 
-			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
+			self.im_patches_npy_multitemporal_from_npy_from_folder_store2(label_type=self.conf["label_type"])
+			
 			
 			#deb.prints(np.unique(self.ram_data["train"]["labels"],return_counts=True)[1])
 
@@ -340,12 +338,18 @@ class DataOneHot(DataForNet):
 		self.ram_data["train"]["labels"]=np.zeros((self.conf["train"]["n_apriori"],))
 		self.ram_data["test"]["labels"]=np.zeros((self.conf["test"]["n_apriori"],))
 		self.conf["label_type"]="one_hot"
+	def im_patches_npy_multitemporal_from_npy_from_folder_store2_onehot(self):
+		self.im_patches_npy_multitemporal_from_npy_from_folder_store2(label_type=self.conf["label_type"])
+		self.ram_data["train"]["labels_onehot"]=self.labels_onehot_get(self.ram_data["train"]["labels"], \
+			self.ram_data["train"]["n"],self.conf["class_n"])
+		self.ram_data["test"]["labels_onehot"]=self.labels_onehot_get(self.ram_data["test"]["labels"], \
+			self.ram_data["test"]["n"],self.conf["class_n"])
 	def create(self):
 		os.system("rm -rf ../data/train_test")
 
 		if self.conf["memory_mode"]=="ram":
 
-			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
+			self.im_patches_npy_multitemporal_from_npy_from_folder_store2_onehot()
 			
 			deb.prints(np.unique(self.ram_data["train"]["labels"],return_counts=True)[1])
 
@@ -355,7 +359,7 @@ class DataOneHot(DataForNet):
 			with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.ram_data, f)
 
 		else:
-			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
+			self.im_patches_npy_multitemporal_from_npy_from_folder_store2_onehot()
 			self.data_onehot_load_balance_store()
 		##self.balance_data()
 		##self.save_data()
