@@ -83,6 +83,7 @@ class NeuralNet(object):
 	def trainable_vars_print(self):
 		t_vars = tf.trainable_variables()
 		if self.debug: print("trainable parameters",np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
+	# =____________________ Train methods ___________________= #
 	def data_len_get(self,data,memory_mode):
 		if memory_mode=="hdd":
 			data_len=len(data["im_paths"])
@@ -100,18 +101,18 @@ class NeuralNet(object):
 			return len(data["im_paths"])
 		elif memory_mode=="ram":
 			return data["ims"].shape[0]
-	def train_init(self):
-		init_op = tf.global_variables_initializer()
-		self.sess = tf.Session()
-		self.sess.run(init_op)
-#		self.writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph())
-		self.writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
+
 	def ram_data_sub_data_get(self, data,n,sub_data):
 
 		sub_data["labels"] = data["labels"][sub_data["index"]]
 		sub_data["ims"]=data["ims"][sub_data["index"]]
 		return sub_data
 
+	def batch_ims_labels_get(self,batch,data,batch_size,idx,memory_mode):
+		if memory_mode=="hdd":
+			return self.hdd_batch_ims_labels_get(batch,data,batch_size,idx)
+		elif memory_mode=="ram":
+			return self.ram_batch_ims_labels_get(batch,data,batch_size,idx)
 	def data_sub_data_get(self, data,n,memory_mode):
 		sub_data={"n":n}		
 		sub_data["index"] = np.random.choice(data["index"], sub_data["n"], replace=False)
@@ -123,8 +124,85 @@ class NeuralNet(object):
 			sub_data=self.ram_data_sub_data_get(data,n,sub_data)
 		deb.prints(sub_data["ims"].shape)
 		return sub_data
+	def train_init(self):
+		init_op = tf.global_variables_initializer()
+		self.sess = tf.Session()
+		self.sess.run(init_op)
+#		self.writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph())
+		self.writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
+	def train(self, args):
+		self.train_init()
+		
+		data = self.data_load(self.conf,memory_mode=self.conf["memory_mode"])
+		deb.prints(data["train"]["n"])
+		deb.prints(args.train_size)
+		deb.prints(self.batch_size)
+		batch={}
+		batch["idxs"] = min(data["train"]["n"], args.train_size) // self.batch_size
+		if self.debug>=1:
+			deb.prints(data["train"]["labels"].shape)
+			deb.prints(data["test"]["labels"].shape)
+			deb.prints(batch["idxs"])
+		
+		self.unique_classes_print(data["train"],memory_mode=self.conf["memory_mode"])
+
+		counter = 1
+		start_time = time.time()
+		if self.data_len_get(data["test"],memory_mode=self.conf["memory_mode"])>1000:
+			data["sub_test"]=self.data_sub_data_get(data["test"],1000,memory_mode=self.conf["memory_mode"])
+		else:
+			data["sub_test"]=data["test"]
+		#deb.prints(data["train"]["ims"].shape)
+		deb.prints(data["train"]["labels"].shape)
+		#deb.prints(data["test"]["ims"].shape)
+		deb.prints(data["test"]["labels"].shape)
+		
+
+		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
+		for epoch in range(args.epoch):
+			for idx in range(0, batch["idxs"]):
+				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx,memory_mode=self.conf["memory_mode"])
+				if self.debug>=3:
+					deb.prints(batch["ims"].shape)
+					deb.prints(batch["labels"].shape)
+				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels"]})
+				self.writer.add_summary(summary, counter)
+				counter += 1
+				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"]})
+				if self.debug>=3:
+					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
+			
+			# =__________________________________ Test stats get and model save  _______________________________ = #
+			save_path = self.saver.save(self.sess, "./model.ckpt")
+			print("Model saved in path: %s" % save_path)
+			
+			stats = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
+			
+			
+			print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
+			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
+
+			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
+	def data_load(self,conf,memory_mode):
+		if memory_mode=="hdd":
+			data=self.hdd_data_load(conf)
+		elif memory_mode=="ram":
+			data=self.ram_data
+			data["train"]["n"]=data["train"]["ims"].shape[0]
+			data["test"]["n"]=data["test"]["ims"].shape[0]
+
+			deb.prints(self.ram_data["train"]["ims"].shape)
+			deb.prints(data["train"]["ims"].shape)
 
 		
+		
+		data["train"]["index"] = range(data["test"]["n"])
+		data["test"]["index"] = range(data["test"]["n"])
+
+		return data
+
+# ============================ NeuralNetSemantic takes image output ============================================= #
+
 class NeuralNetSemantic(NeuralNet):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -150,7 +228,13 @@ class NeuralNetSemantic(NeuralNet):
 		error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
 		tf.summary.scalar('error',error)
 		return minimize, mistakes, error
+	def unique_classes_print(self,memory_mode):
+		pass
+	def data_stats_get(self,data,batch_size=1000):
 
+		stats["average_accuracy"]=0
+		stats["overall_accuracy"]=0
+		return stats
 # ============================ NeuralNet takes onehot image output ============================================= #
 class NeuralNetOneHot(NeuralNet):
 	def __init__(self, *args, **kwargs):
@@ -208,11 +292,7 @@ class NeuralNetOneHot(NeuralNet):
 		batch["ims"] = np.asarray([np.load(batch_file_path) for batch_file_path in batch["file_paths"]]) # Load files from path
 		return batch
 
-	def batch_ims_labels_get(self,batch,data,batch_size,idx,memory_mode):
-		if memory_mode=="hdd":
-			return self.hdd_batch_ims_labels_get(batch,data,batch_size,idx)
-		elif memory_mode=="ram":
-			return self.ram_batch_ims_labels_get(batch,data,batch_size,idx)
+
 
 	def ims_get(self,data_im_paths):
 		return np.asarray([np.load(file_path) for file_path in data_im_paths]) # Load files from path
@@ -232,59 +312,6 @@ class NeuralNetOneHot(NeuralNet):
 		elif memory_mode=="ram":
 			print("Unique classes",np.unique(data["labels_int"],return_counts=True))
 
-	def train(self, args):
-		self.train_init()
-		
-		data = self.data_load(self.conf,memory_mode=self.conf["memory_mode"])
-		deb.prints(data["train"]["n"])
-		deb.prints(args.train_size)
-		deb.prints(self.batch_size)
-		batch={}
-		batch["idxs"] = min(data["train"]["n"], args.train_size) // self.batch_size
-		if self.debug>=1:
-			deb.prints(data["train"]["labels"].shape)
-			deb.prints(data["test"]["labels"].shape)
-			deb.prints(batch["idxs"])
-		
-		self.unique_classes_print(data["train"],memory_mode=self.conf["memory_mode"])
-
-		counter = 1
-		start_time = time.time()
-		if self.data_len_get(data["test"],memory_mode=self.conf["memory_mode"])>1000:
-			data["sub_test"]=self.data_sub_data_get(data["test"],1000,memory_mode=self.conf["memory_mode"])
-		else:
-			data["sub_test"]=data["test"]
-		#deb.prints(data["train"]["ims"].shape)
-		deb.prints(data["train"]["labels"].shape)
-		#deb.prints(data["test"]["ims"].shape)
-		deb.prints(data["test"]["labels"].shape)
-		
-
-		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
-		for epoch in range(args.epoch):
-			for idx in range(0, batch["idxs"]):
-				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx,memory_mode=self.conf["memory_mode"])
-				if self.debug>=3:
-					deb.prints(batch["ims"].shape)
-					deb.prints(batch["labels"].shape)
-				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels"]})
-				self.writer.add_summary(summary, counter)
-				counter += 1
-				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"]})
-				if self.debug>=3:
-					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
-			
-			# =__________________________________ Test stats get and model save  _______________________________ = #
-			save_path = self.saver.save(self.sess, "./model.ckpt")
-			print("Model saved in path: %s" % save_path)
-			
-			stats = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
-			
-			
-			print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
-			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
-
-			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
 	def data_stats_get(self,data,batch_size=1000):
 
 		batch={}
@@ -390,23 +417,7 @@ class NeuralNetOneHot(NeuralNet):
 		data["test"]["n"]=len(data["test"]["im_paths"])
 		return data
 
-	def data_load(self,conf,memory_mode):
-		if memory_mode=="hdd":
-			data=self.hdd_data_load(conf)
-		elif memory_mode=="ram":
-			data=self.ram_data
-			data["train"]["n"]=data["train"]["ims"].shape[0]
-			data["test"]["n"]=data["test"]["ims"].shape[0]
 
-			deb.prints(self.ram_data["train"]["ims"].shape)
-			deb.prints(data["train"]["ims"].shape)
-
-		
-		
-		data["train"]["index"] = range(data["test"]["n"])
-		data["test"]["index"] = range(data["test"]["n"])
-
-		return data
 
 # ================================= Implements ConvLSTM ============================================== #
 class conv_lstm(NeuralNetOneHot):

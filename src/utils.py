@@ -293,6 +293,20 @@ class DataForNet(object):
 		elif label_type=="semantic":
 			data["labels_int"][data_idx]=label_patch[self.conf["t_len"]-1]
 		return data
+
+	def data_normalize_per_band(self,data):
+		whole_data={}
+		whole_data["value"]=np.concatenate((data["train"]["ims"],data["test"]["ims"]),axis=0)
+		data["normalize"]={}
+		data["normalize"]["avg"]=np.zeros(self.conf["band_n"])
+		data["normalize"]["std"]=np.zeros(self.conf["band_n"])
+		if self.debug>=1: print(data["train"]["ims"].dtype)
+		for i in range(0,self.conf["band_n"]):
+			data["normalize"]["avg"][i]=np.average(whole_data["value"][:,:,:,:,i])
+			data["normalize"]["std"][i]=np.std(whole_data["value"][:,:,:,:,i])
+			data["train"]["ims"][:,:,:,:,i]=(data["train"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
+			data["test"]["ims"][:,:,:,:,i]=(data["test"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
+		return data
 class DataSemantic(DataForNet):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args, **kwargs)
@@ -313,7 +327,7 @@ class DataSemantic(DataForNet):
 		if self.conf["memory_mode"]=="ram":
 
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2(label_type=self.conf["label_type"])
-			
+			self.ram_data=self.data_normalize_per_band(self.ram_data)
 			if self.debug>=1:
 				deb.prints(self.ram_data["train"]["labels_int"].shape)
 
@@ -346,7 +360,7 @@ class DataOneHot(DataForNet):
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2_onehot()
 			
 			deb.prints(np.unique(self.ram_data["train"]["labels_int"],return_counts=True)[1])
-
+			self.ram_data=self.data_normalize_per_band(self.ram_data)
 			self.ram_data["train"]["ims"],self.ram_data["train"]["labels_int"],self.ram_data["train"]["labels"]=self.data_balance(self.ram_data, \
 				self.conf["balanced"]["samples_per_class"])
 
@@ -393,19 +407,7 @@ class DataOneHot(DataForNet):
 			os.system("rm -rf ../data/balanced")
 			self.data_save_to_npy(self.conf["train"],data["train"])
 			self.data_save_to_npy(self.conf["test"],data["test"])	
-	def data_normalize_per_band(self,data):
-		whole_data={}
-		whole_data["value"]=np.concatenate((data["train"]["ims"],data["test"]["ims"]),axis=0)
-		data["normalize"]={}
-		data["normalize"]["avg"]=np.zeros(self.conf["band_n"])
-		data["normalize"]["std"]=np.zeros(self.conf["band_n"])
-		if self.debug>=1: print(data["train"]["ims"].dtype)
-		for i in range(0,self.conf["band_n"]):
-			data["normalize"]["avg"][i]=np.average(whole_data["value"][:,:,:,:,i])
-			data["normalize"]["std"][i]=np.std(whole_data["value"][:,:,:,:,i])
-			data["train"]["ims"][:,:,:,:,i]=(data["train"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
-			data["test"]["ims"][:,:,:,:,i]=(data["test"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
-		return data
+
 	def im_patches_npy_multitemporal_from_npy_from_folder_load2(self,load=True,debug=1):
 		fname=sys._getframe().f_code.co_name
 		
