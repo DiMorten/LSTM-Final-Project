@@ -32,9 +32,9 @@ np.set_printoptions(suppress=True)
 class NeuralNet(object):
 
 	def __init__(self, sess=tf.Session(), batch_size=50, epoch=200, train_size=1e8,
-                        timesteps=utils.conf["t_len"], shape=[32,32],
-                        kernel=[3,3], channels=6, filters=32, n_classes=9,
-                        checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1):
+						timesteps=utils.conf["t_len"], shape=[32,32],
+						kernel=[3,3], channels=6, filters=32, n_classes=9,
+						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1):
 		
 		self.ram_data=data
 		self.sess = sess
@@ -216,18 +216,26 @@ class NeuralNetSemantic(NeuralNet):
 		accuracy_average=0.5
 		return accuracy_average
 	def loss_optimizer_set(self,target,prediction):
-		# Estimate loss from prediction and target
-		cross_entropy = -tf.reduce_sum(target * tf.log(tf.clip_by_value(prediction,1e-10,1.0)))
 
+		# Estimate loss from prediction and target
+		with tf.name_scope('cross_entropy'):
+			cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target, logits=prediction))
+
+		with tf.name_scope('learning_rate'):
+			learning_rate = tf.train.exponential_decay(opt.learning_rate, global_step, opt.iter_epoch, opt.lr_decay, staircase=True)
 		# Prepare the optimization function
-		optimizer = tf.train.AdamOptimizer()
+		optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy_loss, global_step=global_step)
+
 		minimize = optimizer.minimize(cross_entropy)
 
-		mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
+		# Distance L1
+		error = tf.reduce_sum(tf.abs(tf.subtract(tf.contrib.layers.flatten(prediction),tf.contrib.layers.flatten(target))))
+		#mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
 		
-		error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
+		#error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
 		tf.summary.scalar('error',error)
 		return minimize, mistakes, error
+
 	def unique_classes_print(self,memory_mode):
 		pass
 	def data_stats_get(self,data,batch_size=1000):
