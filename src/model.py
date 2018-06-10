@@ -90,7 +90,41 @@ class NeuralNet(object):
 			data_len=data["ims"].shape[0]
 		deb.prints(data_len)
 		return data_len
+	def ram_batch_ims_labels_get(self,batch,data,batch_size,idx):
+		
+		batch["ims"] = data["ims"][idx*batch_size:(idx+1)*batch_size]
+		batch["labels"] = data["labels"][idx*batch_size:(idx+1)*batch_size]
+		return batch
+	def data_n_get(self,data,memory_mode):
+		if memory_mode=="hdd":
+			return len(data["im_paths"])
+		elif memory_mode=="ram":
+			return data["ims"].shape[0]
+	def train_init(self):
+		init_op = tf.global_variables_initializer()
+		self.sess = tf.Session()
+		self.sess.run(init_op)
+#		self.writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph())
+		self.writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
+	def ram_data_sub_data_get(self, data,n,sub_data):
 
+		sub_data["labels"] = data["labels"][sub_data["index"]]
+		sub_data["ims"]=data["ims"][sub_data["index"]]
+		return sub_data
+
+	def data_sub_data_get(self, data,n,memory_mode):
+		sub_data={"n":n}		
+		sub_data["index"] = np.random.choice(data["index"], sub_data["n"], replace=False)
+		deb.prints(sub_data["index"].shape)
+
+		if memory_mode=="hdd":
+			sub_data=self.hdd_data_sub_data_get(data,n,sub_data)
+		elif memory_mode=="ram":
+			sub_data=self.ram_data_sub_data_get(data,n,sub_data)
+		deb.prints(sub_data["ims"].shape)
+		return sub_data
+
+		
 class NeuralNetSemantic(NeuralNet):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -116,11 +150,7 @@ class NeuralNetSemantic(NeuralNet):
 		error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
 		tf.summary.scalar('error',error)
 		return minimize, mistakes, error
-	def ram_batch_ims_labels_get(self,batch,data,batch_size,idx):
-		
-		batch["ims"] = data["ims"][idx*batch_size:(idx+1)*batch_size]
-		batch["labels"] = data["labels"][idx*batch_size:(idx+1)*batch_size]
-		return batch
+
 # ============================ NeuralNet takes onehot image output ============================================= #
 class NeuralNetOneHot(NeuralNet):
 	def __init__(self, *args, **kwargs):
@@ -177,11 +207,7 @@ class NeuralNetOneHot(NeuralNet):
 		batch["labels"] = data["labels"][idx*batch_size:(idx+1)*batch_size]
 		batch["ims"] = np.asarray([np.load(batch_file_path) for batch_file_path in batch["file_paths"]]) # Load files from path
 		return batch
-	def ram_batch_ims_labels_get(self,batch,data,batch_size,idx):
-		
-		batch["ims"] = data["ims"][idx*batch_size:(idx+1)*batch_size]
-		batch["labels"] = data["labels"][idx*batch_size:(idx+1)*batch_size]
-		return batch
+
 	def batch_ims_labels_get(self,batch,data,batch_size,idx,memory_mode):
 		if memory_mode=="hdd":
 			return self.hdd_batch_ims_labels_get(batch,data,batch_size,idx)
@@ -197,30 +223,7 @@ class NeuralNetOneHot(NeuralNet):
 		sub_data["labels"] = data["labels"][sub_data["index"]]
 		sub_data["ims"]=self.ims_get(sub_data["im_paths"])
 		return sub_data
-	def ram_data_sub_data_get(self, data,n,sub_data):
 
-		sub_data["labels"] = data["labels"][sub_data["index"]]
-		sub_data["ims"]=data["ims"][sub_data["index"]]
-		return sub_data
-
-	def data_sub_data_get(self, data,n,memory_mode):
-		sub_data={"n":n}		
-		sub_data["index"] = np.random.choice(data["index"], sub_data["n"], replace=False)
-		deb.prints(sub_data["index"].shape)
-
-		if memory_mode=="hdd":
-			sub_data=self.hdd_data_sub_data_get(data,n,sub_data)
-		elif memory_mode=="ram":
-			sub_data=self.ram_data_sub_data_get(data,n,sub_data)
-		deb.prints(sub_data["ims"].shape)
-		return sub_data
-
-	def data_n_get(self,data,memory_mode):
-		if memory_mode=="hdd":
-			return len(data["im_paths"])
-		elif memory_mode=="ram":
-			return data["ims"].shape[0]
-		
 
 	def unique_classes_print(self,data,memory_mode):
 		if memory_mode=="hdd":
@@ -228,14 +231,10 @@ class NeuralNetOneHot(NeuralNet):
 			print("Unique classes",np.unique(data["labels_int"],return_counts=True))
 		elif memory_mode=="ram":
 			print("Unique classes",np.unique(data["labels_int"],return_counts=True))
+
 	def train(self, args):
-
-		init_op = tf.global_variables_initializer()
-		self.sess = tf.Session()
-		self.sess.run(init_op)
-#		self.writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph())
-		self.writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
-
+		self.train_init()
+		
 		data = self.data_load(self.conf,memory_mode=self.conf["memory_mode"])
 		deb.prints(data["train"]["n"])
 		deb.prints(args.train_size)
