@@ -293,10 +293,10 @@ class DataForNet(object):
 		elif label_type=="semantic":
 			data["labels"][data_idx]=label_patch
 		return data
-class DataIm2Im(DataForNet):
+class DataSemantic(DataForNet):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args, **kwargs)
-		if self.debug>=1: print("Initializing DataIm2Im instance")
+		if self.debug>=1: print("Initializing DataSemantic instance")
 		#self.ram_data["train"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
 		#self.ram_data["test"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
 		deb.prints((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.label_shape)
@@ -315,7 +315,7 @@ class DataIm2Im(DataForNet):
 
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2(label_type=self.conf["label_type"])
 			
-			
+
 			#deb.prints(np.unique(self.ram_data["train"]["labels"],return_counts=True)[1])
 
 			#self.ram_data["train"]["ims"],self.ram_data["train"]["labels"],self.ram_data["train"]["labels_onehot"]=self.data_balance(self.ram_data, \
@@ -324,9 +324,9 @@ class DataIm2Im(DataForNet):
 			#with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.ram_data, f)
 
 		else:
-			self.im_patches_npy_multitemporal_from_npy_from_folder_store2()
-			self.data_onehot_load_balance_store()
-
+			print("Hdd mode not implemented yet for Im2Im data.")
+			#break
+			
 
 class DataOneHot(DataForNet):
 	def __init__(self,*args,**kwargs):
@@ -546,7 +546,7 @@ if __name__ == "__main__":
 
 	
 	#data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
-	data=DataIm2Im(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+	data=DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
 		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True, \
 		balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \

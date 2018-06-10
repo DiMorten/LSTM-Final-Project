@@ -83,6 +83,13 @@ class NeuralNet(object):
 	def trainable_vars_print(self):
 		t_vars = tf.trainable_variables()
 		if self.debug: print("trainable parameters",np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
+
+
+class NeuralNetSemantic(NeuralNet):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		if self.debug>=1: print("Initializing NeuralNetOneHot instance")
+
 # ============================ NeuralNet takes onehot image output ============================================= #
 class NeuralNetOneHot(NeuralNet):
 	def __init__(self, *args, **kwargs):

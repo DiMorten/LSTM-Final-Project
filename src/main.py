@@ -63,6 +63,10 @@ parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,d
 parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=1000000, help="Class number. 'local' or 'remote'")
 args = parser.parse_args()
 np.set_printoptions(suppress=True)
+if args.model=='convlstm' or args.model=='conv3d':
+    label_type='one_hot'
+elif args.model=='unet':
+    label_type='semantic'
 """
 if args.memory_mode=="hdd":
     with open(utils.conf["path"]+'data.pkl', 'rb') as handle: dataset=pickle.load(handle)
@@ -75,12 +79,21 @@ if args.memory_mode=="hdd":
 def main(_):
     if not os.path.exists(args.checkpoint_dir):
         os.makedirs(args.checkpoint_dir)
-    #if args.memory_mode=="ram":
-    data=utils.DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
-                            band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
-                            test_n_limit=args.test_n_limit,memory_mode=args.memory_mode, \
-                            balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
-                            n_apriori=args.n_apriori)
+
+    if label_type=='one_hot':
+        data=utils.DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+                                band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
+                                test_n_limit=args.test_n_limit,memory_mode=args.memory_mode, \
+                                balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
+                                n_apriori=args.n_apriori)
+    elif label_type=='semantic':
+        data=utils.DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+                                band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
+                                test_n_limit=args.test_n_limit,memory_mode=args.memory_mode, \
+                                balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
+                                n_apriori=args.n_apriori)
+
+
     if args.memory_mode=="ram":
         data.create()
         deb.prints(data.ram_data["train"]["ims"].shape)
