@@ -202,9 +202,9 @@ class NeuralNet(object):
 		return data
 	def model_build(self):
 		self.data,self.target=self.placeholder_init(self.timesteps,self.shape,self.channels,self.n_classes)
-		self.prediction = self.model_graph_get(self.data)
+		self.annotation, self.prediction = self.model_graph_get(self.data)
 
-		self.minimize,self.mistakes,self.error=self.loss_optimizer_set(self.target,self.prediction)
+		self.minimize,self.mistakes,self.error=self.loss_optimizer_set(self.target,self.prediction, self.annotation)
 		self.error_sum, self.saver, self.merged = self.tensorboard_saver_init(self.error)
 		self.trainable_vars_print()
 # ============================ NeuralNetSemantic takes image output ============================================= #
@@ -215,37 +215,47 @@ class NeuralNetSemantic(NeuralNet):
 		if self.debug>=1: print("Initializing NeuralNetSemantic instance")
 	def placeholder_init(self,timesteps,shape,channels,n_classes):
 		data = tf.placeholder(tf.float32, [None] +[timesteps] + shape + [channels])
-		target = tf.placeholder(tf.float32, [None] + shape)
+		target = tf.placeholder(tf.float32, [None] + shape[0::])
 		if self.debug: deb.prints(target.get_shape())
 		return data,target
 	def average_accuracy_get(self,target,prediction,debug=0):
 		accuracy_average=0.5
 		return accuracy_average
-	def loss_optimizer_set(self,target,prediction):
+	def loss_optimizer_set(self,target,prediction, annotation):
 
+		target_int=tf.cast(target,tf.int32)
+		deb.prints(target_int.get_shape())
+		deb.prints(prediction.get_shape())
+		#prediction=tf.squeeze(prediction, squeeze_dims=[3])
+		#logits=tf.argmax(prediction,1)
+		#deb.prints(logits.get_shape())
+		
 		# Estimate loss from prediction and target
 		with tf.name_scope('cross_entropy'):
-			cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target, logits=prediction))
+			cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=prediction))
 
-		with tf.name_scope('learning_rate'):
-			learning_rate = tf.train.exponential_decay(opt.learning_rate, global_step, opt.iter_epoch, opt.lr_decay, staircase=True)
+		##with tf.name_scope('learning_rate'):
+		##	learning_rate = tf.train.exponential_decay(opt.learning_rate, global_step, opt.iter_epoch, opt.lr_decay, staircase=True)
 		# Prepare the optimization function
-		optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy_loss, global_step=global_step)
+		##optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy_loss, global_step=global_step)
+		optimizer = tf.train.AdamOptimizer()
 
 		minimize = optimizer.minimize(cross_entropy)
 
+		annotation=tf.cast(annotation,tf.float32)
 		# Distance L1
-		error = tf.reduce_sum(tf.cast(tf.abs(tf.subtract(tf.contrib.layers.flatten(prediction),tf.contrib.layers.flatten(target))), tf.float32))
+		error = tf.reduce_sum(tf.cast(tf.abs(tf.subtract(tf.contrib.layers.flatten(annotation),tf.contrib.layers.flatten(target))), tf.float32))
 		#mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
 		
 		#error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
 		tf.summary.scalar('error',error)
-		return minimize, error
+		mistakes=None
+		return minimize, mistakes, error
 
-	def unique_classes_print(self,memory_mode):
+	def unique_classes_print(self,data,memory_mode):
 		pass
 	def data_stats_get(self,data,batch_size=1000):
-
+		stats={}
 		stats["average_accuracy"]=0
 		stats["overall_accuracy"]=0
 		return stats
@@ -437,7 +447,15 @@ class UNet(NeuralNetSemantic):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.model_build()
-
+		self.kernel_size=(3,3)
+		self.filters=10
+	def model_graph_get(self,data):
+		graph_pipeline = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh,padding='same')
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, 9, self.kernel_size, activation=None,padding='same')
+		annotation_pred = tf.argmax(graph_pipeline, dimension=3, name="prediction")
+		#return tf.expand_dims(annotation_pred, dim=3), graph_pipeline
+		return annotation_pred, graph_pipeline
 
 # ================================= Implements ConvLSTM ============================================== #
 class conv_lstm(NeuralNetOneHot):

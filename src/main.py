@@ -30,6 +30,7 @@ import utils
 import deb
 from model import conv_lstm
 from model import Conv3DMultitemp
+from model import UNet
 
 #import conf
 parser = argparse.ArgumentParser(description='')
@@ -45,7 +46,7 @@ parser.add_argument('--channels', dest='channels', type=int, default=6, help='# 
 parser.add_argument('--filters', dest='filters', type=int, default=32, help='# timesteps used to train')
 parser.add_argument('--n_classes', dest='n_classes', type=int, default=9, help='# timesteps used to train')
 parser.add_argument('--checkpoint_dir', dest='checkpoint_dir', default='./checkpoint', help='models are saved here')
-parser.add_argument('--model', dest='model', default='convlstm', help='models are saved here')
+parser.add_argument('-m','--model', dest='model', default='convlstm', help='models are saved here')
 parser.add_argument('--log_dir', dest='log_dir', default=utils.conf["summaries_path"], help='models are saved here')
 
 parser.add_argument('--debug', type=int, default=1, help='Debug')
@@ -108,6 +109,12 @@ def main(_):
                             timesteps=args.timesteps, shape=args.shape,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
                             checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
+        elif args.model=='unet':
+            model = UNet(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
+                            timesteps=args.timesteps, shape=args.shape,
+                            kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
+            
         if args.phase == 'train':
             model.train(args)
         

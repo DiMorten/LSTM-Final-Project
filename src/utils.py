@@ -314,12 +314,14 @@ class DataSemantic(DataForNet):
 
 		deb.prints((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.label_shape)
 
-		self.ram_data["train"]["labels_int"]=np.zeros((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.label_shape)
-		self.ram_data["test"]["labels_int"]=np.zeros((self.conf["test"]["n_apriori"],self.conf["t_len"])+self.label_shape)
+		self.ram_data["train"]["labels"]=np.zeros((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.label_shape)
+		self.ram_data["test"]["labels"]=np.zeros((self.conf["test"]["n_apriori"],self.conf["t_len"])+self.label_shape)
+		self.ram_data["train"]["labels_int"]=np.zeros((self.conf["train"]["n_apriori"],)+self.label_shape)
+		self.ram_data["test"]["labels_int"]=np.zeros((self.conf["test"]["n_apriori"],)+self.label_shape)
 
 		self.conf["label_type"]="semantic"
-		deb.prints(self.ram_data["train"]["labels_int"].shape)
-		deb.prints(self.ram_data["test"]["labels_int"].shape)
+		deb.prints(self.ram_data["train"]["labels"].shape)
+		deb.prints(self.ram_data["test"]["labels"].shape)
 		
 	def create(self):
 		os.system("rm -rf ../data/train_test")
@@ -327,9 +329,14 @@ class DataSemantic(DataForNet):
 		if self.conf["memory_mode"]=="ram":
 
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2(label_type=self.conf["label_type"])
+
+			self.ram_data["train"]["labels"]=self.ram_data["train"]["labels_int"]
+			self.ram_data["test"]["labels"]=self.ram_data["test"]["labels_int"]
+						
+
 			self.ram_data=self.data_normalize_per_band(self.ram_data)
 			if self.debug>=1:
-				deb.prints(self.ram_data["train"]["labels_int"].shape)
+				deb.prints(self.ram_data["train"]["labels"].shape)
 
 		else:
 			print("Hdd mode not implemented yet for Im2Im data.")
@@ -358,7 +365,8 @@ class DataOneHot(DataForNet):
 		if self.conf["memory_mode"]=="ram":
 
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2_onehot()
-			
+			if self.debug>=1:
+				deb.prints(self.ram_data["train"]["labels_int"].shape)
 			deb.prints(np.unique(self.ram_data["train"]["labels_int"],return_counts=True)[1])
 			self.ram_data=self.data_normalize_per_band(self.ram_data)
 			self.ram_data["train"]["ims"],self.ram_data["train"]["labels_int"],self.ram_data["train"]["labels"]=self.data_balance(self.ram_data, \
