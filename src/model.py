@@ -200,7 +200,13 @@ class NeuralNet(object):
 		data["test"]["index"] = range(data["test"]["n"])
 
 		return data
+	def model_build(self):
+		self.data,self.target=self.placeholder_init(self.timesteps,self.shape,self.channels,self.n_classes)
+		self.prediction = self.model_graph_get(self.data)
 
+		self.minimize,self.mistakes,self.error=self.loss_optimizer_set(self.target,self.prediction)
+		self.error_sum, self.saver, self.merged = self.tensorboard_saver_init(self.error)
+		self.trainable_vars_print()
 # ============================ NeuralNetSemantic takes image output ============================================= #
 
 class NeuralNetSemantic(NeuralNet):
@@ -229,12 +235,12 @@ class NeuralNetSemantic(NeuralNet):
 		minimize = optimizer.minimize(cross_entropy)
 
 		# Distance L1
-		error = tf.reduce_sum(tf.abs(tf.subtract(tf.contrib.layers.flatten(prediction),tf.contrib.layers.flatten(target))))
+		error = tf.reduce_sum(tf.cast(tf.abs(tf.subtract(tf.contrib.layers.flatten(prediction),tf.contrib.layers.flatten(target))), tf.float32))
 		#mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
 		
 		#error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
 		tf.summary.scalar('error',error)
-		return minimize, mistakes, error
+		return minimize, error
 
 	def unique_classes_print(self,memory_mode):
 		pass
@@ -426,21 +432,18 @@ class NeuralNetOneHot(NeuralNet):
 		return data
 
 
+# ================================= Implements U-Net ============================================== #
+class UNet(NeuralNetSemantic):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.model_build()
+
 
 # ================================= Implements ConvLSTM ============================================== #
 class conv_lstm(NeuralNetOneHot):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.model_build()
-
-	def model_build(self):
-		self.data,self.target=self.placeholder_init(self.timesteps,self.shape,self.channels,self.n_classes)
-		self.prediction = self.model_graph_get(self.data)
-
-		# Set optimizer
-		self.minimize,self.mistakes,self.error=self.loss_optimizer_set(self.target,self.prediction)
-		self.error_sum, self.saver, self.merged = self.tensorboard_saver_init(self.error)
-		self.trainable_vars_print()
 		
 	def model_graph_get(self,data):
 		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=self.kernel,name='convlstm')
@@ -466,14 +469,6 @@ class Conv3DMultitemp(NeuralNetOneHot):
 		self.kernel=[3,3,3]
 		deb.prints(self.kernel)
 		self.model_build()
-	def model_build(self):
-		self.data,self.target=self.placeholder_init(self.timesteps,self.shape,self.channels,self.n_classes)
-		self.prediction = self.model_graph_get(self.data)
-
-		# Set optimizer
-		self.minimize,self.mistakes,self.error=self.loss_optimizer_set(self.target,self.prediction)
-		self.error_sum, self.saver, self.merged = self.tensorboard_saver_init(self.error)
-		self.trainable_vars_print()
 		
 	def model_graph_get(self,data):
 		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=[3,3],get_last=False,name="convlstm")
