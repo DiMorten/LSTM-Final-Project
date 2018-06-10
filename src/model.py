@@ -174,13 +174,13 @@ class NeuralNetOneHot(NeuralNet):
 
 	def hdd_batch_ims_labels_get(self,batch,data,batch_size,idx):
 		batch["file_paths"] = data["im_paths"][idx*batch_size:(idx+1)*batch_size]
-		batch["labels_onehot"] = data["labels_onehot"][idx*batch_size:(idx+1)*batch_size]
+		batch["labels"] = data["labels"][idx*batch_size:(idx+1)*batch_size]
 		batch["ims"] = np.asarray([np.load(batch_file_path) for batch_file_path in batch["file_paths"]]) # Load files from path
 		return batch
 	def ram_batch_ims_labels_get(self,batch,data,batch_size,idx):
 		
 		batch["ims"] = data["ims"][idx*batch_size:(idx+1)*batch_size]
-		batch["labels_onehot"] = data["labels_onehot"][idx*batch_size:(idx+1)*batch_size]
+		batch["labels"] = data["labels"][idx*batch_size:(idx+1)*batch_size]
 		return batch
 	def batch_ims_labels_get(self,batch,data,batch_size,idx,memory_mode):
 		if memory_mode=="hdd":
@@ -194,12 +194,12 @@ class NeuralNetOneHot(NeuralNet):
 	def hdd_data_sub_data_get(self, data,n,sub_data):
 		
 		sub_data["im_paths"] = [data["im_paths"][i] for i in sub_data["index"]]
-		sub_data["labels_onehot"] = data["labels_onehot"][sub_data["index"]]
+		sub_data["labels"] = data["labels"][sub_data["index"]]
 		sub_data["ims"]=self.ims_get(sub_data["im_paths"])
 		return sub_data
 	def ram_data_sub_data_get(self, data,n,sub_data):
 
-		sub_data["labels_onehot"] = data["labels_onehot"][sub_data["index"]]
+		sub_data["labels"] = data["labels"][sub_data["index"]]
 		sub_data["ims"]=data["ims"][sub_data["index"]]
 		return sub_data
 
@@ -224,10 +224,10 @@ class NeuralNetOneHot(NeuralNet):
 
 	def unique_classes_print(self,data,memory_mode):
 		if memory_mode=="hdd":
-			data["labels_int"]=[ np.where(r==1)[0][0] for r in data["labels_onehot"] ]
+			data["labels_int"]=[ np.where(r==1)[0][0] for r in data["labels"] ]
 			print("Unique classes",np.unique(data["labels_int"],return_counts=True))
 		elif memory_mode=="ram":
-			print("Unique classes",np.unique(data["labels"],return_counts=True))
+			print("Unique classes",np.unique(data["labels_int"],return_counts=True))
 	def train(self, args):
 
 		init_op = tf.global_variables_initializer()
@@ -243,8 +243,8 @@ class NeuralNetOneHot(NeuralNet):
 		batch={}
 		batch["idxs"] = min(data["train"]["n"], args.train_size) // self.batch_size
 		if self.debug>=1:
-			deb.prints(data["train"]["labels_onehot"].shape)
-			deb.prints(data["test"]["labels_onehot"].shape)
+			deb.prints(data["train"]["labels"].shape)
+			deb.prints(data["test"]["labels"].shape)
 			deb.prints(batch["idxs"])
 		
 		self.unique_classes_print(data["train"],memory_mode=self.conf["memory_mode"])
@@ -256,9 +256,9 @@ class NeuralNetOneHot(NeuralNet):
 		else:
 			data["sub_test"]=data["test"]
 		#deb.prints(data["train"]["ims"].shape)
-		deb.prints(data["train"]["labels_onehot"].shape)
+		deb.prints(data["train"]["labels"].shape)
 		#deb.prints(data["test"]["ims"].shape)
-		deb.prints(data["test"]["labels_onehot"].shape)
+		deb.prints(data["test"]["labels"].shape)
 		
 
 		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
@@ -267,11 +267,11 @@ class NeuralNetOneHot(NeuralNet):
 				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx,memory_mode=self.conf["memory_mode"])
 				if self.debug>=3:
 					deb.prints(batch["ims"].shape)
-					deb.prints(batch["labels_onehot"].shape)
-				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels_onehot"]})
+					deb.prints(batch["labels"].shape)
+				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels"]})
 				self.writer.add_summary(summary, counter)
 				counter += 1
-				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels_onehot"]})
+				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"]})
 				if self.debug>=3:
 					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
 			
@@ -300,13 +300,13 @@ class NeuralNetOneHot(NeuralNet):
 			batch=self.batch_ims_labels_get(batch,data,batch_size,idx,memory_mode=self.conf["memory_mode"])
 			
 			batch["prediction"] = np.around(self.sess.run(self.prediction,{self.data: batch["ims"]}),decimals=2)
-			batch["label_count"]=np.sum(batch["labels_onehot"],axis=0)
+			batch["label_count"]=np.sum(batch["labels"],axis=0)
 			
 			if self.debug>=2:
 				deb.prints(batch["prediction"].shape)
-				deb.prints(batch["labels_onehot"].shape)
+				deb.prints(batch["labels"].shape)
 				deb.prints(batch["label_count"])
-			_,batch["correct_per_class"],_=self.average_accuracy_get(batch["labels_onehot"],batch["prediction"])
+			_,batch["correct_per_class"],_=self.average_accuracy_get(batch["labels"],batch["prediction"])
 			stats["correct_per_class"]+=batch["correct_per_class"]
 			
 			if self.debug>=2:
@@ -314,9 +314,9 @@ class NeuralNetOneHot(NeuralNet):
 				deb.prints(stats["correct_per_class"])
 			
 		if self.debug>=2:
-			deb.prints(data["labels_onehot"].shape)
+			deb.prints(data["labels"].shape)
 		
-		stats["per_class_label_count"]=np.sum(data["labels_onehot"],axis=0)
+		stats["per_class_label_count"]=np.sum(data["labels"],axis=0)
 
 		if self.debug>=2:
 			deb.prints(stats["correct_per_class"])
@@ -348,19 +348,19 @@ class NeuralNetOneHot(NeuralNet):
 		print("train results")
 		
 		print(np.around(self.sess.run(self.prediction,{self.data: dataset["train"]["ims"][sample_range]}),decimals=4))
-		deb.prints(dataset["train"]["labels_onehot"][sample_range])
+		deb.prints(dataset["train"]["labels"][sample_range])
 		
 		print("test results")
 		
 		print(np.around(self.sess.run(self.prediction,{self.data: dataset["test"]["ims"][sample_range]}),decimals=4))
-		deb.prints(dataset["test"]["labels_onehot"][sample_range])
+		deb.prints(dataset["test"]["labels"][sample_range])
 
 	def data_group_load(self,conf,data):
 
 		data["im_paths"] = glob.glob(conf["balanced_path_ims"]+'/*.npy')
 		data["im_paths"] = sorted(data["im_paths"], key=lambda x: int(x.split('_')[1][:-4]))
 		
-		data["labels_onehot"] = np.load(conf["balanced_path_label"]+"labels.npy")
+		data["labels"] = np.load(conf["balanced_path_label"]+"labels.npy")
 
 		data["n"]=len(data["im_paths"])
 		data["index"] = range(data["n"])
@@ -382,9 +382,9 @@ class NeuralNetOneHot(NeuralNet):
 
 		deb.prints(len(data["train"]["im_paths"]))
 		
-		data["train"]["labels_onehot"] = np.load(conf["train"]["balanced_path_label"]+"labels.npy")
+		data["train"]["labels"] = np.load(conf["train"]["balanced_path_label"]+"labels.npy")
 		
-		data["test"]["labels_onehot"] = np.load(conf["test"]["balanced_path_label"]+"labels.npy")
+		data["test"]["labels"] = np.load(conf["test"]["balanced_path_label"]+"labels.npy")
 		
 		# Change to a subset of test
 		data["test"]["ims"]=[np.load(im_path) for im_path in data["test"]["im_paths"]]

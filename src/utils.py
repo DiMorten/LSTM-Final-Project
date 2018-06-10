@@ -275,9 +275,9 @@ class DataForNet(object):
 		self.ram_data["test"]["n"]=test_real_count
 		
 		self.ram_data["train"]["ims"]=self.ram_data["train"]["ims"][0:self.ram_data["train"]["n"]]
-		self.ram_data["train"]["labels"]=self.ram_data["train"]["labels"][0:self.ram_data["train"]["n"]]
+		self.ram_data["train"]["labels_int"]=self.ram_data["train"]["labels_int"][0:self.ram_data["train"]["n"]]
 		self.ram_data["test"]["ims"]=self.ram_data["test"]["ims"][0:self.ram_data["test"]["n"]]
-		self.ram_data["test"]["labels"]=self.ram_data["test"]["labels"][0:self.ram_data["test"]["n"]]
+		self.ram_data["test"]["labels_int"]=self.ram_data["test"]["labels_int"][0:self.ram_data["test"]["n"]]
 
 
 
@@ -287,11 +287,11 @@ class DataForNet(object):
 	def in_label_ram_store(self,data,patch,label_patch,data_idx,label_type):
 		data["ims"][data_idx]=patch
 		if label_type=="one_hot":
-			data["labels"][data_idx]=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
-			if data["labels"][data_idx]==0:
+			data["labels_int"][data_idx]=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
+			if data["labels_int"][data_idx]==0:
 				deb.prints("here")
 		elif label_type=="semantic":
-			data["labels"][data_idx]=label_patch[self.conf["t_len"]-1]
+			data["labels_int"][data_idx]=label_patch[self.conf["t_len"]-1]
 		return data
 class DataSemantic(DataForNet):
 	def __init__(self,*args,**kwargs):
@@ -300,12 +300,12 @@ class DataSemantic(DataForNet):
 
 		deb.prints((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.label_shape)
 
-		self.ram_data["train"]["labels"]=np.zeros((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.label_shape)
-		self.ram_data["test"]["labels"]=np.zeros((self.conf["test"]["n_apriori"],self.conf["t_len"])+self.label_shape)
+		self.ram_data["train"]["labels_int"]=np.zeros((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.label_shape)
+		self.ram_data["test"]["labels_int"]=np.zeros((self.conf["test"]["n_apriori"],self.conf["t_len"])+self.label_shape)
 
 		self.conf["label_type"]="semantic"
-		deb.prints(self.ram_data["train"]["labels"].shape)
-		deb.prints(self.ram_data["test"]["labels"].shape)
+		deb.prints(self.ram_data["train"]["labels_int"].shape)
+		deb.prints(self.ram_data["test"]["labels_int"].shape)
 		
 	def create(self):
 		os.system("rm -rf ../data/train_test")
@@ -315,7 +315,7 @@ class DataSemantic(DataForNet):
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2(label_type=self.conf["label_type"])
 			
 			if self.debug>=1:
-				deb.prints(self.ram_data["train"]["labels"].shape)
+				deb.prints(self.ram_data["train"]["labels_int"].shape)
 
 		else:
 			print("Hdd mode not implemented yet for Im2Im data.")
@@ -326,17 +326,17 @@ class DataOneHot(DataForNet):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args, **kwargs)
 		if self.debug>=1: print("Initializing DataNetOneHot instance")
-		#self.ram_data["train"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
-		#self.ram_data["test"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
+		#self.ram_data["train"]["labels"]=np.zeros((9000,)+self.label_shape)
+		#self.ram_data["test"]["labels"]=np.zeros((9000,)+self.label_shape)
 
-		self.ram_data["train"]["labels"]=np.zeros((self.conf["train"]["n_apriori"],))
-		self.ram_data["test"]["labels"]=np.zeros((self.conf["test"]["n_apriori"],))
+		self.ram_data["train"]["labels_int"]=np.zeros((self.conf["train"]["n_apriori"],))
+		self.ram_data["test"]["labels_int"]=np.zeros((self.conf["test"]["n_apriori"],))
 		self.conf["label_type"]="one_hot"
 	def im_patches_npy_multitemporal_from_npy_from_folder_store2_onehot(self):
 		self.im_patches_npy_multitemporal_from_npy_from_folder_store2(label_type=self.conf["label_type"])
-		self.ram_data["train"]["labels_onehot"]=self.labels_onehot_get(self.ram_data["train"]["labels"], \
+		self.ram_data["train"]["labels"]=self.labels_onehot_get(self.ram_data["train"]["labels_int"], \
 			self.ram_data["train"]["n"],self.conf["class_n"])
-		self.ram_data["test"]["labels_onehot"]=self.labels_onehot_get(self.ram_data["test"]["labels"], \
+		self.ram_data["test"]["labels"]=self.labels_onehot_get(self.ram_data["test"]["labels_int"], \
 			self.ram_data["test"]["n"],self.conf["class_n"])
 	def create(self):
 		os.system("rm -rf ../data/train_test")
@@ -345,9 +345,9 @@ class DataOneHot(DataForNet):
 
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2_onehot()
 			
-			deb.prints(np.unique(self.ram_data["train"]["labels"],return_counts=True)[1])
+			deb.prints(np.unique(self.ram_data["train"]["labels_int"],return_counts=True)[1])
 
-			self.ram_data["train"]["ims"],self.ram_data["train"]["labels"],self.ram_data["train"]["labels_onehot"]=self.data_balance(self.ram_data, \
+			self.ram_data["train"]["ims"],self.ram_data["train"]["labels_int"],self.ram_data["train"]["labels"]=self.data_balance(self.ram_data, \
 				self.conf["balanced"]["samples_per_class"])
 
 			with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.ram_data, f)
@@ -370,7 +370,7 @@ class DataOneHot(DataForNet):
 		deb.prints(data["train"]["ims"].shape)
 		deb.prints(data["test"]["ims"].shape)
 		
-		classes,counts=np.unique(data["train"]["labels"],return_counts=True)
+		classes,counts=np.unique(data["train"]["labels_int"],return_counts=True)
 		print(classes,counts)
 
 		data=self.data_normalize_per_band(data)
@@ -379,7 +379,7 @@ class DataOneHot(DataForNet):
 		else:
 			samples_per_class=5000
 
-		data["train"]["ims"],data["train"]["labels"],data["train"]["labels_onehot"]=self.data_balance(data,self.conf["balanced"]["samples_per_class"])
+		data["train"]["ims"],data["train"]["labels_int"],data["train"]["labels"]=self.data_balance(data,self.conf["balanced"]["samples_per_class"])
 		data["train"]["n"]=data["train"]["ims"].shape[0]
 
 		deb.prints(data["train"]["ims"].shape)
@@ -428,7 +428,7 @@ class DataOneHot(DataForNet):
 		balance={}
 		balance["unique"]={}
 	#	classes = range(0,self.conf["class_n"])
-		classes,counts=np.unique(data["train"]["labels"],return_counts=True)
+		classes,counts=np.unique(data["train"]["labels_int"],return_counts=True)
 		print(classes,counts)
 		
 		if classes[0]==0: classes=classes[1::]
@@ -445,21 +445,21 @@ class DataOneHot(DataForNet):
 			if clss==0: 
 				continue
 			deb.prints(clss,fname)
-			balance["data"]=data["train"]["ims"][data["train"]["labels"]==clss]
-			balance["labels"]=data["train"]["labels"][data["train"]["labels"]==clss]
+			balance["data"]=data["train"]["ims"][data["train"]["labels_int"]==clss]
+			balance["labels_int"]=data["train"]["labels_int"][data["train"]["labels_int"]==clss]
 			balance["num_samples"]=balance["data"].shape[0]
 			if self.debug>=1: deb.prints(balance["data"].shape,fname)
 			if self.debug>=2: 
-				deb.prints(balance["labels"].shape,fname)
-				deb.prints(np.unique(balance["labels"].shape),fname)
+				deb.prints(balance["labels_int"].shape,fname)
+				deb.prints(np.unique(balance["labels_int"].shape),fname)
 			if balance["num_samples"] > samples_per_class:
 				replace=False
 			else: 
 				replace=True
 
-			index = range(balance["labels"].shape[0])
+			index = range(balance["labels_int"].shape[0])
 			index = np.random.choice(index, samples_per_class, replace=replace)
-			balance["out_labels"][k*samples_per_class:k*samples_per_class + samples_per_class] = balance["labels"][index]
+			balance["out_labels"][k*samples_per_class:k*samples_per_class + samples_per_class] = balance["labels_int"][index]
 			balance["out_data"][k*samples_per_class:k*samples_per_class + samples_per_class] = balance["data"][index]
 
 			k+=1
@@ -467,11 +467,11 @@ class DataOneHot(DataForNet):
 		balance["out_data"] = balance["out_data"][idx]
 		balance["out_labels"] = balance["out_labels"][idx]
 
-		balance["labels_onehot"]=self.labels_onehot_get(balance["out_labels"],num_total_samples,self.conf["class_n"])
-		#balance["labels_onehot"]=np.zeros((num_total_samples,self.conf["class_n"]))
-		#balance["labels_onehot"][np.arange(num_total_samples),balance["out_labels"].astype(np.int)]=1
+		balance["labels"]=self.labels_onehot_get(balance["out_labels"],num_total_samples,self.conf["class_n"])
+		#balance["labels"]=np.zeros((num_total_samples,self.conf["class_n"]))
+		#balance["labels"][np.arange(num_total_samples),balance["out_labels"].astype(np.int)]=1
 		if self.debug>=1: deb.prints(np.unique(balance["out_labels"],return_counts=True),fname)
-		return balance["out_data"],balance["out_labels"],balance["labels_onehot"]
+		return balance["out_data"],balance["out_labels"],balance["labels"]
 
 	def labels_onehot_get(self,labels,n_samples,class_n):
 		out=np.zeros((n_samples,class_n))
@@ -487,7 +487,7 @@ class DataOneHot(DataForNet):
 		
 		for i in range(0,data["ims"].shape[0]):
 			np.save(conf_set["balanced_path"]+"ims/"+"patch_"+str(i)+".npy",data["ims"][i])
-		np.save(conf_set["balanced_path"]+"label/labels.npy",data["labels_onehot"])			
+		np.save(conf_set["balanced_path"]+"label/labels.npy",data["labels"])			
 
 	# Use after patches_npy_multitemporal_from_npy_store2(). Probably use within patches_npy_multitemporal_from_npy_from_folder_load2()
 	def im_patches_labelsonehot_load2(self,conf_set,data,data_whole,debug=0): #data["n"], self.conf["patch"]["ims_path"], self.conf["patch"]["labels_path"]
@@ -495,7 +495,7 @@ class DataOneHot(DataForNet):
 		fname=sys._getframe().f_code.co_name
 
 		data["ims"]=np.zeros((conf_set["n"],self.conf["t_len"],self.conf["patch"]["size"],self.conf["patch"]["size"],self.conf["band_n"]))
-		data["labels"]=np.zeros((conf_set["n"])).astype(np.int)
+		data["labels_int"]=np.zeros((conf_set["n"])).astype(np.int)
 			
 		count=0
 		if self.debug>=1: deb.prints(conf_set["ims_path"],fname)
@@ -505,15 +505,15 @@ class DataOneHot(DataForNet):
 			data["ims"][count,:,:,:,:]=np.load(im_name)
 			
 			label_name=glob.glob(conf_set["labels_path"]+'patch_'+str(i)+'_*')[0]
-			data["labels"][count]=int(np.load(label_name)[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
-			if self.debug>=2: print("train_labels[count]",data["labels"][count])
+			data["labels_int"][count]=int(np.load(label_name)[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
+			if self.debug>=2: print("train_labels[count]",data["labels_int"][count])
 			
 			count=count+1
 			if i % 1000==0:
 				print("file ID",i)
-		data["labels_onehot"]=np.zeros((conf_set["n"],self.conf["class_n"]))
-		data["labels_onehot"][np.arange(conf_set["n"]),data["labels"]]=1
-		#del data["labels"]
+		data["labels"]=np.zeros((conf_set["n"],self.conf["class_n"]))
+		data["labels"][np.arange(conf_set["n"]),data["labels_int"]]=1
+		#del data["labels_int"]
 		return data
 
 if __name__ == "__main__":
