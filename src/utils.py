@@ -127,15 +127,35 @@ class DataForNet(object):
 		if self.test_n_limit<=self.conf["test"]["n_apriori"]:
 			self.conf["test"]["n_apriori"]=self.test_n_limit
 
-
-
-
-
 		self.ram_data={"train":{},"test":{}}
 		self.ram_data["train"]["ims"]=np.zeros((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.patch_shape)
 		self.ram_data["test"]["ims"]=np.zeros((self.conf["test"]["n_apriori"],self.conf["t_len"])+self.patch_shape)
 		
+		self.conf["out_mode"]="im2im"
+
 		print(self.conf)
+	def im_patches_npy_multitemporal_from_npy_from_folder_store2(self):
+		im_names=[]
+		for i in range(1,10):
+			im_name=glob.glob(self.conf["in_npy_path"]+'im'+str(i)+'*')[0]
+			im_name=im_name[-14:-4]
+			im_names.append(im_name)
+			print(im_name)
+		print(im_names)
+		self.im_patches_npy_multitemporal_from_npy_store2(im_names)
+
+class DataIm2Im(DataForNet):
+	def __init__(self,*args,**kwargs):
+		super().__init__(*args, **kwargs)
+		if self.debug>=1: print("Initializing DataIm2Im instance")
+		#self.ram_data["train"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
+		#self.ram_data["test"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
+
+		self.ram_data["train"]["labels"]=np.zeros((self.conf["train"]["n_apriori"],))
+		self.ram_data["test"]["labels"]=np.zeros((self.conf["test"]["n_apriori"],))
+
+
+
 
 class DataOneHot(DataForNet):
 	def __init__(self,*args,**kwargs):
@@ -168,15 +188,7 @@ class DataOneHot(DataForNet):
 		##self.save_data()
 
 		#
-	def im_patches_npy_multitemporal_from_npy_from_folder_store2(self):
-		im_names=[]
-		for i in range(1,10):
-			im_name=glob.glob(self.conf["in_npy_path"]+'im'+str(i)+'*')[0]
-			im_name=im_name[-14:-4]
-			im_names.append(im_name)
-			print(im_name)
-		print(im_names)
-		self.im_patches_npy_multitemporal_from_npy_store2(im_names)
+
 	def im_patches_npy_multitemporal_from_npy_store2(self,names,train_mask_save=True):
 		fname=sys._getframe().f_code.co_name
 		print('[@im_patches_npy_multitemporal_from_npy_store2]')
