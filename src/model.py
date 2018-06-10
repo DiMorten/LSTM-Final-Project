@@ -83,13 +83,44 @@ class NeuralNet(object):
 	def trainable_vars_print(self):
 		t_vars = tf.trainable_variables()
 		if self.debug: print("trainable parameters",np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
-
+	def data_len_get(self,data,memory_mode):
+		if memory_mode=="hdd":
+			data_len=len(data["im_paths"])
+		elif memory_mode=="ram":
+			data_len=data["ims"].shape[0]
+		deb.prints(data_len)
+		return data_len
 
 class NeuralNetSemantic(NeuralNet):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
-		if self.debug>=1: print("Initializing NeuralNetOneHot instance")
+		if self.debug>=1: print("Initializing NeuralNetSemantic instance")
+	def placeholder_init(self,timesteps,shape,channels,n_classes):
+		data = tf.placeholder(tf.float32, [None] +[timesteps] + shape + [channels])
+		target = tf.placeholder(tf.float32, [None] + shape)
+		if self.debug: deb.prints(target.get_shape())
+		return data,target
+	def average_accuracy_get(self,target,prediction,debug=0):
+		accuracy_average=0.5
+		return accuracy_average
+	def loss_optimizer_set(self,target,prediction):
+		# Estimate loss from prediction and target
+		cross_entropy = -tf.reduce_sum(target * tf.log(tf.clip_by_value(prediction,1e-10,1.0)))
 
+		# Prepare the optimization function
+		optimizer = tf.train.AdamOptimizer()
+		minimize = optimizer.minimize(cross_entropy)
+
+		mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
+		
+		error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
+		tf.summary.scalar('error',error)
+		return minimize, mistakes, error
+	def ram_batch_ims_labels_get(self,batch,data,batch_size,idx):
+		
+		batch["ims"] = data["ims"][idx*batch_size:(idx+1)*batch_size]
+		batch["labels"] = data["labels"][idx*batch_size:(idx+1)*batch_size]
+		return batch
 # ============================ NeuralNet takes onehot image output ============================================= #
 class NeuralNetOneHot(NeuralNet):
 	def __init__(self, *args, **kwargs):
@@ -109,12 +140,12 @@ class NeuralNetOneHot(NeuralNet):
 		predictions_int = np.argmax(prediction,axis=1)
 
 		targets_label_count = np.sum(target,axis=0)
-		valid = targets_int[targets_int == predictions_int]
-		count_total = valid.shape[0]
+		correct_all_classes = targets_int[targets_int == predictions_int]
+		count_total = correct_all_classes.shape[0]
 		
 		if debug>=2: deb.prints(count_total)
 		for clss in range(0,self.n_classes):
-			correct_per_class[clss]=valid[valid==clss].shape[0]
+			correct_per_class[clss]=correct_all_classes[correct_all_classes==clss].shape[0]
 		if debug>=2: deb.prints(correct_per_class)
 		correct_per_class_average, accuracy_average = self.correct_per_class_average_get(correct_per_class, targets_label_count)
 		return correct_per_class_average,correct_per_class,accuracy_average
@@ -171,13 +202,7 @@ class NeuralNetOneHot(NeuralNet):
 		sub_data["labels_onehot"] = data["labels_onehot"][sub_data["index"]]
 		sub_data["ims"]=data["ims"][sub_data["index"]]
 		return sub_data
-	def data_len_get(self,data,memory_mode):
-		if memory_mode=="hdd":
-			data_len=len(data["im_paths"])
-		elif memory_mode=="ram":
-			data_len=data["ims"].shape[0]
-		deb.prints(data_len)
-		return data_len
+
 	def data_sub_data_get(self, data,n,memory_mode):
 		sub_data={"n":n}		
 		sub_data["index"] = np.random.choice(data["index"], sub_data["n"], replace=False)

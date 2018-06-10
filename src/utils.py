@@ -291,14 +291,13 @@ class DataForNet(object):
 			if data["labels"][data_idx]==0:
 				deb.prints("here")
 		elif label_type=="semantic":
-			data["labels"][data_idx]=label_patch
+			data["labels"][data_idx]=label_patch[self.conf["t_len"]-1]
 		return data
 class DataSemantic(DataForNet):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args, **kwargs)
 		if self.debug>=1: print("Initializing DataSemantic instance")
-		#self.ram_data["train"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
-		#self.ram_data["test"]["labels_onehot"]=np.zeros((9000,)+self.label_shape)
+
 		deb.prints((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.label_shape)
 
 		self.ram_data["train"]["labels"]=np.zeros((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.label_shape)
@@ -315,13 +314,8 @@ class DataSemantic(DataForNet):
 
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2(label_type=self.conf["label_type"])
 			
-
-			#deb.prints(np.unique(self.ram_data["train"]["labels"],return_counts=True)[1])
-
-			#self.ram_data["train"]["ims"],self.ram_data["train"]["labels"],self.ram_data["train"]["labels_onehot"]=self.data_balance(self.ram_data, \
-			#	self.conf["balanced"]["samples_per_class"])
-
-			#with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.ram_data, f)
+			if self.debug>=1:
+				deb.prints(self.ram_data["train"]["labels"].shape)
 
 		else:
 			print("Hdd mode not implemented yet for Im2Im data.")
@@ -361,10 +355,6 @@ class DataOneHot(DataForNet):
 		else:
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2_onehot()
 			self.data_onehot_load_balance_store()
-		##self.balance_data()
-		##self.save_data()
-
-		#
 
 
 	def data_onehot_load_balance_store(self):
