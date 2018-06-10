@@ -22,3 +22,9 @@ source activate py361
 # 78% oa:
 #python main.py -mm="ram" --debug=2 -po 3 -ts 8 -tnl 1000000 -bs=5000 --batch_size=500
 python main.py -mm="ram" --debug=2 -po 4 -ts 8 -tnl 1000000 -bs=5000 --batch_size=1000
+python main.py -mm="ram" --debug=1 -po 4 -ts 8 -tnl 1000000 -bs=20000 --batch_size=3500
+
+81%:
+python main.py -mm="ram" --debug=1 -po 4 -ts 4 -tnl 1000000 -bs=20000 --batch_size=2000
+
+python main.py -mm="ram" --debug=1 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=2000 --filters=256

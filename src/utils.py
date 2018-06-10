@@ -118,8 +118,8 @@ class DataForNet(object):
 		self.patch_shape=(self.conf["patch"]["size"],self.conf["patch"]["size"],self.conf["band_n"])
 		self.label_shape=(self.conf["patch"]["size"],self.conf["patch"]["size"])
 		
-		self.conf["train"]["n_apriori"]=100000
-		self.conf["test"]["n_apriori"]=100000
+		self.conf["train"]["n_apriori"]=1000000
+		self.conf["test"]["n_apriori"]=1000000
 		if self.conf["patch"]["overlap"]==0 and self.conf["patch"]["size"]==5:
 			self.conf["train"]["n_apriori"]=3950
 			if self.conf["extract"]["test_skip"]==0:

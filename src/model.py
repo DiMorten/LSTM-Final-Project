@@ -33,7 +33,7 @@ class NeuralNet(object):
 
 	def __init__(self, sess=tf.Session(), batch_size=50, epoch=200, train_size=1e8,
                         timesteps=utils.conf["t_len"], shape=[32,32],
-                        kernel=[3,3], channels=6, filters=32, n_classes=9,
+                        kernel=[3,3], channels=6, filters=256, n_classes=9,
                         checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1):
 		
 		self.ram_data=data
@@ -254,7 +254,7 @@ class NeuralNetOneHot(NeuralNet):
 			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
 
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
-	def data_stats_get(self,data,batch_size=100):
+	def data_stats_get(self,data,batch_size=1000):
 
 		batch={}
 		batch["idxs"] = data["n"] // batch_size
@@ -400,7 +400,7 @@ class conv_lstm(NeuralNetOneHot):
 		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh)
 		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.layers.dense(graph_pipeline, 128,activation=tf.nn.tanh,name='hidden')
+		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		
 		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
