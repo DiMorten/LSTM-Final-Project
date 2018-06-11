@@ -300,8 +300,9 @@ class NeuralNetOneHot(NeuralNet):
 		accuracy_average=correct_per_class_average[~np.isnan(correct_per_class_average)]
 		accuracy_average=accuracy_average[np.nonzero(accuracy_average)]
 		accuracy_average=np.average(accuracy_average)
+		overall_accuracy=np.sum(correct_per_class)/np.sum(targets_label_count)# Don't take backnd (label 0) into account for overall accuracy
 		
-		return correct_per_class_average, accuracy_average
+		return correct_per_class_average, accuracy_average, overall_accuracy
 
 	def loss_optimizer_set(self,target,prediction,logits=None):
 		# Estimate loss from prediction and target
@@ -379,10 +380,7 @@ class NeuralNetOneHot(NeuralNet):
 			deb.prints(stats["correct_per_class"])
 			deb.prints(stats["per_class_label_count"])
 		
-
-		stats["overall_accuracy"]=np.sum(stats["correct_per_class"][1::])/np.sum(stats["per_class_label_count"][1::])# Don't take backnd (label 0) into account for overall accuracy
-		
-		stats["per_class_accuracy"],stats["average_accuracy"]=self.correct_per_class_average_get(stats["correct_per_class"][1::], stats["per_class_label_count"][1::])
+		stats["per_class_accuracy"],stats["average_accuracy"],stats["overall_accuracy"]=self.correct_per_class_average_get(stats["correct_per_class"][1::], stats["per_class_label_count"][1::])
 		if self.debug>=1: 
 			deb.prints(stats["overall_accuracy"])
 			deb.prints(stats["average_accuracy"])
