@@ -226,7 +226,18 @@ class NeuralNet(object):
 		if self.debug>=2:
 			deb.prints(stats["per_class_accuracy"])
 		return stats
-
+	def correct_per_class_get(self,target,prediction,debug=0):
+		correct_per_class = np.zeros(self.n_classes).astype(np.float32)
+		targets_int,predictions_int=self.targets_predictions_int_get(target,prediction)
+		correct_all_classes = targets_int[targets_int == predictions_int]
+		count_total = correct_all_classes.shape[0]
+		
+		if debug>=2: deb.prints(count_total)
+		for clss in range(0,self.n_classes):
+			correct_per_class[clss]=correct_all_classes[correct_all_classes==clss].shape[0]
+		if debug>=2: deb.prints(correct_per_class)
+		return correct_per_class
+		
 	def data_load(self,conf,memory_mode):
 		if memory_mode=="hdd":
 			data=self.hdd_data_load(conf)
@@ -334,17 +345,7 @@ class NeuralNetOneHot(NeuralNet):
 	def targets_predictions_int_get(self,target,prediction): 
 		return np.argmax(target,axis=1),np.argmax(prediction,axis=1)
 
-	def correct_per_class_get(self,target,prediction,debug=0):
-		correct_per_class = np.zeros(self.n_classes).astype(np.float32)
-		targets_int,predictions_int=self.targets_predictions_int_get(target,prediction)
-		correct_all_classes = targets_int[targets_int == predictions_int]
-		count_total = correct_all_classes.shape[0]
-		
-		if debug>=2: deb.prints(count_total)
-		for clss in range(0,self.n_classes):
-			correct_per_class[clss]=correct_all_classes[correct_all_classes==clss].shape[0]
-		if debug>=2: deb.prints(correct_per_class)
-		return correct_per_class
+
 	def average_accuracy_get(self,target,prediction,debug=0):	
 		
 		correct_per_class=self.correct_per_class_get(target,prediction,debug=debug)
