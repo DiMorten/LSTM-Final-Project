@@ -190,19 +190,17 @@ class NeuralNet(object):
 		batch["idxs"] = data["n"] // batch_size
 		if self.debug>=2:
 			deb.prints(batch["idxs"])
-			#deb.prints()
+
 		stats={"correct_per_class":np.zeros(self.n_classes).astype(np.float32)}
 		stats["per_class_label_count"]=np.zeros(self.n_classes).astype(np.float32)
 		
 		for idx in range(0, batch["idxs"]):
 			batch=self.batch_ims_labels_get(batch,data,batch_size,idx,memory_mode=self.conf["memory_mode"])
 			batch["prediction"] = self.batch_prediction_from_sess_get(batch["ims"])
-			#batch["label_count"]=np.sum(batch["labels"],axis=0)
 			
 			if self.debug>=2:
 				deb.prints(batch["prediction"].shape)
 				deb.prints(batch["labels"].shape)
-				#deb.prints(batch["label_count"])
 			batch["correct_per_class"]=self.correct_per_class_get(batch["labels"],batch["prediction"])
 			stats["correct_per_class"]+=batch["correct_per_class"]
 			
@@ -210,12 +208,10 @@ class NeuralNet(object):
 				deb.prints(batch["correct_per_class"])
 				deb.prints(stats["correct_per_class"])
 			
-		if self.debug>=2:
-			deb.prints(data["labels"].shape)
-		
 		stats["per_class_label_count"]=self.per_class_label_count_get(data["labels"])
 
 		if self.debug>=2:
+			deb.prints(data["labels"].shape)
 			deb.prints(stats["correct_per_class"])
 			deb.prints(stats["per_class_label_count"])
 		
@@ -278,23 +274,22 @@ class NeuralNetSemantic(NeuralNet):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		if self.debug>=1: print("Initializing NeuralNetSemantic instance")
+
 	def placeholder_init(self,timesteps,shape,channels,n_classes):
 		data = tf.placeholder(tf.float32, [None] +[timesteps] + shape + [channels])
 		target = tf.placeholder(tf.float32, [None] + shape[0::])
 		if self.debug: deb.prints(target.get_shape())
 		return data,target
+
 	def average_accuracy_get(self,target,prediction,debug=0):
 		accuracy_average=0.5
 		return accuracy_average
-	def loss_optimizer_set(self,target,prediction, logits):
 
+	def loss_optimizer_set(self,target,prediction, logits):
 		target_int=tf.cast(target,tf.int32)
 		deb.prints(target_int.get_shape())
 		deb.prints(logits.get_shape())
-		#prediction=tf.squeeze(prediction, squeeze_dims=[3])
-		#logits=tf.argmax(prediction,1)
-		#deb.prints(logits.get_shape())
-		
+
 		# Estimate loss from prediction and target
 		with tf.name_scope('cross_entropy'):
 			cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits))
@@ -304,9 +299,7 @@ class NeuralNetSemantic(NeuralNet):
 		# Prepare the optimization function
 		##optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy_loss, global_step=global_step)
 		optimizer = tf.train.AdamOptimizer()
-
 		minimize = optimizer.minimize(cross_entropy)
-
 		prediction=tf.cast(prediction,tf.float32)
 		# Distance L1
 		error = tf.reduce_sum(tf.cast(tf.abs(tf.subtract(tf.contrib.layers.flatten(prediction),tf.contrib.layers.flatten(target))), tf.float32))
@@ -317,25 +310,27 @@ class NeuralNetSemantic(NeuralNet):
 
 	def unique_classes_print(self,data,memory_mode):
 		pass
+
 	def data_stats_get2(self,data,batch_size=1000):
 		stats={}
 		stats["average_accuracy"]=0
 		stats["overall_accuracy"]=0
 		return stats
+
 	def batch_prediction_from_sess_get(self,ims):
 		return self.sess.run(self.prediction,{self.data: ims})
+
 	def targets_predictions_int_get(self,target,prediction):
 		return target.flatten(),prediction.flatten()
 
 	def per_class_label_count_get(self,data_labels):
 		per_class_label_count=np.zeros(self.n_classes)
 		classes_unique,classes_count=np.unique(data_labels,return_counts=True)
-		#print(classes_unique,classes_count)
+
 		for clss,clss_count in zip(np.nditer(classes_unique),np.nditer(classes_count)):
-			#print(clss,clss_count)
 			per_class_label_count[int(clss)]=clss_count
 		deb.prints(per_class_label_count)
-		#per_class_label_count[per_class_label_count==unique]=count
+	
 		return per_class_label_count
 
 # ============================ NeuralNet takes onehot image output ============================================= #
@@ -495,11 +490,11 @@ class conv_lstm(NeuralNetOneHot):
 		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=self.kernel,name='convlstm')
 		
 		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
+		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
 		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh)
 		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
+		graph_pipeline = tf.layers.dense(graph_pipeline, 128,activation=tf.nn.tanh,name='hidden')
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		
 		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
