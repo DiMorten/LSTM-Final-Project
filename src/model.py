@@ -169,7 +169,7 @@ class NeuralNet(object):
 				self.writer.add_summary(summary, counter)
 				counter += 1
 				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"]})
-				if self.debug>=3:
+				if self.debug>=1:
 					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
 			
 			# =__________________________________ Test stats get and model save  _______________________________ = #
@@ -202,11 +202,14 @@ class NeuralNet(object):
 		return data
 	def model_build(self):
 		self.data,self.target=self.placeholder_init(self.timesteps,self.shape,self.channels,self.n_classes)
-		self.annotation, self.prediction = self.model_graph_get(self.data)
+		self.logits, self.prediction = self.model_graph_get(self.data)
 
-		self.minimize,self.mistakes,self.error=self.loss_optimizer_set(self.target,self.prediction, self.annotation)
+		self.minimize,self.mistakes,self.error=self.loss_optimizer_set(self.target,self.prediction, self.logits)
 		self.error_sum, self.saver, self.merged = self.tensorboard_saver_init(self.error)
 		self.trainable_vars_print()
+
+
+
 # ============================ NeuralNetSemantic takes image output ============================================= #
 
 class NeuralNetSemantic(NeuralNet):
@@ -221,18 +224,22 @@ class NeuralNetSemantic(NeuralNet):
 	def average_accuracy_get(self,target,prediction,debug=0):
 		accuracy_average=0.5
 		return accuracy_average
-	def loss_optimizer_set(self,target,prediction, annotation):
+	def loss_optimizer_set(self,target,prediction, logits):
 
 		target_int=tf.cast(target,tf.int32)
 		deb.prints(target_int.get_shape())
-		deb.prints(prediction.get_shape())
+		deb.prints(logits.get_shape())
 		#prediction=tf.squeeze(prediction, squeeze_dims=[3])
 		#logits=tf.argmax(prediction,1)
 		#deb.prints(logits.get_shape())
 		
 		# Estimate loss from prediction and target
+
+
+
+
 		with tf.name_scope('cross_entropy'):
-			cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=prediction))
+			cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits))
 
 		##with tf.name_scope('learning_rate'):
 		##	learning_rate = tf.train.exponential_decay(opt.learning_rate, global_step, opt.iter_epoch, opt.lr_decay, staircase=True)
@@ -242,9 +249,9 @@ class NeuralNetSemantic(NeuralNet):
 
 		minimize = optimizer.minimize(cross_entropy)
 
-		annotation=tf.cast(annotation,tf.float32)
+		prediction=tf.cast(prediction,tf.float32)
 		# Distance L1
-		error = tf.reduce_sum(tf.cast(tf.abs(tf.subtract(tf.contrib.layers.flatten(annotation),tf.contrib.layers.flatten(target))), tf.float32))
+		error = tf.reduce_sum(tf.cast(tf.abs(tf.subtract(tf.contrib.layers.flatten(prediction),tf.contrib.layers.flatten(target))), tf.float32))
 		#mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
 		
 		#error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
@@ -296,7 +303,7 @@ class NeuralNetOneHot(NeuralNet):
 		
 		return correct_per_class_average, accuracy_average
 
-	def loss_optimizer_set(self,target,prediction):
+	def loss_optimizer_set(self,target,prediction,logits=None):
 		# Estimate loss from prediction and target
 		cross_entropy = -tf.reduce_sum(target * tf.log(tf.clip_by_value(prediction,1e-10,1.0)))
 
@@ -453,9 +460,9 @@ class UNet(NeuralNetSemantic):
 		graph_pipeline = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
 		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh,padding='same')
 		graph_pipeline = tf.layers.conv2d(graph_pipeline, 9, self.kernel_size, activation=None,padding='same')
-		annotation_pred = tf.argmax(graph_pipeline, dimension=3, name="prediction")
+		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
 		#return tf.expand_dims(annotation_pred, dim=3), graph_pipeline
-		return annotation_pred, graph_pipeline
+		return graph_pipeline, prediction
 
 # ================================= Implements ConvLSTM ============================================== #
 class conv_lstm(NeuralNetOneHot):
@@ -476,7 +483,7 @@ class conv_lstm(NeuralNetOneHot):
 		
 		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
-		return graph_pipeline
+		return None,graph_pipeline
 
 
 # ================================= Implements Conv3DMultitemp ============================================== #
@@ -509,4 +516,4 @@ class Conv3DMultitemp(NeuralNetOneHot):
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
-		return graph_pipeline
+		return None,graph_pipeline
