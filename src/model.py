@@ -330,7 +330,7 @@ class NeuralNetSemantic(NeuralNet):
 		for clss,clss_count in zip(np.nditer(classes_unique),np.nditer(classes_count)):
 			per_class_label_count[int(clss)]=clss_count
 		deb.prints(per_class_label_count)
-	
+
 		return per_class_label_count
 
 # ============================ NeuralNet takes onehot image output ============================================= #
@@ -345,12 +345,9 @@ class NeuralNetOneHot(NeuralNet):
 		if self.debug: deb.prints(target.get_shape())
 		return data,target
 
-
 	def batch_prediction_from_sess_get(self,ims):
 		return np.around(self.sess.run(self.prediction,{self.data: ims}),decimals=2)
 
-
-#	def average_accuracy_get(self,target,prediction,correct_per_class_accumulated=False,correct_per_class=None):
 	def targets_predictions_int_get(self,target,prediction): 
 		return np.argmax(target,axis=1),np.argmax(prediction,axis=1)
 
@@ -363,7 +360,6 @@ class NeuralNetOneHot(NeuralNet):
 		targets_label_count = np.sum(target,axis=0)
 		correct_per_class_average, accuracy_average = self.correct_per_class_average_get(correct_per_class, targets_label_count)
 		return correct_per_class_average,correct_per_class,accuracy_average
-
 
 	def loss_optimizer_set(self,target,prediction,logits=None):
 		# Estimate loss from prediction and target
@@ -385,8 +381,6 @@ class NeuralNetOneHot(NeuralNet):
 		batch["ims"] = np.asarray([np.load(batch_file_path) for batch_file_path in batch["file_paths"]]) # Load files from path
 		return batch
 
-
-
 	def ims_get(self,data_im_paths):
 		return np.asarray([np.load(file_path) for file_path in data_im_paths]) # Load files from path
 		
@@ -397,14 +391,12 @@ class NeuralNetOneHot(NeuralNet):
 		sub_data["ims"]=self.ims_get(sub_data["im_paths"])
 		return sub_data
 
-
 	def unique_classes_print(self,data,memory_mode):
 		if memory_mode=="hdd":
 			data["labels_int"]=[ np.where(r==1)[0][0] for r in data["labels"] ]
 			print("Unique classes",np.unique(data["labels_int"],return_counts=True))
 		elif memory_mode=="ram":
 			print("Unique classes",np.unique(data["labels_int"],return_counts=True))
-
 
 	def test(self, args):
 		
@@ -439,7 +431,6 @@ class NeuralNetOneHot(NeuralNet):
 		data["index"] = range(data["n"])
 
 		return data
-		
 		
 	def hdd_data_load(self, conf):
 
@@ -533,3 +524,29 @@ class Conv3DMultitemp(NeuralNetOneHot):
 		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		return None,graph_pipeline
+# ================================= Implements SMCNN ============================================== #
+class SMCNN(NeuralNetOneHot):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.model_build()
+		
+	def model_graph_get(self,data):
+		graph_pipeline = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		return None,graph_pipeline
+

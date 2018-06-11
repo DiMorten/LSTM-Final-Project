@@ -28,9 +28,7 @@ import argparse
 # Local
 import utils
 import deb
-from model import conv_lstm
-from model import Conv3DMultitemp
-from model import UNet
+from model import (conv_lstm,Conv3DMultitemp,UNet,SMCNN)
 
 #import conf
 parser = argparse.ArgumentParser(description='')
@@ -64,10 +62,10 @@ parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,d
 parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=1000000, help="Class number. 'local' or 'remote'")
 args = parser.parse_args()
 np.set_printoptions(suppress=True)
-if args.model=='convlstm' or args.model=='conv3d':
-    label_type='one_hot'
-elif args.model=='unet':
+if args.model=='unet':
     label_type='semantic'
+else:
+    label_type='one_hot'
 """
 if args.memory_mode=="hdd":
     with open(utils.conf["path"]+'data.pkl', 'rb') as handle: dataset=pickle.load(handle)
@@ -111,6 +109,11 @@ def main(_):
                             checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
         elif args.model=='unet':
             model = UNet(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
+                            timesteps=args.timesteps, shape=args.shape,
+                            kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
+        elif args.model=='smcnn':
+            model = SMCNN(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
                             timesteps=args.timesteps, shape=args.shape,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
                             checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
