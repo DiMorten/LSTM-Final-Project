@@ -213,7 +213,7 @@ class NeuralNet(object):
 		if self.debug>=2:
 			deb.prints(data["labels"].shape)
 		
-		stats["per_class_label_count"]=np.sum(data["labels"],axis=0)
+		stats["per_class_label_count"]=self.per_class_label_count_get(data["labels"])
 
 		if self.debug>=2:
 			deb.prints(stats["correct_per_class"])
@@ -237,7 +237,15 @@ class NeuralNet(object):
 			correct_per_class[clss]=correct_all_classes[correct_all_classes==clss].shape[0]
 		if debug>=2: deb.prints(correct_per_class)
 		return correct_per_class
+	def correct_per_class_average_get(self,correct_per_class,targets_label_count):
+		correct_per_class_average=np.divide(correct_per_class, targets_label_count)
+		accuracy_average=correct_per_class_average[~np.isnan(correct_per_class_average)]
+		accuracy_average=accuracy_average[np.nonzero(accuracy_average)]
+		accuracy_average=np.average(accuracy_average)
+		overall_accuracy=np.sum(correct_per_class)/np.sum(targets_label_count)# Don't take backnd (label 0) into account for overall accuracy
 		
+		return correct_per_class_average, accuracy_average, overall_accuracy
+
 	def data_load(self,conf,memory_mode):
 		if memory_mode=="hdd":
 			data=self.hdd_data_load(conf)
@@ -309,7 +317,7 @@ class NeuralNetSemantic(NeuralNet):
 
 	def unique_classes_print(self,data,memory_mode):
 		pass
-	def data_stats_get(self,data,batch_size=1000):
+	def data_stats_get2(self,data,batch_size=1000):
 		stats={}
 		stats["average_accuracy"]=0
 		stats["overall_accuracy"]=0
@@ -318,11 +326,17 @@ class NeuralNetSemantic(NeuralNet):
 		return self.sess.run(self.prediction,{self.data: ims})
 	def targets_predictions_int_get(self,target,prediction):
 		return target.flatten(),prediction.flatten()
-	def correct_per_class_get(self,target,prediction,debug=0):
-		correct_per_class = np.zeros(self.n_classes).astype(np.float32)
 
-		if self.debug>=1: deb.prints(targets_int.shape)
-
+	def per_class_label_count_get(self,data_labels):
+		per_class_label_count=np.zeros(self.n_classes)
+		classes_unique,classes_count=np.unique(data_labels,return_counts=True)
+		#print(classes_unique,classes_count)
+		for clss,clss_count in zip(np.nditer(classes_unique),np.nditer(classes_count)):
+			#print(clss,clss_count)
+			per_class_label_count[int(clss)]=clss_count
+		deb.prints(per_class_label_count)
+		#per_class_label_count[per_class_label_count==unique]=count
+		return per_class_label_count
 
 # ============================ NeuralNet takes onehot image output ============================================= #
 class NeuralNetOneHot(NeuralNet):
@@ -345,6 +359,8 @@ class NeuralNetOneHot(NeuralNet):
 	def targets_predictions_int_get(self,target,prediction): 
 		return np.argmax(target,axis=1),np.argmax(prediction,axis=1)
 
+	def per_class_label_count_get(self,data_labels):
+		return np.sum(data_labels,axis=0)
 
 	def average_accuracy_get(self,target,prediction,debug=0):	
 		
@@ -353,14 +369,6 @@ class NeuralNetOneHot(NeuralNet):
 		correct_per_class_average, accuracy_average = self.correct_per_class_average_get(correct_per_class, targets_label_count)
 		return correct_per_class_average,correct_per_class,accuracy_average
 
-	def correct_per_class_average_get(self,correct_per_class,targets_label_count):
-		correct_per_class_average=np.divide(correct_per_class, targets_label_count)
-		accuracy_average=correct_per_class_average[~np.isnan(correct_per_class_average)]
-		accuracy_average=accuracy_average[np.nonzero(accuracy_average)]
-		accuracy_average=np.average(accuracy_average)
-		overall_accuracy=np.sum(correct_per_class)/np.sum(targets_label_count)# Don't take backnd (label 0) into account for overall accuracy
-		
-		return correct_per_class_average, accuracy_average, overall_accuracy
 
 	def loss_optimizer_set(self,target,prediction,logits=None):
 		# Estimate loss from prediction and target
