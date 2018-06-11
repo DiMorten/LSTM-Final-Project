@@ -467,11 +467,11 @@ class conv_lstm(NeuralNetOneHot):
 		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=self.kernel,name='convlstm')
 		
 		if self.debug: deb.prints(graph_pipeline.get_shape())
-		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
+		graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
 		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh)
 		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.layers.dense(graph_pipeline, 128,activation=tf.nn.tanh,name='hidden')
+		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		
 		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
