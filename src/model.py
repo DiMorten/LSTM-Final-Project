@@ -32,7 +32,7 @@ np.set_printoptions(suppress=True)
 class NeuralNet(object):
 
 	def __init__(self, sess=tf.Session(), batch_size=50, epoch=200, train_size=1e8,
-						timesteps=utils.conf["t_len"], shape=[32,32],
+						timesteps=utils.conf["t_len"], patch_len=32,
 						kernel=[3,3], channels=6, filters=32, n_classes=9,
 						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1):
 		
@@ -42,7 +42,8 @@ class NeuralNet(object):
 		self.epoch = epoch
 		self.train_size = train_size
 		self.timesteps = timesteps
-		self.shape = shape
+		self.patch_len = patch_len
+		self.shape = [self.patch_len,self.patch_len]
 		self.kernel = kernel
 		self.kernel_size = kernel[0]
 		self.channels = channels

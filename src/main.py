@@ -38,7 +38,7 @@ parser.add_argument('--epoch', dest='epoch', type=int, default=200, help='# of e
 parser.add_argument('--batch_size', dest='batch_size', type=int, default=200, help='# images in batch')
 parser.add_argument('--train_size', dest='train_size', type=int, default=1e8, help='# images used to train')
 parser.add_argument('--timesteps', dest='timesteps', type=int, default=utils.conf["t_len"], help='# timesteps used to train')
-parser.add_argument('--shape', dest='shape', type=int, default=[5,5], help='# timesteps used to train')
+parser.add_argument('-pl','--patch_len', dest='patch_len', type=int, default=5, help='# timesteps used to train')
 parser.add_argument('--kernel', dest='kernel', type=int, default=[3,3], help='# timesteps used to train')
 parser.add_argument('--channels', dest='channels', type=int, default=6, help='# timesteps used to train')
 parser.add_argument('--filters', dest='filters', type=int, default=32, help='# timesteps used to train')
@@ -66,6 +66,8 @@ if args.model=='unet':
     label_type='semantic'
 else:
     label_type='one_hot'
+
+
 """
 if args.memory_mode=="hdd":
     with open(utils.conf["path"]+'data.pkl', 'rb') as handle: dataset=pickle.load(handle)
@@ -84,13 +86,13 @@ def main(_):
                                 band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
                                 test_n_limit=args.test_n_limit,memory_mode=args.memory_mode, \
                                 balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
-                                n_apriori=args.n_apriori)
+                                n_apriori=args.n_apriori,patch_length=args.patch_len)
     elif label_type=='semantic':
         data=utils.DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
                                 band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
                                 test_n_limit=args.test_n_limit,memory_mode=args.memory_mode, \
                                 balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
-                                n_apriori=args.n_apriori)
+                                n_apriori=args.n_apriori,patch_length=args.patch_len)
 
 
     if args.memory_mode=="ram":
@@ -99,27 +101,27 @@ def main(_):
     with tf.Session() as sess:
         if args.model=='convlstm':
             model = conv_lstm(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
-                            timesteps=args.timesteps, shape=args.shape,
+                            timesteps=args.timesteps, patch_len=args.patch_len,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
                             checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data,conf=data.conf, debug=args.debug)
         elif args.model=='conv3d':
             model = Conv3DMultitemp(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
-                            timesteps=args.timesteps, shape=args.shape,
+                            timesteps=args.timesteps, patch_len=args.patch_len,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
                             checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
         elif args.model=='unet':
             model = UNet(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
-                            timesteps=args.timesteps, shape=args.shape,
+                            timesteps=args.timesteps, patch_len=args.patch_len,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
                             checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
         elif args.model=='smcnn':
             model = SMCNN(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
-                            timesteps=args.timesteps, shape=args.shape,
+                            timesteps=args.timesteps, patch_len=args.patch_len,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
                             checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
         elif args.model=='smcnnlstm':
             model = SMCNNlstm(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
-                            timesteps=args.timesteps, shape=args.shape,
+                            timesteps=args.timesteps, patch_len=args.patch_len,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
                             checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
         if args.phase == 'train':

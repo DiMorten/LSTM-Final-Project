@@ -543,14 +543,14 @@ if __name__ == "__main__":
 	parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=1000000, help="Class number. 'local' or 'remote'")
 
 	args = parser.parse_args()
-
+	patch_length=5
 	
 	#data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
 	data=DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
 		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True, \
 		balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
-		n_apriori=args.n_apriori)
+		n_apriori=args.n_apriori,patch_length=patch_length)
 	data.create()
 	
 	#conf=data_creator.conf
