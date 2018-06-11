@@ -28,7 +28,7 @@ import argparse
 # Local
 import utils
 import deb
-from model import (conv_lstm,Conv3DMultitemp,UNet,SMCNN,SMCNNlstm)
+from model import (conv_lstm,Conv3DMultitemp,UNet,SMCNN,SMCNNlstm, SMCNN_UNet)
 
 #import conf
 parser = argparse.ArgumentParser(description='')
@@ -62,7 +62,7 @@ parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,d
 parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=1000000, help="Class number. 'local' or 'remote'")
 args = parser.parse_args()
 np.set_printoptions(suppress=True)
-if args.model=='unet':
+if args.model=='unet' or args.model=='smcnn_unet':
     label_type='semantic'
 else:
     label_type='one_hot'
@@ -124,6 +124,11 @@ def main(_):
                             timesteps=args.timesteps, patch_len=args.patch_len,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
                             checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
+        elif args.model=='smcnn_unet':
+            model = SMCNN_UNet(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
+                timesteps=args.timesteps, patch_len=args.patch_len,
+                kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
+                checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
         if args.phase == 'train':
             model.train(args)
         

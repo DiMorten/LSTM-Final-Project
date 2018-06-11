@@ -25,6 +25,9 @@ import pickle
 # Local
 import utils
 import deb
+
+#from tf.keras.layers import Input, concatenate, Conv2D, MaxPooling2D, Conv2DTranspose
+
 np.set_printoptions(suppress=True)
 
 # ===================================NeuralNet generic class ======================================================= #
@@ -469,10 +472,51 @@ class UNet(NeuralNetSemantic):
 	def model_graph_get(self,data):
 		graph_pipeline = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
 		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh,padding='same')
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, 9, self.kernel_size, activation=None,padding='same')
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.n_classes, self.kernel_size, activation=None,padding='same')
 		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
 		#return tf.expand_dims(annotation_pred, dim=3), graph_pipeline
 		return graph_pipeline, prediction
+	def conv_block_get(self,graph_pipeline):
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh,padding='same')
+		
+		return graph_pipeline
+class SMCNN_UNet(NeuralNetSemantic):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.model_build()
+		self.kernel_size=(3,3)
+		self.filters=10
+	def model_graph_get(self,data):
+
+		graph_pipeline = data
+		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1])
+		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,6*6])
+
+		deb.prints(graph_pipeline.get_shape())
+
+		self.filter_first=32
+		conv0=tf.layers.conv2d(graph_pipeline, self.n_classes, self.filter_first, activation=None,padding='same')
+		conv1=self.conv_block_get(conv0,self.filter_first*2)
+		conv2=self.conv_block_get(conv1,self.filter_first*4)
+		conv3=self.conv_block_get(conv2,self.filter_first*8)
+		up4=self.deconv_block_get(conv3,conv2,self.filter_first*4)
+		up5=self.deconv_block_get(up4,conv1,self.filter_first*2)
+		up6=self.deconv_block_get(up5,conv0,self.filter_first)
+
+		graph_pipeline = tf.layers.conv2d(up6, self.n_classes, self.kernel_size, activation=None,padding='same')
+		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
+		#return tf.expand_dims(annotation_pred, dim=3), graph_pipeline
+		return graph_pipeline, prediction
+	def conv_block_get(self,graph_pipeline,filters):
+		graph_pipeline = tf.layers.conv2d_transpose(graph_pipeline, filters, self.kernel_size, activation=tf.nn.relu,padding='same')
+		graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
+		deb.prints(graph_pipeline.get_shape())
+
+		return graph_pipeline
+	def deconv_block_get(self,graph_pipeline,layer,filters):
+		graph_pipeline = tf.layers.conv2d_transpose(graph_pipeline, filters, self.kernel_size,strides=(2,2),activation=tf.nn.relu,padding='same')
+		deb.prints(graph_pipeline.get_shape())
+		return tf.concat([graph_pipeline,layer],axis=3)
 
 # ================================= Implements ConvLSTM ============================================== #
 class conv_lstm(NeuralNetOneHot):
@@ -538,7 +582,7 @@ class SMCNN(NeuralNetOneHot):
 		#graph_pipeline = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
 		graph_pipeline = data
 		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1])
-		graph_pipeline = tf.reshape(graph_pipeline,[-1,5,5,6*6])
+		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,6*6])
 
 		deb.prints(graph_pipeline.get_shape())
 
@@ -575,7 +619,7 @@ class SMCNNlstm(NeuralNetOneHot):
 		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=[3,3],get_last=False,name="convlstm")
 
 		graph_pipeline = tf.transpose(data, [0, 2, 3, 4, 1])
-		graph_pipeline = tf.reshape(graph_pipeline,[-1,5,5,6*6])
+		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,6*6])
 
 		deb.prints(graph_pipeline.get_shape())
 

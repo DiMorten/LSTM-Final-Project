@@ -37,5 +37,8 @@ python main.py -mm="ram" --debug=1 -po 0 -bs=500 --filters=32
 
 python main.py -mm="ram" --debug=1 -po 0 -bs=500 --filters=32 -m="unet"
 python main.py -mm="ram" --debug=1 -po 27 -bs=500 --filters=32 -m="unet" -pl=32 -nap=16000
+
+python main.py -mm="ram" --debug=1 -po 27 -bs=500 --filters=32 -m="smcnn_unet" -pl=32 -nap=16000
+
 # Pending: Use validation set from train set
 # 
