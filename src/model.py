@@ -165,10 +165,10 @@ class NeuralNet(object):
 				if self.debug>=3:
 					deb.prints(batch["ims"].shape)
 					deb.prints(batch["labels"].shape)
-				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels"]})
+				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels"], self.keep_prob: 1})
 				self.writer.add_summary(summary, counter)
 				counter += 1
-				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"]})
+				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1})
 				if self.debug>=1:
 					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
 			
@@ -260,6 +260,8 @@ class NeuralNet(object):
 
 		return data
 	def model_build(self):
+		self.keep_prob = tf.placeholder(tf.float32)
+		
 		self.data,self.target=self.placeholder_init(self.timesteps,self.shape,self.channels,self.n_classes)
 		self.logits, self.prediction = self.model_graph_get(self.data)
 
@@ -318,7 +320,7 @@ class NeuralNetSemantic(NeuralNet):
 		return stats
 
 	def batch_prediction_from_sess_get(self,ims):
-		return self.sess.run(self.prediction,{self.data: ims})
+		return self.sess.run(self.prediction,{self.data: ims, self.keep_prob: 1.0})
 
 	def targets_predictions_int_get(self,target,prediction):
 		return target.flatten(),prediction.flatten()
@@ -346,7 +348,7 @@ class NeuralNetOneHot(NeuralNet):
 		return data,target
 
 	def batch_prediction_from_sess_get(self,ims):
-		return np.around(self.sess.run(self.prediction,{self.data: ims}),decimals=2)
+		return np.around(self.sess.run(self.prediction,{self.data: ims, self.keep_prob: 1.0}),decimals=2)
 
 	def targets_predictions_int_get(self,target,prediction): 
 		return np.argmax(target,axis=1),np.argmax(prediction,axis=1)
@@ -412,12 +414,12 @@ class NeuralNetOneHot(NeuralNet):
 
 		print("train results")
 		
-		print(np.around(self.sess.run(self.prediction,{self.data: dataset["train"]["ims"][sample_range]}),decimals=4))
+		print(np.around(self.sess.run(self.prediction,{self.data: dataset["train"]["ims"][sample_range], self.keep_prob: 1.0}),decimals=4))
 		deb.prints(dataset["train"]["labels"][sample_range])
 		
 		print("test results")
 		
-		print(np.around(self.sess.run(self.prediction,{self.data: dataset["test"]["ims"][sample_range]}),decimals=4))
+		print(np.around(self.sess.run(self.prediction,{self.data: dataset["test"]["ims"][sample_range], self.keep_prob: 1.0}),decimals=4))
 		deb.prints(dataset["test"]["labels"][sample_range])
 
 	def data_group_load(self,conf,data):
@@ -531,10 +533,16 @@ class SMCNN(NeuralNetOneHot):
 		self.model_build()
 		
 	def model_graph_get(self,data):
-		graph_pipeline = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh)
+		#graph_pipeline = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
+		#graph_pipeline=tf.transpose(data, [1, 0] + [i+2 for i in range(tf.shape(data).shape[0]-2)])
+		#graph_pipeline=tf.transpose(data, [2, 1] + [i+2 for i in range(tf.shape(data).shape[0]-2)])
+		graph_pipeline = tf.transpose(data, [0, 2, 3, 4, 1])
+		graph_pipeline = tf.reshape(graph_pipeline,[-1,5,5,6*6])
+		#graph_pipeline=tf.transpose(data, tf.concat([[3,2], tf.range(0, tf.rank(data)-2)], 0))
+		deb.prints(graph_pipeline.get_shape())
+		#if self.debug: deb.prints(graph_pipeline.get_shape())
+		#graph_pipeline=tf.reshape(data,[None,])
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		
 		graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
@@ -546,7 +554,11 @@ class SMCNN(NeuralNetOneHot):
 		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		
+		#graph_pipeline = tf.layers.dropout(graph_pipeline,rate=self.keep_prob,training=False,name='dropout')
+		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
 		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
+
+
 		return None,graph_pipeline
 
