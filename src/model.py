@@ -173,7 +173,7 @@ class NeuralNet(object):
 				self.writer.add_summary(summary, counter)
 				counter += 1
 				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1.0})
-				if self.debug>=2:
+				if self.debug>=1 and (idx % 30 == 0):
 					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
 			
 			# =__________________________________ Test stats get and model save  _______________________________ = #
@@ -301,12 +301,13 @@ class NeuralNetSemantic(NeuralNet):
 			cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits))
 
 		#with tf.name_scope('learning_rate'):
-		learning_rate = tf.train.exponential_decay(0.1, self.global_step, 288, 0.96, staircase=True)
+		#learning_rate = tf.train.exponential_decay(0.1, self.global_step, 288, 0.96, staircase=True)
 		
 		#	learning_rate = tf.train.exponential_decay(opt.learning_rate, global_step, opt.iter_epoch, opt.lr_decay, staircase=True)
 		# Prepare the optimization function
 		##optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy_loss, global_step=global_step)
-		optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+		#optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+		optimizer = tf.train.AdamOptimizer()
 		minimize = optimizer.minimize(cross_entropy)
 		prediction=tf.cast(prediction,tf.float32)
 		# Distance L1
@@ -514,7 +515,7 @@ class SMCNN_UNet(NeuralNetSemantic):
 
 	def conv_2d(self,graph_pipeline,filters):
 		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(1,1), activation=None,padding='same')
-		graph_pipeline=self.batchnorm(graph_pipeline,training=True)
+		#graph_pipeline=self.batchnorm(graph_pipeline,training=True)
 		graph_pipeline = tf.nn.relu(graph_pipeline)
 		return graph_pipeline
 	def conv_block_get(self,graph_pipeline,filters):
@@ -532,7 +533,7 @@ class SMCNN_UNet(NeuralNetSemantic):
 		return graph_pipeline
 	def deconv_2d(self,graph_pipeline,filters):
 		graph_pipeline = tf.layers.conv2d_transpose(graph_pipeline, filters, self.kernel_size,strides=(2,2),activation=None,padding='same')
-		graph_pipeline=self.batchnorm(graph_pipeline,training=True)
+		#graph_pipeline=self.batchnorm(graph_pipeline,training=True)
 		graph_pipeline = tf.nn.relu(graph_pipeline)
 		return graph_pipeline
 	def deconv_block_get(self,graph_pipeline,layer,filters):
