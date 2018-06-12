@@ -509,19 +509,25 @@ class SMCNN_UNet(NeuralNetSemantic):
 		#return tf.expand_dims(annotation_pred, dim=3), graph_pipeline
 		return graph_pipeline, prediction
 	def conv_block_get(self,graph_pipeline,filters):
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(2,2), activation=tf.nn.relu,padding='same')
-		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(1,1), activation=tf.nn.relu,padding='same')
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(1,1), activation=tf.nn.relu,padding='same')
+		
+		#graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(2,2), activation=tf.nn.relu,padding='same')
+		graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
 		deb.prints(graph_pipeline.get_shape())
 
 		return graph_pipeline
 	def deconv_block_get(self,graph_pipeline,layer,filters):
 		graph_pipeline = tf.layers.conv2d_transpose(graph_pipeline, filters, self.kernel_size,strides=(2,2),activation=tf.nn.relu,padding='same')
+		graph_pipeline = tf.concat([graph_pipeline,layer],axis=3)
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size,activation=tf.nn.relu,padding='same')
 		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size,activation=tf.nn.relu,padding='same')
 		
 		deb.prints(graph_pipeline.get_shape())
-		return tf.concat([graph_pipeline,layer],axis=3)
+		return graph_pipeline
 	def out_block_get(self,graph_pipeline,filters):
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, activation=None,padding='same')
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filter_first, self.kernel_size,activation=tf.nn.relu,padding='same')
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, (1,1), activation=None,padding='same')
 		deb.prints(graph_pipeline.get_shape())
 		return graph_pipeline
 
