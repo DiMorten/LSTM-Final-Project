@@ -509,30 +509,41 @@ class SMCNN_UNet(NeuralNetSemantic):
 		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
 		#return tf.expand_dims(annotation_pred, dim=3), graph_pipeline
 		return graph_pipeline, prediction
-	def conv_block_get(self,graph_pipeline,filters):
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(1,1), activation=tf.nn.relu,padding='same')
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(1,1), activation=tf.nn.relu,padding='same')
-		#graph_pipeline = tf.cond(tf.less(self.keep_prob,tf.Variable(1.0,dtype=tf.float32)),self.batchnorm(graph_pipeline,training=True),self.batchnorm(graph_pipeline,training=False))
-		#if self.keep_prob<1.0:
-		#	graph_pipeline=self.batchnorm(graph_pipeline,training=True)
-		#else:
-	#		graph_pipeline=self.batchnorm(graph_pipeline,training=False)
+
+	def conv_2d(self,graph_pipeline,filters):
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(1,1), activation=None,padding='same')
 		graph_pipeline=self.batchnorm(graph_pipeline,training=True)
+		graph_pipeline = tf.nn.relu(graph_pipeline)
+		return graph_pipeline
+	def conv_block_get(self,graph_pipeline,filters):
+		
+		graph_pipeline = self.conv_2d(graph_pipeline,filters)
+		graph_pipeline = self.conv_2d(graph_pipeline,filters)
+		
+		##graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(1,1), activation=tf.nn.relu,padding='same')
+		##graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(1,1), activation=tf.nn.relu,padding='same')
+		
 		#graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(2,2), activation=tf.nn.relu,padding='same')
 		graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
 		deb.prints(graph_pipeline.get_shape())
 
 		return graph_pipeline
+	def deconv_2d(self,graph_pipeline,filters):
+		graph_pipeline = tf.layers.conv2d_transpose(graph_pipeline, filters, self.kernel_size,strides=(2,2),activation=None,padding='same')
+		graph_pipeline=self.batchnorm(graph_pipeline,training=True)
+		graph_pipeline = tf.nn.relu(graph_pipeline)
+		return graph_pipeline
 	def deconv_block_get(self,graph_pipeline,layer,filters):
-		graph_pipeline = tf.layers.conv2d_transpose(graph_pipeline, filters, self.kernel_size,strides=(2,2),activation=tf.nn.relu,padding='same')
+		##graph_pipeline = tf.layers.conv2d_transpose(graph_pipeline, filters, self.kernel_size,strides=(2,2),activation=tf.nn.relu,padding='same')
+		graph_pipeline = self.deconv_2d(graph_pipeline,filters)
 		graph_pipeline = tf.concat([graph_pipeline,layer],axis=3)
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size,activation=tf.nn.relu,padding='same')
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size,activation=tf.nn.relu,padding='same')
+		graph_pipeline = self.conv_2d(graph_pipeline,filters)
+		graph_pipeline = self.conv_2d(graph_pipeline,filters)
 		
 		deb.prints(graph_pipeline.get_shape())
 		return graph_pipeline
 	def out_block_get(self,graph_pipeline,filters):
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filter_first, self.kernel_size,activation=tf.nn.relu,padding='same')
+		graph_pipeline = self.conv_2d(graph_pipeline,self.filter_first)
 		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, (1,1), activation=None,padding='same')
 		deb.prints(graph_pipeline.get_shape())
 		return graph_pipeline
