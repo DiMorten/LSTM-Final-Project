@@ -169,7 +169,7 @@ class NeuralNet(object):
 				if self.debug>=3:
 					deb.prints(batch["ims"].shape)
 					deb.prints(batch["labels"].shape)
-				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels"], self.keep_prob: 1.0})
+				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels"], self.keep_prob: 1.0, self.global_step: idx})
 				self.writer.add_summary(summary, counter)
 				counter += 1
 				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1.0})
@@ -265,7 +265,7 @@ class NeuralNet(object):
 		return data
 	def model_build(self):
 		self.keep_prob = tf.placeholder(tf.float32)
-		
+		self.global_step = tf.placeholder(tf.int32)
 		self.data,self.target=self.placeholder_init(self.timesteps,self.shape,self.channels,self.n_classes)
 		self.logits, self.prediction = self.model_graph_get(self.data)
 
@@ -300,11 +300,13 @@ class NeuralNetSemantic(NeuralNet):
 		with tf.name_scope('cross_entropy'):
 			cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits))
 
-		##with tf.name_scope('learning_rate'):
-		##	learning_rate = tf.train.exponential_decay(opt.learning_rate, global_step, opt.iter_epoch, opt.lr_decay, staircase=True)
+		#with tf.name_scope('learning_rate'):
+		learning_rate = tf.train.exponential_decay(0.1, self.global_step, 288, 0.96, staircase=True)
+		
+		#	learning_rate = tf.train.exponential_decay(opt.learning_rate, global_step, opt.iter_epoch, opt.lr_decay, staircase=True)
 		# Prepare the optimization function
 		##optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy_loss, global_step=global_step)
-		optimizer = tf.train.AdamOptimizer()
+		optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 		minimize = optimizer.minimize(cross_entropy)
 		prediction=tf.cast(prediction,tf.float32)
 		# Distance L1
@@ -494,7 +496,7 @@ class SMCNN_UNet(NeuralNetSemantic):
 
 		deb.prints(graph_pipeline.get_shape())
 
-		self.filter_first=64
+		self.filter_first=32
 		#conv0=tf.layers.conv2d(graph_pipeline, self.filter_first, self.kernel_size, activation=tf.nn.relu,padding='same')
 		conv1=self.conv_block_get(graph_pipeline,self.filter_first*2)
 		conv2=self.conv_block_get(conv1,self.filter_first*4)
