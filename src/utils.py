@@ -251,8 +251,9 @@ class DataForNet(object):
 					if patches_get["test_n"]<=self.test_n_limit:
 						patches_get["test_n_limited"]+=1					
 						if test_counter>=self.conf["extract"]["test_skip"]:
+							mask_test=self.mask_test_update(mask_test,yy,xx,window)
 							#mask_test[yy: yy + window, xx: xx + window]=255
-							mask_test[int(yy + window/2), int(xx + window/2)]=255
+							#mask_test[int(yy + window/2), int(xx + window/2)]=255
 							test_counter=0
 							if self.conf["memory_mode"]=="hdd":
 								if patches_save==True:
@@ -341,7 +342,10 @@ class DataSemantic(DataForNet):
 		else:
 			print("Hdd mode not implemented yet for Im2Im data.")
 			#break
-			
+
+	def mask_test_update(self,mask_test,yy,xx,window):
+		mask_test[yy: yy + window, xx: xx + window]=255
+		return mask_test
 
 class DataOneHot(DataForNet):
 	def __init__(self,*args,**kwargs):
@@ -378,6 +382,9 @@ class DataOneHot(DataForNet):
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2_onehot()
 			self.data_onehot_load_balance_store()
 
+	def mask_test_update(self,mask_test,yy,xx,window):
+		mask_test[int(yy + window/2), int(xx + window/2)]=255
+		return mask_test
 
 	def data_onehot_load_balance_store(self):
 		print("heeere")

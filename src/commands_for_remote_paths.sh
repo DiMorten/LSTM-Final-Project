@@ -29,7 +29,9 @@ python main.py -mm="ram" --debug=1 -po 4 -ts 4 -tnl 1000000 -bs=20000 --batch_si
 
 python main.py -mm="ram" --debug=1 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=2000 --filters=256
 
+python main.py -mm="ram" --debug=1 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=2000 --filters=256 -m="smcnn"
 
+python main.py -mm="ram" --debug=1 -po 27 -ts 10 -tnl 10000000 --batch_size=5 --filters=256 -pl=32 -m="smcnn_unet" -nap=16000
 
 toy version:
 python main.py -mm="ram" --debug=1 -po 1 -ts 0 -tnl 1000 -bs=1500 --batch_size=200 --filters=256
