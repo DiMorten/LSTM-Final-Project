@@ -291,14 +291,79 @@ class NeuralNetSemantic(NeuralNet):
 		accuracy_average=0.5
 		return accuracy_average
 
+
+	def weighted_loss(self, logits, labels, num_classes, head=None):
+		""" median-frequency re-weighting """
+		with tf.name_scope('loss'):
+
+			logits = tf.reshape(logits, (-1, num_classes))
+
+			epsilon = tf.constant(value=1e-10)
+
+			logits = logits + epsilon
+
+			# consturct one-hot label array
+			label_flat = tf.reshape(labels, (-1, 1))
+
+			# should be [batch ,num_classes]
+			labels = tf.reshape(tf.one_hot(label_flat, depth=num_classes), (-1, num_classes))
+
+			softmax = tf.nn.softmax(logits)
+
+			cross_entropy = -tf.reduce_sum(tf.multiply(labels * tf.log(softmax + epsilon), head), axis=[1])
+
+			cross_entropy_mean = tf.reduce_mean(cross_entropy, name='cross_entropy')
+
+			tf.add_to_collection('losses', cross_entropy_mean)
+
+			loss = tf.add_n(tf.get_collection('losses'), name='total_loss')
+
+		return loss
+
+	def cal_loss(self, logits, labels):
+		loss_weight = np.array([
+		  0,
+		  0.6326076,
+		  0,
+		  0,
+		  0.93579704,
+		  1.,
+		  0.82499779,
+		  0.5,
+		  0.74134727]) # class 0~11
+
+		labels = tf.cast(labels, tf.int32)
+		# return loss(logits, labels)
+		return self.weighted_loss(logits, labels, num_classes=self.n_classes, head=loss_weight)
+
 	def loss_optimizer_set(self,target,prediction, logits):
 		target_int=tf.cast(target,tf.int32)
 		deb.prints(target_int.get_shape())
 		deb.prints(logits.get_shape())
 
 		# Estimate loss from prediction and target
-		with tf.name_scope('cross_entropy'):
-			cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits))
+		#with tf.name_scope('cross_entropy'):
+		#weights=tf.transpose(tf.constant([[0, 0.6326076 ,  0, 0, 0.93579704,  1.        ,  0.82499779,  0.5       , 0.74134727]]))
+
+		#im_weights=tf.Variable(tf.zeros([32,32],dtype=tf.float32))
+		#for clss in range(0,8):
+		#	comparison = tf.equal( target_int, clss )
+		#	print(clss)
+		#	weight = tf.gather(weights, clss)
+		#	print(weights[clss])
+		#	print(weight.get_shape())
+		#	im_weights = im_weights.assign_add( tf.where (comparison, tf.multiply(weight,tf.ones_like(im_weights)), im_weights) )
+
+			#im_weights[target_int==clss]=weights[clss]
+
+
+#graph_pipeline = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
+		loss = self.cal_loss(logits, target_int)
+		#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits)
+
+		deb.prints(loss.get_shape())
+		cross_entropy = tf.reduce_mean(loss)
+		deb.prints(cross_entropy.get_shape())
 
 		#with tf.name_scope('learning_rate'):
 		#learning_rate = tf.train.exponential_decay(0.1, self.global_step, 288, 0.96, staircase=True)
@@ -318,6 +383,8 @@ class NeuralNetSemantic(NeuralNet):
 		return minimize, mistakes, error
 
 	def unique_classes_print(self,data,memory_mode):
+		count,unique=np.unique(data["labels"],return_counts=True)
+		print("Train count,unique=",count,unique)
 		pass
 
 	def data_stats_get2(self,data,batch_size=1000):

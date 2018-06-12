@@ -44,3 +44,11 @@ python main.py -mm="ram" --debug=1 -po 27 -bs=500 --filters=32 -m="smcnn_unet" -
 
 # Pending: Use validation set from train set
 # 
+
+
+
+Class balancing
+
+Test: [@debug] stats["per_class_label_count"] = [     0. 873240.      0.      0. 166194. 141965. 174402. 435596. 247387.]
+
+[ 1.  4.  5.  6.  7.  8.] [326256 135005 109385 188598 482812 239672]
