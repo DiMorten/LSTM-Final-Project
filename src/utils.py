@@ -445,6 +445,7 @@ class DataOneHot(DataForNet):
 
 	# From data_get()
 	def labels_unused_classes_eliminate(self,data):
+		fname=sys._getframe().f_code.co_name
 		##deb.prints(data["labels_int"].shape[0])
 		##idxs=[i for i in range(data["labels_int"].shape[0]) if (data["labels_int"][i] == 0 or data["labels_int"][i] == 2 or data["labels_int"][i] == 3)]
 		##deb.prints(len(idxs))
@@ -452,7 +453,7 @@ class DataOneHot(DataForNet):
 		# self.old_n_classes=self.n_classes
 		self.classes = np.unique(data["labels_int"])
 		# self.n_classes=self.classes.shape[0]
-		deb.prints(self.classes)		
+		deb.prints(self.classes,fname)		
 		self.labels2new_labels = dict((c, i) for i, c in enumerate(self.classes))
 		self.new_labels2labels = dict((i, c) for i, c in enumerate(self.classes))
 

@@ -141,6 +141,12 @@ class NeuralNet(object):
 		data["labels"]=data["labels"][idxs]
 		return data
 
+	def data_shuffle(self,data):
+		idxs=np.arange(0,data.shape[0])
+		idxs=np.random.shuffle(idxs)
+		return np.squeeze(data)
+
+
 	def train(self, args):
 		self.train_init()
 		
@@ -171,7 +177,9 @@ class NeuralNet(object):
 
 		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
 		for epoch in range(args.epoch):
-			data["train"]=self.random_shuffle(data["train"])
+			data["train"]["ims"]=self.data_shuffle(data["train"]["ims"])
+			data["train"]["labels"]=self.data_shuffle(data["train"]["labels"])
+			
 			for idx in range(0, batch["idxs"]):
 				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx,memory_mode=self.conf["memory_mode"])
 				if self.debug>=3:
