@@ -2,7 +2,6 @@ import numpy as np
 from csv import reader
 import glob
 #from osgeo import gdal
-from collections import Counter
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
@@ -21,24 +20,6 @@ from keras.layers import Conv2D, MaxPooling2D, AveragePooling2D
 from keras import regularizers
 import cv2
 
-def get_class_weights(y, smooth_factor=0):
-    """
-    Returns the weights for each class based on the frequencies of the samples
-    :param smooth_factor: factor that smooths extremely uneven weights
-    :param y: list of true labels (the labels must be hashable)
-    :return: dictionary with the weight for each class
-    """
-    counter = Counter(y)
-
-    if smooth_factor > 0:
-        p = max(counter.values()) * smooth_factor
-        for k in counter.keys():
-            counter[k] += p
-
-    majority = max(counter.values())
-
-    return {cls: float(majority / count) for cls, count in counter.items()}
-
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -48,7 +29,7 @@ def load_image(patch):
     # Read Mask Image
     #gdal_header = gdal.Open(patch)
     #img = gdal_header.ReadAsArray()
-    img=cv2.imread(patch)
+    img=cv2.imread(patch,0)
     DIM = img.shape
     img = img.reshape(DIM[0]*DIM[1])
     return img
@@ -198,18 +179,22 @@ def extract_features(stack, DIM, weights, bias, scaler, ksize=3):
 if __name__ == '__main__':
     np.core.arrayprint._line_width = 160  # terminal width
     #root_directory = '/home/jose/Drive/PUC/WorkPlace/IpuaCodes/'
-    root_directory = '/home/jorg/Documents/Master/scnd_semester/neural_nets/final_project/baseline_reproducing/'
+    #root_directory = '/home/jorg/Documents/Master/scnd_semester/neural_nets/final_project/baseline_reproducing/'
+    root_directory='/home/lvc/Documents/Jorg/deep_learning/LSTM-Final-Project/src/baseline/'
     #images_directory = '/mnt/Data/DataBases/RS/Ipua/'
-    images_directory = '../repo2/LSTM-Final-Project/data/'
+    images_directory = '../../data/'
 
 
 #    root_directory = '/home/jose/Workplace/Experiments/Ipua/Codes/'
 #    images_directory = '/home/jose/DataBases/RS/Ipua/npy_imgs/'
     images_list = glob.glob(images_directory + 'in_npy/' '*.npy')
-    images_list.sort(key=lambda f: int(filter(str.isdigit, f)))  # Sort lists
+    print(images_list)
+    images_list.sort(key=lambda f: int(f[20]))  # Sort lists
     labels_list = glob.glob(images_directory + 'labels/' '*.tif')
-    labels_list.sort(key=lambda f: int(filter(str.isdigit, f)))
+    print(labels_list)
+    labels_list.sort(key=lambda f: int(f[18]))  # Sort lists
     mask_patch = [root_directory + 'TrainTestMask_new.tif']
+    print(mask_patch)
     output_folder = 'results/'
 
     filename_accuracy = 'Report_ipua_cnn.txt'
