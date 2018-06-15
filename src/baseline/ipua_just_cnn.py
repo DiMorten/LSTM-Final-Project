@@ -19,7 +19,7 @@ from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D, AveragePooling2D
 from keras import regularizers
 import cv2
-
+from skimage.util import view_as_windows
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -38,6 +38,8 @@ def load_image(patch):
 def stack_images(start, images_list, seq):
 
     img = np.load(images_list[start-1])
+    img = np.transpose(img,(2,0,1))
+    print("img",img.shape)
     print(images_list[start-1])
     bands, rows, cols = img.shape
     img = img.reshape(bands, rows*cols)
@@ -64,7 +66,7 @@ def load_data(DIM, image2classify, start, images_list, labels_list, mask, seq):
     # print(labels_list)
     labels = load_image(labels_list[image2classify])
     data = stack_images(start-seq+1, images_list, seq)
-
+    print("stack",data.shape)
     return data, labels
 
 
@@ -141,16 +143,21 @@ def extract_patches_randomly(data, DIM, ksize=3, numPatches=500000):
 
 def extract_patches(img, ksize=3):
     img=np.transpose(img,(1,2,0))
-    padding = np.zeros(shape=(img.shape[0] + 2*(ksize/2),
-                              img.shape[1] + 2*(ksize/2),
+    padding = np.zeros(shape=(img.shape[0] + 2*int(ksize/2),
+                              img.shape[1] + 2*int(ksize/2),
                               img.shape[2]), dtype=img.dtype)
-    padding[ksize/2:padding.shape[0] - ksize/2, ksize/2:padding.shape[1] - ksize/2, :] = img
+    ksize_half=int(ksize/2)
+    #padding[ksize/2:padding.shape[0] - ksize/2, ksize/2:padding.shape[1] - ksize/2, :] = img
+    padding[ksize_half:padding.shape[0] - ksize_half, ksize_half:padding.shape[1] - ksize_half, :] = img
+    
     kernel = (ksize, ksize, img.shape[2])
     subimgs = view_as_windows(padding, kernel)
+    print("subimgs",subimgs.shape)
     return subimgs
 
 def extract_subimages(img, mask, DIM, ksize=5):
     bands, num_pixels = img.shape
+    print(img.shape,bands,num_pixels)
     img = img.reshape(bands, DIM[0], DIM[1])
 
     subimgs = extract_patches(img, ksize)
@@ -179,8 +186,8 @@ def extract_features(stack, DIM, weights, bias, scaler, ksize=3):
 if __name__ == '__main__':
     np.core.arrayprint._line_width = 160  # terminal width
     #root_directory = '/home/jose/Drive/PUC/WorkPlace/IpuaCodes/'
-    #root_directory = '/home/jorg/Documents/Master/scnd_semester/neural_nets/final_project/baseline_reproducing/'
-    root_directory='/home/lvc/Documents/Jorg/deep_learning/LSTM-Final-Project/src/baseline/'
+    root_directory = '/home/jorg/Documents/Master/scnd_semester/neural_nets/final_project/repo2/LSTM-Final-Project/src/baseline/'
+    #root_directory='/home/lvc/Documents/Jorg/deep_learning/LSTM-Final-Project/src/baseline/'
     #images_directory = '/mnt/Data/DataBases/RS/Ipua/'
     images_directory = '../../data/'
 
@@ -193,7 +200,7 @@ if __name__ == '__main__':
     labels_list = glob.glob(images_directory + 'labels/' '*.tif')
     print(labels_list)
     labels_list.sort(key=lambda f: int(f[18]))  # Sort lists
-    mask_patch = [root_directory + 'TrainTestMask_new.tif']
+    mask_patch = [images_directory + 'TrainTestMask.tif']
     print(mask_patch)
     output_folder = 'results/'
 
@@ -210,7 +217,7 @@ if __name__ == '__main__':
     k_size = 3
 
     mask = load_image(mask_patch[0])
-
+    print("mask.shape",mask.shape)
     num_images = 9
     start = 4
     end = 9
@@ -238,6 +245,9 @@ if __name__ == '__main__':
 #                depth = int(9*stack.shape[0]*2.0)
                 depth = depth1
 
+                print("stack",stack.shape)
+                print("labels",labels.shape)
+                
                 trn_subimgs, tst_subimgs = extract_subimages(stack,
                                                              mask,
                                                              DIM,
