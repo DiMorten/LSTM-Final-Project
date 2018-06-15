@@ -36,7 +36,7 @@ class NeuralNet(object):
 
 	def __init__(self, sess=tf.Session(), batch_size=50, epoch=200, train_size=1e8,
 						timesteps=utils.conf["t_len"], patch_len=32,
-						kernel=[3,3], channels=6, filters=32, n_classes=9,
+						kernel=[3,3], channels=6, filters=32, n_classes=6,
 						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1):
 		
 		self.ram_data=data
@@ -213,6 +213,9 @@ class NeuralNet(object):
 			if self.debug>=2:
 				deb.prints(batch["prediction"].shape)
 				deb.prints(batch["labels"].shape)
+
+			self.prediction2old_labels_get(batch["prediction"])
+		   
 			batch["correct_per_class"]=self.correct_per_class_get(batch["labels"],batch["prediction"])
 			stats["correct_per_class"]+=batch["correct_per_class"]
 			
@@ -254,6 +257,8 @@ class NeuralNet(object):
 		
 		return correct_per_class_average, accuracy_average, overall_accuracy
 
+
+
 	def data_load(self,conf,memory_mode):
 		if memory_mode=="hdd":
 			data=self.hdd_data_load(conf)
@@ -264,6 +269,7 @@ class NeuralNet(object):
 
 			deb.prints(self.ram_data["train"]["ims"].shape)
 			deb.prints(data["train"]["ims"].shape)
+
 
 		
 		
@@ -280,6 +286,8 @@ class NeuralNet(object):
 		self.minimize,self.mistakes,self.error=self.loss_optimizer_set(self.target,self.prediction, self.logits)
 		self.error_sum, self.saver, self.merged = self.tensorboard_saver_init(self.error)
 		self.trainable_vars_print()
+
+
 
 
 # ============================ NeuralNetSemantic takes image output ============================================= #
@@ -475,7 +483,16 @@ class NeuralNetOneHot(NeuralNet):
 
 	def ims_get(self,data_im_paths):
 		return np.asarray([np.load(file_path) for file_path in data_im_paths]) # Load files from path
-		
+
+
+	# From data stats get()
+	def prediction2old_labels_get(self,predictions):
+		# new_predictions=predictions.copy()
+		# for i in range(len(classes)):
+		# 	new_predictions[predictions == self.classes[i]] = self.new_labels2labels[self.classes[i]]
+		# return new_predictions
+		return predictions
+
 	def hdd_data_sub_data_get(self, data,n,sub_data):
 		
 		sub_data["im_paths"] = [data["im_paths"][i] for i in sub_data["index"]]

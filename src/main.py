@@ -42,7 +42,7 @@ parser.add_argument('-pl','--patch_len', dest='patch_len', type=int, default=5, 
 parser.add_argument('--kernel', dest='kernel', type=int, default=[3,3], help='# timesteps used to train')
 parser.add_argument('--channels', dest='channels', type=int, default=6, help='# timesteps used to train')
 parser.add_argument('--filters', dest='filters', type=int, default=32, help='# timesteps used to train')
-parser.add_argument('--n_classes', dest='n_classes', type=int, default=9, help='# timesteps used to train')
+parser.add_argument('--n_classes', dest='n_classes', type=int, default=6, help='# timesteps used to train')
 parser.add_argument('--checkpoint_dir', dest='checkpoint_dir', default='./checkpoint', help='models are saved here')
 parser.add_argument('-m','--model', dest='model', default='convlstm', help='models are saved here')
 parser.add_argument('--log_dir', dest='log_dir', default=utils.conf["summaries_path"], help='models are saved here')
@@ -53,7 +53,7 @@ parser.add_argument('--im_size', dest='im_size', type=int, default=(948,1068), h
 parser.add_argument('--band_n', dest='band_n', type=int, default=6, help='Debug')
 parser.add_argument('--t_len', dest='t_len', type=int, default=6, help='Debug')
 parser.add_argument('--path', dest='path', default="../data/", help='Data path')
-parser.add_argument('--class_n', dest='class_n', type=int, default=9, help='Class number')
+parser.add_argument('--class_n', dest='class_n', type=int, default=6, help='Class number')
 parser.add_argument('--pc_mode', dest='pc_mode', default="local", help="Class number. 'local' or 'remote'")
 parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=1000, help="Class number. 'local' or 'remote'")
 parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="hdd", help="Class number. 'local' or 'remote'")
@@ -61,6 +61,7 @@ parser.add_argument('-bs','--balance_samples_per_class', dest='balance_samples_p
 parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,default=8, help="Class number. 'local' or 'remote'")
 parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=1000000, help="Class number. 'local' or 'remote'")
 args = parser.parse_args()
+#args.class_n=args.n_classes
 np.set_printoptions(suppress=True)
 if args.model=='unet' or args.model=='smcnn_unet':
     label_type='semantic'

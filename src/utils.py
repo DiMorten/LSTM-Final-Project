@@ -29,7 +29,7 @@ import argparse
 
 
 class DataForNet(object):
-	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=9,pc_mode="local", \
+	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=6,pc_mode="local", \
 		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None, \
 		n_apriori=1000000):
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n}
@@ -130,7 +130,7 @@ class DataForNet(object):
 
 		deb.prints(self.conf["train"]["n_apriori"])
 		deb.prints(self.conf["test"]["n_apriori"])
-		
+		deb.prints(self.conf["class_n"])
 		self.ram_data={"train":{},"test":{}}
 		self.ram_data["train"]["ims"]=np.zeros((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.patch_shape)
 		self.ram_data["test"]["ims"]=np.zeros((self.conf["test"]["n_apriori"],self.conf["t_len"])+self.patch_shape)
@@ -281,9 +281,12 @@ class DataForNet(object):
 		self.ram_data["test"]["labels_int"]=self.ram_data["test"]["labels_int"][0:self.ram_data["test"]["n"]]
 
 
+		self.ram_data["train"]=self.labels_unused_classes_eliminate(self.ram_data["train"])
+		self.ram_data["test"]=self.labels_unused_classes_eliminate(self.ram_data["test"])
 
 		
 		return patches_get["train_n"],test_real_count
+
 
 	def in_label_ram_store(self,data,patch,label_patch,data_idx,label_type):
 		data["ims"][data_idx]=patch
@@ -439,6 +442,35 @@ class DataOneHot(DataForNet):
 
 		#np.save(self.conf["path"]+"data.npy",data) # Save indexes and data for further use with the train/ test set/labels
 		return data	
+
+	# From data_get()
+	def labels_unused_classes_eliminate(self,data):
+		##deb.prints(data["labels_int"].shape[0])
+		##idxs=[i for i in range(data["labels_int"].shape[0]) if (data["labels_int"][i] == 0 or data["labels_int"][i] == 2 or data["labels_int"][i] == 3)]
+		##deb.prints(len(idxs))
+
+		# self.old_n_classes=self.n_classes
+		self.classes = np.unique(data["labels_int"])
+		# self.n_classes=self.classes.shape[0]
+		deb.prints(self.classes)		
+		self.labels2new_labels = dict((c, i) for i, c in enumerate(self.classes))
+		self.new_labels2labels = dict((i, c) for i, c in enumerate(self.classes))
+
+		new_labels = data["labels_int"].copy()
+		for i in range(len(self.classes)):
+			new_labels[data["labels_int"] == self.classes[i]] = self.labels2new_labels[self.classes[i]]
+
+		# #data["old_labels_int"]=data["labels_int"].copy()
+		# #data["old_labels"]=data["labels"].copy()
+		
+		data["labels_int"]=new_labels.copy()
+		deb.prints(np.unique(data["labels_int"]))
+		#data["labels"]=utils.DataOneHot.labels_onehot_get(None,data["labels_int"],data["n"],self.n_classes)
+		# print(data.keys())
+
+
+		return data
+
 	def data_balance(self, data, samples_per_class):
 		fname=sys._getframe().f_code.co_name
 
@@ -448,7 +480,7 @@ class DataOneHot(DataForNet):
 		classes,counts=np.unique(data["train"]["labels_int"],return_counts=True)
 		print(classes,counts)
 		
-		if classes[0]==0: classes=classes[1::]
+		#if classes[0]==0: classes=classes[1::]
 		num_total_samples=len(classes)*samples_per_class
 		balance["out_labels"]=np.zeros(num_total_samples)
 		deb.prints((num_total_samples,) + data["train"]["ims"].shape[1::],fname)
@@ -459,8 +491,8 @@ class DataOneHot(DataForNet):
 		#print(balance["unique"])
 		k=0
 		for clss in classes:
-			if clss==0: 
-				continue
+			#if clss==0: 
+			#	continue
 			deb.prints(clss,fname)
 			balance["data"]=data["train"]["ims"][data["train"]["labels_int"]==clss]
 			balance["labels_int"]=data["train"]["labels_int"][data["train"]["labels_int"]==clss]
@@ -541,7 +573,7 @@ if __name__ == "__main__":
 	parser.add_argument('--band_n', dest='band_n', type=int, default=6, help='Debug')
 	parser.add_argument('--t_len', dest='t_len', type=int, default=6, help='Debug')
 	parser.add_argument('--path', dest='path', default="../data/", help='Data path')
-	parser.add_argument('--class_n', dest='class_n', type=int, default=9, help='Class number')
+	parser.add_argument('--class_n', dest='class_n', type=int, default=6, help='Class number')
 	parser.add_argument('--pc_mode', dest='pc_mode', default="local", help="Class number. 'local' or 'remote'")
 	parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=1000, help="Class number. 'local' or 'remote'")
 	parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="ram", help="Class number. 'local' or 'remote'")
