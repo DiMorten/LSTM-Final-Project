@@ -31,9 +31,9 @@ import argparse
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=6,pc_mode="local", \
 		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None, \
-		n_apriori=1000000):
+		n_apriori=1000000, squeeze_classes=False):
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n}
-
+		self.conf["squeeze_classes"]=squeeze_classes
 		self.conf["memory_mode"]=memory_mode #"ram" or "hdd"
 		self.debug=debug
 		self.test_n_limit=test_n_limit
@@ -280,9 +280,10 @@ class DataForNet(object):
 		self.ram_data["test"]["ims"]=self.ram_data["test"]["ims"][0:self.ram_data["test"]["n"]]
 		self.ram_data["test"]["labels_int"]=self.ram_data["test"]["labels_int"][0:self.ram_data["test"]["n"]]
 
-
-		self.ram_data["train"]=self.labels_unused_classes_eliminate(self.ram_data["train"])
-		self.ram_data["test"]=self.labels_unused_classes_eliminate(self.ram_data["test"])
+		deb.prints(self.conf["squeeze_classes"])
+		if self.conf["squeeze_classes"] is True:
+			self.ram_data["train"]=self.labels_unused_classes_eliminate(self.ram_data["train"])
+			self.ram_data["test"]=self.labels_unused_classes_eliminate(self.ram_data["test"])
 
 		
 		return patches_get["train_n"],test_real_count
@@ -480,8 +481,8 @@ class DataOneHot(DataForNet):
 	#	classes = range(0,self.conf["class_n"])
 		classes,counts=np.unique(data["train"]["labels_int"],return_counts=True)
 		print(classes,counts)
-		
-		#if classes[0]==0: classes=classes[1::]
+		if self.conf["squeeze_classes"] is not True:
+			if classes[0]==0: classes=classes[1::]
 		num_total_samples=len(classes)*samples_per_class
 		balance["out_labels"]=np.zeros(num_total_samples)
 		deb.prints((num_total_samples,) + data["train"]["ims"].shape[1::],fname)
@@ -492,8 +493,9 @@ class DataOneHot(DataForNet):
 		#print(balance["unique"])
 		k=0
 		for clss in classes:
-			#if clss==0: 
-			#	continue
+			if self.conf["squeeze_classes"] is not True:
+				if clss==0: 
+					continue
 			deb.prints(clss,fname)
 			balance["data"]=data["train"]["ims"][data["train"]["labels_int"]==clss]
 			balance["labels_int"]=data["train"]["labels_int"][data["train"]["labels_int"]==clss]
@@ -581,6 +583,7 @@ if __name__ == "__main__":
 	parser.add_argument('-bs','--balance_samples_per_class', dest='balance_samples_per_class',type=int,default=None, help="Class number. 'local' or 'remote'")
 	parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,default=8, help="Class number. 'local' or 'remote'")
 	parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=1000000, help="Class number. 'local' or 'remote'")
+	parser.add_argument('-sc','--squeeze_classes', dest='squeeze_classes',default=True, help="Class number. 'local' or 'remote'")
 
 	args = parser.parse_args()
 	patch_length=5
@@ -590,7 +593,7 @@ if __name__ == "__main__":
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
 		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True, \
 		balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
-		n_apriori=args.n_apriori,patch_length=patch_length)
+		n_apriori=args.n_apriori,patch_length=patch_length, squeeze_classes=args.squeeze_classes)
 	data.create()
 	
 	#conf=data_creator.conf
