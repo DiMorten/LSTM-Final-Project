@@ -380,13 +380,19 @@ class NeuralNetSemantic(NeuralNet):
 		# Prepare the optimization function
 		##optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy_loss, global_step=global_step)
 		#optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-		optimizer = tf.train.AdamOptimizer()
-		minimize = optimizer.minimize(cross_entropy)
-		prediction=tf.cast(prediction,tf.float32)
-		# Distance L1
-		error = tf.reduce_sum(tf.cast(tf.abs(tf.subtract(tf.contrib.layers.flatten(prediction),tf.contrib.layers.flatten(target))), tf.float32))
+		#optimizer = tf.train.AdamOptimizer()
+		optimizer = tf.train.AdamOptimizer(0.001, epsilon=0.0001)
+		
+
+		error = tf.reduce_sum(-tf.cast(tf.abs(tf.subtract(tf.contrib.layers.flatten(tf.cast(prediction,tf.int64)),tf.contrib.layers.flatten(tf.cast(target,tf.int64)))), tf.float32))
 
 		tf.summary.scalar('error',error)
+		
+		minimize = optimizer.minimize(cross_entropy)
+		#minimize = optimizer.minimize(error)
+		
+		prediction=tf.cast(prediction,tf.float32)
+		# Distance L1
 		mistakes=None
 		return minimize, mistakes, error
 
@@ -416,6 +422,8 @@ class NeuralNetSemantic(NeuralNet):
 		deb.prints(per_class_label_count)
 
 		return per_class_label_count
+	def batchnorm(self,inputs,training=True):
+		return tf.layers.batch_normalization(inputs, axis=3, epsilon=1e-5, momentum=0.1, training=training, gamma_initializer=tf.random_normal_initializer(1.0, 0.02))
 
 # ============================ NeuralNet takes onehot image output ============================================= #
 class NeuralNetOneHot(NeuralNet):
@@ -541,6 +549,9 @@ class NeuralNetOneHot(NeuralNet):
 
 
 # ================================= Implements U-Net ============================================== #
+
+# Remote: python main.py -mm="ram" --debug=2 -po 27 -ts 5 -tnl 10000000 --batch_size=50 --filters=256 -pl=32 -m="smcnn_unet" -nap=16000
+# Local: python main.py -mm="ram" --debug=1 -po 27 -bs=500 --filters=32 -m="smcnn_unet" -pl=32 -nap=16000
 class UNet(NeuralNetSemantic):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -572,16 +583,26 @@ class SMCNN_UNet(NeuralNetSemantic):
 
 		deb.prints(graph_pipeline.get_shape())
 
-		self.filter_first=32
+		self.filter_first=64
 		#conv0=tf.layers.conv2d(graph_pipeline, self.filter_first, self.kernel_size, activation=tf.nn.relu,padding='same')
 		conv1=self.conv_block_get(graph_pipeline,self.filter_first*2)
+		#conv1=self.conv_block_get(graph_pipeline,256)
+		
 		conv2=self.conv_block_get(conv1,self.filter_first*4)
 		conv3=self.conv_block_get(conv2,self.filter_first*8)
+		kernel,bias=conv3.variables
+		tf.summary.histogram('conv3', kernel)
+		#conv4=self.conv_block_get(conv3,self.filter_first*16)
+		#up3=self.deconv_block_get(conv4,conv2,self.filter_first*8)
+		
+		#self.hidden_weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, name)
 		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
 		up4=self.deconv_block_get(conv3,conv2,self.filter_first*4)
 		up5=self.deconv_block_get(up4,conv1,self.filter_first*2)
 		up6=self.deconv_block_get(up5,graph_pipeline,self.filter_first)
-
+		kernel,bias=up6.variables
+		tf.summary.histogram('up6', kernel)
+		
 		graph_pipeline=self.out_block_get(up6,self.n_classes)
 		#graph_pipeline = tf.layers.conv2d(up6, self.n_classes, self.kernel_size, activation=None,padding='same')
 		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
@@ -626,10 +647,71 @@ class SMCNN_UNet(NeuralNetSemantic):
 		deb.prints(graph_pipeline.get_shape())
 		return graph_pipeline
 
-	def batchnorm(self,inputs,training=True):
-		return tf.layers.batch_normalization(inputs, axis=3, epsilon=1e-5, momentum=0.1, training=training, gamma_initializer=tf.random_normal_initializer(1.0, 0.02))
 
+#================= Small SMCNN_Unet ========================================#
+# Remote: python main.py -mm="ram" --debug=1 -po 1 -ts 1 -tnl 1000000 --batch_size=2000 --filters=256 -pl=5 -m="smcnn_unet" -nap=160000
+class SMCNN_UNet(NeuralNetSemantic):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.model_build()
+		self.kernel_size=(3,3)
+		self.filters=10
+	def model_graph_get(self,data):
+
+		graph_pipeline = data
+		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1])
+		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,6*6])
+
+		deb.prints(graph_pipeline.get_shape())
+
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding='same')
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding='same')
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding='same')
+
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.n_classes, self.kernel_size, activation=None,padding='same')
+		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
+		#return tf.expand_dims(annotation_pred, dim=3), graph_pipeline
+		return graph_pipeline, prediction
+	def conv_block_get(self,graph_pipeline):
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh,padding='same')
 		
+		return graph_pipeline
+
+class SMCNN_UNet(NeuralNetSemantic):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.model_build()
+		self.kernel_size=(3,3)
+		self.filters=10
+	def model_graph_get(self,data):
+
+		graph_pipeline = data
+		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1])
+		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,6*6])
+
+		deb.prints(graph_pipeline.get_shape())
+
+		conv1 = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
+		conv2 = tf.layers.conv2d(conv1, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
+		conv3 = tf.layers.conv2d(conv2, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
+		conv4 = tf.layers.conv2d(conv3, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
+
+		layer_in = tf.concat([conv4,conv2],axis=3)
+		conv5 = tf.layers.conv2d(layer_in, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
+
+		layer_in = tf.concat([conv5,conv1],axis=3)
+		graph_pipeline = tf.layers.conv2d(layer_in, self.n_classes, self.kernel_size, activation=None,padding='same')
+
+		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
+		#return tf.expand_dims(annotation_pred, dim=3), graph_pipeline
+		return graph_pipeline, prediction
+	def conv_block_get(self,graph_pipeline):
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh,padding='same')
+		
+		return graph_pipeline
+
+
+
 # ================================= Implements ConvLSTM ============================================== #
 class conv_lstm(NeuralNetOneHot):
 	def __init__(self, *args, **kwargs):
@@ -685,16 +767,17 @@ class Conv3DMultitemp(NeuralNetOneHot):
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		return None,graph_pipeline
 # ================================= Implements SMCNN ============================================== #
+# Remote: python main.py -mm="ram" --debug=1 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=2000 --filters=256 -m="smcnn"
 class SMCNN(NeuralNetOneHot):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.model_build()
 		
 	def model_graph_get(self,data):
-		#graph_pipeline = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
+		# Data if of shape [None,6,32,32,6]
 		graph_pipeline = data
-		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1])
-		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,6*6])
+		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
+		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,6*6]) # Shape [None,32,32,6*6]
 
 		deb.prints(graph_pipeline.get_shape())
 
