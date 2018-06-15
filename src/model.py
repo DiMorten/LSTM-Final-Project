@@ -56,7 +56,7 @@ class NeuralNet(object):
 		self.conf=conf
 		self.debug=debug
 		self.log_dir=log_dir
-		self.test_batch_size=100
+		self.test_batch_size=1000
 		if self.debug>=1: print("Initializing NeuralNet instance")
 		print(self.log_dir)
 
@@ -177,8 +177,8 @@ class NeuralNet(object):
 
 		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
 		for epoch in range(args.epoch):
-			data["train"]["ims"]=self.data_shuffle(data["train"]["ims"])
-			data["train"]["labels"]=self.data_shuffle(data["train"]["labels"])
+			#data["train"]["ims"]=self.data_shuffle(data["train"]["ims"])
+			#data["train"]["labels"]=self.data_shuffle(data["train"]["labels"])
 			
 			for idx in range(0, batch["idxs"]):
 				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx,memory_mode=self.conf["memory_mode"])
@@ -222,7 +222,7 @@ class NeuralNet(object):
 				deb.prints(batch["prediction"].shape)
 				deb.prints(batch["labels"].shape)
 
-			self.prediction2old_labels_get(batch["prediction"])
+			#self.prediction2old_labels_get(batch["prediction"])
 		   
 			batch["correct_per_class"]=self.correct_per_class_get(batch["labels"],batch["prediction"])
 			stats["correct_per_class"]+=batch["correct_per_class"]
@@ -251,10 +251,10 @@ class NeuralNet(object):
 		correct_all_classes = targets_int[targets_int == predictions_int]
 		count_total = correct_all_classes.shape[0]
 		
-		if debug>=2: deb.prints(count_total)
+		if debug>=3: deb.prints(count_total)
 		for clss in range(0,self.n_classes):
 			correct_per_class[clss]=correct_all_classes[correct_all_classes==clss].shape[0]
-		if debug>=2: deb.prints(correct_per_class)
+		if debug>=3: deb.prints(correct_per_class)
 		return correct_per_class
 	def correct_per_class_average_get(self,correct_per_class,targets_label_count):
 		correct_per_class_average=np.divide(correct_per_class, targets_label_count)
