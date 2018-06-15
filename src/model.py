@@ -134,6 +134,13 @@ class NeuralNet(object):
 		self.sess.run(init_op)
 #		self.writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph())
 		self.writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
+	def random_shuffle(self,data):
+		idxs=np.arange(0,data["n"])
+		idxs=np.random.permutation(idxs)
+		data["ims"]=data["ims"][idxs]
+		data["labels"]=data["labels"][idxs]
+		return data
+
 	def train(self, args):
 		self.train_init()
 		
@@ -164,6 +171,7 @@ class NeuralNet(object):
 
 		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
 		for epoch in range(args.epoch):
+			data["train"]=self.random_shuffle(data["train"])
 			for idx in range(0, batch["idxs"]):
 				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx,memory_mode=self.conf["memory_mode"])
 				if self.debug>=3:
