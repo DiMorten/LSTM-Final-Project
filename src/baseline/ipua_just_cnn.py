@@ -276,8 +276,9 @@ if __name__ == '__main__':
                 tst_labels = new_labels[mask == 2]
 
 #                class_weighting = get_class_weights(new_labels[new_labels!=0], 1)
-                print(trn_subimgs.shape)
-
+                print("trn_subimgs.shape",trn_subimgs.shape)
+                count,unique=np.unique(trn_labels,return_counts=True)
+                print("train count,unique",count,unique)
                 trn_subimgs, trn_labels = balance_data(trn_subimgs,
                                                        trn_labels,
                                                        samples_per_class)
