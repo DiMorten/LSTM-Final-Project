@@ -42,6 +42,8 @@ class DataForNet(object):
 
 		self.conf["out_path"]=self.conf["path"]+"results/"
 		self.conf["in_npy_path"]=self.conf["path"]+"in_npy/"
+		self.conf["in_npy_path2"]=self.conf["path"]+"in_npy2/"
+
 		self.conf["in_rgb_path"]=self.conf["path"]+"in_rgb/"
 		self.conf["in_labels_path"]=self.conf["path"]+"labels/"
 		self.conf["patch"]={}
@@ -138,8 +140,43 @@ class DataForNet(object):
 		self.conf["label_type"]="one_hot"
 
 		print(self.conf)
+		self.im_npy_get()
+	def im_npy_get(self):
+		pathlib.Path(self.conf["in_npy_path2"]).mkdir(parents=True, exist_ok=True) 
+
+		#for i in range(1,10):
+		for i in range(1,10):
+			im_folder_name=glob.glob(self.conf["path"]+'im'+str(i)+'*')[0]+"/"
+			#im=cv2.imread(im_name)
+			if self.debug>=3: deb.prints(im_folder_name)
+			im_band_path_list=[glob.glob(im_folder_name+"*band1*.tif"), \
+			glob.glob(im_folder_name+"*band2*.tif"), \
+			glob.glob(im_folder_name+"*band3*.tif"), \
+			glob.glob(im_folder_name+"*band4*.tif"), \
+			glob.glob(im_folder_name+"*band5*.tif"), \
+			glob.glob(im_folder_name+"*band7*.tif")]
+			if self.debug>=3: deb.prints(im_band_path_list)
+
+			im_all_bands=np.zeros(self.conf["im_size"] + (6,))
+			counter=0
+			for im_band_path in im_band_path_list:
+				deb.prints(im_band_path[0])
+				im_all_bands[:,:,counter]=cv2.imread(im_band_path[0],-1)
+				if self.debug>=4: deb.prints(im.shape)
+				if self.debug>=4: deb.prints(im.dtype)
+				counter+=1
+			np.save(self.conf["in_npy_path2"]+"im"+str(i)+".npy",im_all_bands.astype(np.float64))
+
+
+
+			#im_name=im_name[-14:-4]
+			#im_names.append(im_name)
+			#print(im_name)
+
+
 	def im_patches_npy_multitemporal_from_npy_from_folder_store2(self,label_type="one_hot"):
 		im_names=[]
+		#for i in range(1,10):
 		for i in range(1,10):
 			im_name=glob.glob(self.conf["in_npy_path"]+'im'+str(i)+'*')[0]
 			im_name=im_name[-14:-4]
@@ -166,6 +203,7 @@ class DataForNet(object):
 		for t_step in range(0,self.conf["t_len"]):	
 			deb.prints(self.conf["in_npy_path"]+names[t_step+3]+".npy")
 			patch["full_ims"][t_step] = np.load(self.conf["in_npy_path"]+names[t_step+3]+".npy")
+			#deb.prints(patch["full_ims"][t_step].dtype)
 			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step+3][2]+".tif",0)
 
 		deb.prints(patch["full_ims"].shape,fname)
@@ -380,7 +418,7 @@ class DataOneHot(DataForNet):
 			self.ram_data["train"]["ims"],self.ram_data["train"]["labels_int"],self.ram_data["train"]["labels"]=self.data_balance(self.ram_data, \
 				self.conf["balanced"]["samples_per_class"])
 
-			with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.ram_data, f)
+			#with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.ram_data, f)
 
 		else:
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2_onehot()
@@ -589,13 +627,14 @@ if __name__ == "__main__":
 	patch_length=5
 	
 	#data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
-	data=DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
-		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
-		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True, \
-		balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
-		n_apriori=args.n_apriori,patch_length=patch_length, squeeze_classes=args.squeeze_classes)
-	data.create()
-	
+	# data=DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+	# 	band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
+	# 	test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True, \
+	# 	balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
+	# 	n_apriori=args.n_apriori,patch_length=patch_length, squeeze_classes=args.squeeze_classes)
+	# data.create()
+	data=DataForNet()
+	data.im_npy_get()
 	#conf=data_creator.conf
 	#pass
 else:

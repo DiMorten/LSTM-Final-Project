@@ -142,7 +142,7 @@ def extract_patches_randomly(data, DIM, ksize=3, numPatches=500000):
 #     return patches
 
 def extract_patches(img, ksize=3):
-    img=np.transpose(img,(1,2,0))
+    img=np.transpose(img,(1,2,0)) # Switch to channel last
     padding = np.zeros(shape=(img.shape[0] + 2*int(ksize/2),
                               img.shape[1] + 2*int(ksize/2),
                               img.shape[2]), dtype=img.dtype)
@@ -151,8 +151,18 @@ def extract_patches(img, ksize=3):
     padding[ksize_half:padding.shape[0] - ksize_half, ksize_half:padding.shape[1] - ksize_half, :] = img
     
     kernel = (ksize, ksize, img.shape[2])
+    print("kernel",kernel)
     subimgs = view_as_windows(padding, kernel)
+    subimgs = np.squeeze(subimgs)
     print("subimgs",subimgs.shape)
+    subimgs = np.transpose(subimgs,(0,1,4,2,3)) # Go back to channel first
+    subimgs = np.reshape(subimgs,(img.shape[0]*img.shape[1],subimgs.shape[2],subimgs.shape[3],subimgs.shape[4]))
+    subimgs = np.reshape(subimgs,(subimgs.shape[0],subimgs.shape[1]*subimgs.shape[2]*subimgs.shape[3]))
+
+
+    #subimgs = np.reshape(subimgs,(img.shape[0]*img.shape[1],subimgs.shape[2]*subimgs.shape[3]*subimgs.shape[4]))
+    print("subimgs",subimgs.shape)
+    
     return subimgs
 
 def extract_subimages(img, mask, DIM, ksize=5):
@@ -186,17 +196,17 @@ def extract_features(stack, DIM, weights, bias, scaler, ksize=3):
 if __name__ == '__main__':
     np.core.arrayprint._line_width = 160  # terminal width
     #root_directory = '/home/jose/Drive/PUC/WorkPlace/IpuaCodes/'
-    root_directory = '/home/jorg/Documents/Master/scnd_semester/neural_nets/final_project/repo2/LSTM-Final-Project/src/baseline/'
-    #root_directory='/home/lvc/Documents/Jorg/deep_learning/LSTM-Final-Project/src/baseline/'
+    #root_directory = '/home/jorg/Documents/Master/scnd_semester/neural_nets/final_project/repo2/LSTM-Final-Project/src/baseline/'
+    root_directory='/home/lvc/Documents/Jorg/deep_learning/LSTM-Final-Project/src/baseline/'
     #images_directory = '/mnt/Data/DataBases/RS/Ipua/'
     images_directory = '../../data/'
 
 
 #    root_directory = '/home/jose/Workplace/Experiments/Ipua/Codes/'
 #    images_directory = '/home/jose/DataBases/RS/Ipua/npy_imgs/'
-    images_list = glob.glob(images_directory + 'in_npy/' '*.npy')
+    images_list = glob.glob(images_directory + 'in_npy2/' '*.npy')
     print(images_list)
-    images_list.sort(key=lambda f: int(f[20]))  # Sort lists
+    images_list.sort(key=lambda f: int(f[21]))  # Sort lists
     labels_list = glob.glob(images_directory + 'labels/' '*.tif')
     print(labels_list)
     labels_list.sort(key=lambda f: int(f[18]))  # Sort lists
@@ -266,10 +276,12 @@ if __name__ == '__main__':
                 tst_labels = new_labels[mask == 2]
 
 #                class_weighting = get_class_weights(new_labels[new_labels!=0], 1)
+                print(trn_subimgs.shape)
 
                 trn_subimgs, trn_labels = balance_data(trn_subimgs,
                                                        trn_labels,
                                                        samples_per_class)
+
 
                 # convert class vectors to binary class matrices
                 trn_labels = keras.utils.to_categorical(trn_labels, num_classes+1)
