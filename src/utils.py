@@ -29,7 +29,7 @@ import argparse
 
 
 class DataForNet(object):
-	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=6,t_len=6,path="../data/",class_n=6,pc_mode="local", \
+	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=7,t_len=6,path="../data/",class_n=6,pc_mode="local", \
 		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None, \
 		n_apriori=1000000, squeeze_classes=False):
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n}
@@ -41,8 +41,8 @@ class DataForNet(object):
 		self.conf["pc_mode"]=pc_mode
 
 		self.conf["out_path"]=self.conf["path"]+"results/"
-		self.conf["in_npy_path"]=self.conf["path"]+"in_npy/"
-		self.conf["in_npy_path2"]=self.conf["path"]+"in_npy2/"
+		self.conf["in_npy_path"]=self.conf["path"]+"in_np2/"
+		self.conf["in_npy_path2"]=self.conf["path"]+"in_np2/"
 
 		self.conf["in_rgb_path"]=self.conf["path"]+"in_rgb/"
 		self.conf["in_labels_path"]=self.conf["path"]+"labels/"
@@ -166,6 +166,11 @@ class DataForNet(object):
 				if self.debug>=4: deb.prints(im.shape)
 				if self.debug>=4: deb.prints(im.dtype)
 				counter+=1
+			ndvi = np.expand_dims((im_all_bands[:,:,3] - im_all_bands[:,:,2])/(im_all_bands[:,:,3] + im_all_bands[:,:,2]),axis=2)
+			deb.prints(ndvi.shape)
+			deb.prints(im_all_bands.shape)
+			im_all_bands = np.concatenate((im_all_bands, ndvi),axis=2)
+			deb.prints(im_all_bands.shape)
 			np.save(self.conf["in_npy_path2"]+"im"+str(i)+".npy",im_all_bands.astype(np.float64))
 
 
@@ -180,7 +185,9 @@ class DataForNet(object):
 		#for i in range(1,10):
 		for i in range(1,10):
 			im_name=glob.glob(self.conf["in_npy_path"]+'im'+str(i)+'*')[0]
-			im_name=im_name[-14:-4]
+			print(im_name)
+			#im_name=im_name[-14:-4]
+			im_name=im_name[-7:-4]
 			im_names.append(im_name)
 			print(im_name)
 		print(im_names)
@@ -621,7 +628,7 @@ if __name__ == "__main__":
 	parser.add_argument('--debug', type=int, default=1, help='Debug')
 	parser.add_argument('-po','--patch_overlap', dest='patch_overlap', type=int, default=0, help='Debug')
 	parser.add_argument('--im_size', dest='im_size', type=int, default=(948,1068), help='Debug')
-	parser.add_argument('--band_n', dest='band_n', type=int, default=6, help='Debug')
+	parser.add_argument('--band_n', dest='band_n', type=int, default=7, help='Debug')
 	parser.add_argument('--t_len', dest='t_len', type=int, default=6, help='Debug')
 	parser.add_argument('--path', dest='path', default="../data/", help='Data path')
 	parser.add_argument('--class_n', dest='class_n', type=int, default=6, help='Class number')

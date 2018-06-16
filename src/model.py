@@ -36,7 +36,7 @@ class NeuralNet(object):
 
 	def __init__(self, sess=tf.Session(), batch_size=50, epoch=200, train_size=1e8,
 						timesteps=utils.conf["t_len"], patch_len=32,
-						kernel=[3,3], channels=6, filters=32, n_classes=6,
+						kernel=[3,3], channels=7, filters=32, n_classes=6,
 						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1):
 		
 		self.ram_data=data
@@ -50,6 +50,7 @@ class NeuralNet(object):
 		self.kernel = kernel
 		self.kernel_size = kernel[0]
 		self.channels = channels
+		deb.prints(self.channels)
 		self.filters = filters
 		self.n_classes = n_classes
 		self.checkpoint_dir = checkpoint_dir
@@ -802,7 +803,7 @@ class SMCNN(NeuralNetOneHot):
 		# Data if of shape [None,6,32,32,6]
 		graph_pipeline = data
 		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
-		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,6*6]) # Shape [None,32,32,6*6]
+		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
 
 		deb.prints(graph_pipeline.get_shape())
 
