@@ -51,6 +51,7 @@ class DataForNet(object):
 		self.conf["patch"]["ims_path"]=self.conf["patch"]["out_npy_path"]+"patches_all/"
 		self.conf["patch"]["labels_path"]=self.conf["patch"]["out_npy_path"]+"labels_all/"
 		self.conf['patch']['center_pixel']=int(np.around(self.conf["patch"]["size"]/2))
+		deb.prints(self.conf['patch']['center_pixel'])
 		self.conf["train"]={}
 		self.conf["train"]["mask"]={}
 		self.conf["train"]["mask"]["dir"]=self.conf["path"]+"TrainTestMask.tif"
@@ -140,7 +141,7 @@ class DataForNet(object):
 		self.conf["label_type"]="one_hot"
 
 		print(self.conf)
-		self.im_npy_get()
+		#self.im_npy_get()
 	def im_npy_get(self):
 		pathlib.Path(self.conf["in_npy_path2"]).mkdir(parents=True, exist_ok=True) 
 
@@ -268,9 +269,13 @@ class DataForNet(object):
 				patch = img[:,yy: yy + window, xx: xx + window,:]
 				label_patch = label[:,yy: yy + window, xx: xx + window]
 				mask_patch = mask[yy: yy + window, xx: xx + window]
+				is_mask_from_train=self.is_mask_from_train(mask_patch)
+				
 				if np.any(label_patch==0):
 					continue
-				elif np.all(mask_patch==1): # Train sample
+				#deb.prints(is_mask_from_train)
+				#elif np.all(mask_patch==1): # Train sample
+				elif is_mask_from_train==True: # Train sample
 					
 					mask_train[yy: yy + window, xx: xx + window]=255
 					if memory_mode=="hdd":
@@ -388,7 +393,9 @@ class DataSemantic(DataForNet):
 	def mask_test_update(self,mask_test,yy,xx,window):
 		mask_test[yy: yy + window, xx: xx + window]=255
 		return mask_test
-
+	def is_mask_from_train(self,mask_patch):
+		return np.all(mask_patch==1)
+	
 class DataOneHot(DataForNet):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args, **kwargs)
@@ -399,6 +406,9 @@ class DataOneHot(DataForNet):
 		self.ram_data["train"]["labels_int"]=np.zeros((self.conf["train"]["n_apriori"],))
 		self.ram_data["test"]["labels_int"]=np.zeros((self.conf["test"]["n_apriori"],))
 		self.conf["label_type"]="one_hot"
+
+	def is_mask_from_train(self,mask_patch):
+		return (mask_patch[self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]]==1)
 	def im_patches_npy_multitemporal_from_npy_from_folder_store2_onehot(self):
 		self.im_patches_npy_multitemporal_from_npy_from_folder_store2(label_type=self.conf["label_type"])
 		self.ram_data["train"]["labels"]=self.labels_onehot_get(self.ram_data["train"]["labels_int"], \
@@ -627,14 +637,16 @@ if __name__ == "__main__":
 	patch_length=5
 	
 	#data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
-	# data=DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
-	# 	band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
-	# 	test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True, \
-	# 	balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
-	# 	n_apriori=args.n_apriori,patch_length=patch_length, squeeze_classes=args.squeeze_classes)
-	# data.create()
-	data=DataForNet()
-	data.im_npy_get()
+	data=DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
+		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True, \
+		balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
+		n_apriori=args.n_apriori,patch_length=patch_length, squeeze_classes=args.squeeze_classes)
+	data.create()
+	
+
+	##data=DataForNet()
+	##data.im_npy_get()
 	#conf=data_creator.conf
 	#pass
 else:

@@ -47,7 +47,7 @@ python main.py -mm="ram" --debug=1 -po 27 -bs=500 --filters=32 -m="smcnn_unet" -
 # Pending: Use validation set from train set
 # 
 
-
+python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=2000 --filters=256 -m="smcnn" --class_n=9 -sc=False
 
 Class balancing
 

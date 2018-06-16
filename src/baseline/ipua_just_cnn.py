@@ -288,11 +288,11 @@ if __name__ == '__main__':
                 trn_labels = keras.utils.to_categorical(trn_labels, num_classes+1)
                 tst_labels = keras.utils.to_categorical(tst_labels, num_classes+1)
 
-                epochs = 10
+                epochs = 100
                 input_shape = (7*seq_length, sub_size, sub_size)
 #MaxPooling2D, AveragePooling2D
                 model = Sequential()
-                model.add(Conv2D(64,
+                model.add(Conv2D(265,
                                  kernel_size=(k_size, k_size),
                                  activation='relu',
                                  padding="valid",
@@ -304,7 +304,7 @@ if __name__ == '__main__':
 
                 model.add(Flatten())
                 model.add(Dropout(0.5))
-                model.add(Dense(128, activation='relu'))
+                model.add(Dense(256, activation='relu'))
 #                model.add(Dropout(0.5))
                 model.add(Dense(num_classes+1, activation='softmax'))
 
