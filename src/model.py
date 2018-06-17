@@ -138,6 +138,31 @@ class NeuralNet(object):
 		self.sess.run(init_op)
 #		self.writer = tf.summary.FileWriter(utils.conf["summaries_path"], graph=tf.get_default_graph())
 		self.writer = tf.summary.FileWriter(self.log_dir, self.sess.graph)
+
+
+		data = self.data_load(self.conf,memory_mode=self.conf["memory_mode"])
+		deb.prints(data["train"]["n"])
+		deb.prints(args.train_size)
+		deb.prints(self.batch_size)
+		batch={}
+		batch["idxs"] = min(data["train"]["n"], args.train_size) // self.batch_size
+		if self.debug>=1:
+			deb.prints(data["train"]["labels"].shape)
+			deb.prints(data["test"]["labels"].shape)
+			deb.prints(batch["idxs"])
+		
+		self.unique_classes_print(data["train"],memory_mode=self.conf["memory_mode"])
+
+		
+		if self.data_len_get(data["test"],memory_mode=self.conf["memory_mode"])>1000:
+			data["sub_test"]=self.data_sub_data_get(data["test"],1000,memory_mode=self.conf["memory_mode"])
+		else:
+			data["sub_test"]=data["test"]
+		#deb.prints(data["train"]["ims"].shape)
+		deb.prints(data["train"]["labels"].shape)
+		#deb.prints(data["test"]["ims"].shape)
+		deb.prints(data["test"]["labels"].shape)
+		return batch,data
 	def random_shuffle(self,data):
 		idxs=np.arange(0,data["n"])
 		idxs=np.random.permutation(idxs)
@@ -152,9 +177,9 @@ class NeuralNet(object):
 
 	def train_batch_loop(self,args,batch,data):
 		start_time = time.time()
-		
-		self.early_stop["count"]=0
-		self.early_stop["best"]=0
+		early_stop={}
+		early_stop["count"]=0
+		early_stop["best"]=0
 		counter=1
 		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
 		for epoch in range(args.epoch):
@@ -178,57 +203,40 @@ class NeuralNet(object):
 			print("Model saved in path: %s" % save_path)
 			
 			stats = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
-			self.early_stop["signal"]=self.early_stop_check(stats["overall_accuracy"],stats["average_accuracy"])
-			if self.early_stop["signal"]:
-				deb.prints(self.early_stop["best"])
-				deb.prints(self.early_stop["best_aa"])
+			early_stop=self.early_stop_check(early_stop,stats["overall_accuracy"],stats["average_accuracy"],stats["per_class_accuracy"])
+			if early_stop["signal"]:
+				deb.prints(early_stop["best"]["metric1"])
+				deb.prints(early_stop["best"]["metric2"])
+				deb.prints(early_stop["best"]["metric3"])
+				
 				break
 			
 			print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
 			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
 
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
-		return self.early_stop
+		return early_stop
 	def train(self, args):
-		self.train_init()
+		batch,data=self.train_init(args)
 		
-		data = self.data_load(self.conf,memory_mode=self.conf["memory_mode"])
-		deb.prints(data["train"]["n"])
-		deb.prints(args.train_size)
-		deb.prints(self.batch_size)
-		batch={}
-		batch["idxs"] = min(data["train"]["n"], args.train_size) // self.batch_size
-		if self.debug>=1:
-			deb.prints(data["train"]["labels"].shape)
-			deb.prints(data["test"]["labels"].shape)
-			deb.prints(batch["idxs"])
 		
-		self.unique_classes_print(data["train"],memory_mode=self.conf["memory_mode"])
+		early_stop=self.train_batch_loop(args,batch,data)
+	#def train_repeat(self,args):
 
-		
-		if self.data_len_get(data["test"],memory_mode=self.conf["memory_mode"])>1000:
-			data["sub_test"]=self.data_sub_data_get(data["test"],1000,memory_mode=self.conf["memory_mode"])
-		else:
-			data["sub_test"]=data["test"]
-		#deb.prints(data["train"]["ims"].shape)
-		deb.prints(data["train"]["labels"].shape)
-		#deb.prints(data["test"]["ims"].shape)
-		deb.prints(data["test"]["labels"].shape)
 
-		self.train_batch_loop(args,batch,data)
-		
-	def early_stop_check(self,metric,metric_aux):
-		if metric>self.early_stop["best"]:
-			self.early_stop["best"]=metric
-			self.early_stop["best_aa"]=metric_aux
-			self.early_stop["count"]=0
+	def early_stop_check(self,early_stop,metric1,metric2,metric3):
+		if metric1>early_stop["best"]["metric1"]:
+			early_stop["best"]["metric1"]=metric1
+			early_stop["best"]["metric2"]=metric2
+			early_stop["best"]["metric3"]=metric3
+			early_stop["count"]=0
 		else:
-			self.early_stop["count"]+=1
-			if self.early_stop["count"]>=self.early_stop["patience"]:
-				return True
+			early_stop["count"]+=1
+			if early_stop["count"]>=early_stop["patience"]:
+				early_stop["signal"]=True
 			else:
-				return False
-		return False
+				early_stop["signal"]=False
+		return early_stop
 	def data_stats_get(self,data,batch_size=1000):
 
 		batch={}
