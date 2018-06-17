@@ -124,10 +124,10 @@ class DataForNet(object):
 		
 		self.conf["train"]["n_apriori"]=n_apriori
 		self.conf["test"]["n_apriori"]=n_apriori
-		if self.conf["patch"]["overlap"]==0 and self.conf["patch"]["size"]==5:
-			self.conf["train"]["n_apriori"]=3950
-			if self.conf["extract"]["test_skip"]==0:
-				self.conf["test"]["n_apriori"]=15587
+		#if self.conf["patch"]["overlap"]==0 and self.conf["patch"]["size"]==5:
+		#	self.conf["train"]["n_apriori"]=3950
+		#	if self.conf["extract"]["test_skip"]==0:
+		#		self.conf["test"]["n_apriori"]=15587
 		if self.test_n_limit<=self.conf["test"]["n_apriori"]:
 			self.conf["test"]["n_apriori"]=self.test_n_limit
 

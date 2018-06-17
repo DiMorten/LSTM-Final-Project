@@ -66,3 +66,20 @@ Test: [@debug] stats["per_class_label_count"] = [     0. 873240.      0.      0.
 [ 0.6326076 ,  0.93579704,  1.        ,  0.82499779,  0.5       , 0.74134727]
 
 [0, 0.6326076 ,  0, 0, 0.93579704,  1.        ,  0.82499779,  0.5       , 0.74134727]
+
+
+
+Results:
+
+SMCNN: 
+[@debug] stats["overall_accuracy"] = 0.839626607065964
+[@debug] stats["average_accuracy"] = 0.8172330218068024
+python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=200 --filters=256 -m="smcnn" --class_n=9 -sc=False
+
+python main.py -mm="ram" --debug=1 -pl 5 -po 0 -ts 1 -tnl 10000000 -bs=1000 --batch_size=200 --filters=256 -m="smcnnlstm" --class_n=9 -sc=False
+
+
+ConvLSTM:
+[@debug] self.early_stop["best"] = 0.8355461461174106
+[@debug] self.early_stop["best_aa"] = 0.8134161141264326
+python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=200 --filters=256 -m="convlstm" 

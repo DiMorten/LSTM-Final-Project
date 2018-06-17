@@ -28,7 +28,7 @@ import argparse
 # Local
 import utils
 import deb
-from model import (conv_lstm,Conv3DMultitemp,UNet,SMCNN,SMCNNlstm, SMCNN_UNet)
+from model import (conv_lstm,Conv3DMultitemp,UNet,SMCNN,SMCNNlstm, SMCNN_UNet, SMCNN_conv3d)
 
 #import conf
 parser = argparse.ArgumentParser(description='')
@@ -135,6 +135,12 @@ def main(_):
                 timesteps=args.timesteps, patch_len=args.patch_len,
                 kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
                 checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
+        elif args.model=='smcnn_conv3d':
+            model = SMCNN_conv3d(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
+                timesteps=args.timesteps, patch_len=args.patch_len,
+                kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
+                checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
+
         if args.phase == 'train':
             model.train(args)
         

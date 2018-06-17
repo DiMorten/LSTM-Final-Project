@@ -25,7 +25,7 @@ import pickle
 # Local
 import utils
 import deb
-
+from cell import ConvGRUCell
 #from tf.keras.layers import Input, concatenate, Conv2D, MaxPooling2D, Conv2DTranspose
 
 np.set_printoptions(suppress=True)
@@ -37,8 +37,9 @@ class NeuralNet(object):
 	def __init__(self, sess=tf.Session(), batch_size=50, epoch=200, train_size=1e8,
 						timesteps=utils.conf["t_len"], patch_len=32,
 						kernel=[3,3], channels=7, filters=32, n_classes=6,
-						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1):
-		
+						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1, \
+						patience=5,squeeze_classes=True):
+		self.squeeze_classes=squeeze_classes		
 		self.ram_data=data
 		self.sess = sess
 		self.batch_size = batch_size
@@ -58,6 +59,8 @@ class NeuralNet(object):
 		self.debug=debug
 		self.log_dir=log_dir
 		self.test_batch_size=1000
+		self.early_stop={}
+		self.early_stop["patience"]=patience
 		if self.debug>=1: print("Initializing NeuralNet instance")
 		print(self.log_dir)
 
@@ -147,7 +150,45 @@ class NeuralNet(object):
 		idxs=np.random.shuffle(idxs)
 		return np.squeeze(data)
 
+	def train_batch_loop(self,args,batch,data):
+		start_time = time.time()
+		
+		self.early_stop["count"]=0
+		self.early_stop["best"]=0
+		counter=1
+		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
+		for epoch in range(args.epoch):
+			data["train"]["ims"]=self.data_shuffle(data["train"]["ims"])
+			data["train"]["labels"]=self.data_shuffle(data["train"]["labels"])
+			
+			for idx in range(0, batch["idxs"]):
+				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx,memory_mode=self.conf["memory_mode"])
+				if self.debug>=3:
+					deb.prints(batch["ims"].shape)
+					deb.prints(batch["labels"].shape)
+				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels"], self.keep_prob: 1.0, self.global_step: idx, self.training: True})
+				self.writer.add_summary(summary, counter)
+				counter += 1
+				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1.0, self.training: True})
+				if self.debug>=1 and (idx % 30 == 0):
+					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
+			
+			# =__________________________________ Test stats get and model save  _______________________________ = #
+			save_path = self.saver.save(self.sess, "./model.ckpt")
+			print("Model saved in path: %s" % save_path)
+			
+			stats = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
+			self.early_stop["signal"]=self.early_stop_check(stats["overall_accuracy"],stats["average_accuracy"])
+			if self.early_stop["signal"]:
+				deb.prints(self.early_stop["best"])
+				deb.prints(self.early_stop["best_aa"])
+				break
+			
+			print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
+			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
 
+			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
+		return self.early_stop
 	def train(self, args):
 		self.train_init()
 		
@@ -164,8 +205,7 @@ class NeuralNet(object):
 		
 		self.unique_classes_print(data["train"],memory_mode=self.conf["memory_mode"])
 
-		counter = 1
-		start_time = time.time()
+		
 		if self.data_len_get(data["test"],memory_mode=self.conf["memory_mode"])>1000:
 			data["sub_test"]=self.data_sub_data_get(data["test"],1000,memory_mode=self.conf["memory_mode"])
 		else:
@@ -174,37 +214,21 @@ class NeuralNet(object):
 		deb.prints(data["train"]["labels"].shape)
 		#deb.prints(data["test"]["ims"].shape)
 		deb.prints(data["test"]["labels"].shape)
+
+		self.train_batch_loop(args,batch,data)
 		
-
-		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
-		for epoch in range(args.epoch):
-			#data["train"]["ims"]=self.data_shuffle(data["train"]["ims"])
-			#data["train"]["labels"]=self.data_shuffle(data["train"]["labels"])
-			
-			for idx in range(0, batch["idxs"]):
-				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx,memory_mode=self.conf["memory_mode"])
-				if self.debug>=3:
-					deb.prints(batch["ims"].shape)
-					deb.prints(batch["labels"].shape)
-				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels"], self.keep_prob: 1.0, self.global_step: idx})
-				self.writer.add_summary(summary, counter)
-				counter += 1
-				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1.0})
-				if self.debug>=1 and (idx % 30 == 0):
-					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
-			
-			# =__________________________________ Test stats get and model save  _______________________________ = #
-			save_path = self.saver.save(self.sess, "./model.ckpt")
-			print("Model saved in path: %s" % save_path)
-			
-			stats = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
-			
-			
-			print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
-			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
-
-			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
-
+	def early_stop_check(self,metric,metric_aux):
+		if metric>self.early_stop["best"]:
+			self.early_stop["best"]=metric
+			self.early_stop["best_aa"]=metric_aux
+			self.early_stop["count"]=0
+		else:
+			self.early_stop["count"]+=1
+			if self.early_stop["count"]>=self.early_stop["patience"]:
+				return True
+			else:
+				return False
+		return False
 	def data_stats_get(self,data,batch_size=1000):
 
 		batch={}
@@ -238,8 +262,11 @@ class NeuralNet(object):
 			deb.prints(data["labels"].shape)
 			deb.prints(stats["correct_per_class"])
 			deb.prints(stats["per_class_label_count"])
-		
-		stats["per_class_accuracy"],stats["average_accuracy"],stats["overall_accuracy"]=self.correct_per_class_average_get(stats["correct_per_class"][1::], stats["per_class_label_count"][1::])
+		#if utils.
+		if self.squeeze_classes:
+			stats["per_class_accuracy"],stats["average_accuracy"],stats["overall_accuracy"]=self.correct_per_class_average_get(stats["correct_per_class"], stats["per_class_label_count"])
+		else:
+			stats["per_class_accuracy"],stats["average_accuracy"],stats["overall_accuracy"]=self.correct_per_class_average_get(stats["correct_per_class"][1::], stats["per_class_label_count"][1::])
 		if self.debug>=1: 
 			deb.prints(stats["overall_accuracy"])
 			deb.prints(stats["average_accuracy"])
@@ -289,6 +316,7 @@ class NeuralNet(object):
 	def model_build(self):
 		self.keep_prob = tf.placeholder(tf.float32)
 		self.global_step = tf.placeholder(tf.int32)
+		self.training = tf.placeholder(tf.bool, name='training')
 		self.data,self.target=self.placeholder_init(self.timesteps,self.shape,self.channels,self.n_classes)
 		self.logits, self.prediction = self.model_graph_get(self.data)
 
@@ -425,7 +453,7 @@ class NeuralNetSemantic(NeuralNet):
 		return stats
 
 	def batch_prediction_from_sess_get(self,ims):
-		return self.sess.run(self.prediction,{self.data: ims, self.keep_prob: 1.0})
+		return self.sess.run(self.prediction,{self.data: ims, self.keep_prob: 1.0, self.training: False})
 
 	def targets_predictions_int_get(self,target,prediction):
 		return target.flatten(),prediction.flatten()
@@ -439,8 +467,8 @@ class NeuralNetSemantic(NeuralNet):
 		deb.prints(per_class_label_count)
 
 		return per_class_label_count
-	def batchnorm(self,inputs,training=True):
-		return tf.layers.batch_normalization(inputs, axis=3, epsilon=1e-5, momentum=0.1, training=training, gamma_initializer=tf.random_normal_initializer(1.0, 0.02))
+	def batchnorm(self,inputs,training=True,axis=3):
+		return tf.layers.batch_normalization(inputs, axis=axis, epsilon=1e-5, momentum=0.1, training=training, gamma_initializer=tf.random_normal_initializer(1.0, 0.02))
 
 # ============================ NeuralNet takes onehot image output ============================================= #
 class NeuralNetOneHot(NeuralNet):
@@ -455,7 +483,7 @@ class NeuralNetOneHot(NeuralNet):
 		return data,target
 
 	def batch_prediction_from_sess_get(self,ims):
-		return np.around(self.sess.run(self.prediction,{self.data: ims, self.keep_prob: 1.0}),decimals=2)
+		return np.around(self.sess.run(self.prediction,{self.data: ims, self.keep_prob: 1.0, self.training: False}),decimals=2)
 
 	def targets_predictions_int_get(self,target,prediction): 
 		return np.argmax(target,axis=1),np.argmax(prediction,axis=1)
@@ -530,12 +558,12 @@ class NeuralNetOneHot(NeuralNet):
 
 		print("train results")
 		
-		print(np.around(self.sess.run(self.prediction,{self.data: dataset["train"]["ims"][sample_range], self.keep_prob: 1.0}),decimals=4))
+		print(np.around(self.sess.run(self.prediction,{self.data: dataset["train"]["ims"][sample_range], self.keep_prob: 1.0, self.training: False}),decimals=4))
 		deb.prints(dataset["train"]["labels"][sample_range])
 		
 		print("test results")
 		
-		print(np.around(self.sess.run(self.prediction,{self.data: dataset["test"]["ims"][sample_range], self.keep_prob: 1.0}),decimals=4))
+		print(np.around(self.sess.run(self.prediction,{self.data: dataset["test"]["ims"][sample_range], self.keep_prob: 1.0, self.training: False}),decimals=4))
 		deb.prints(dataset["test"]["labels"][sample_range])
 
 	def data_group_load(self,conf,data):
@@ -583,7 +611,7 @@ class UNet(NeuralNetSemantic):
 		super().__init__(*args, **kwargs)
 		self.model_build()
 		self.kernel_size=(3,3)
-		self.filters=10
+		self.filters=256
 	def model_graph_get(self,data):
 		graph_pipeline = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
 		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh,padding='same')
@@ -593,9 +621,12 @@ class UNet(NeuralNetSemantic):
 		return graph_pipeline, prediction
 	def conv_block_get(self,graph_pipeline):
 		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh,padding='same')
-		
+ 
+		graph_pipeline=self.batchnorm(graph_pipeline,training=True)
+
+
 		return graph_pipeline
-class SMCNN_UNet(NeuralNetSemantic):
+class SMCNN_UNet_large(NeuralNetSemantic):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.model_build()
@@ -605,7 +636,7 @@ class SMCNN_UNet(NeuralNetSemantic):
 
 		graph_pipeline = data
 		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1])
-		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,6*6])
+		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
 
 		deb.prints(graph_pipeline.get_shape())
 
@@ -616,18 +647,18 @@ class SMCNN_UNet(NeuralNetSemantic):
 		
 		conv2=self.conv_block_get(conv1,self.filter_first*4)
 		conv3=self.conv_block_get(conv2,self.filter_first*8)
-		kernel,bias=conv3.variables
-		tf.summary.histogram('conv3', kernel)
+		##kernel,bias=conv3.variables
+		##tf.summary.histogram('conv3', kernel)
 		#conv4=self.conv_block_get(conv3,self.filter_first*16)
 		#up3=self.deconv_block_get(conv4,conv2,self.filter_first*8)
 		
 		#self.hidden_weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, name)
-		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
+		#graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
 		up4=self.deconv_block_get(conv3,conv2,self.filter_first*4)
 		up5=self.deconv_block_get(up4,conv1,self.filter_first*2)
 		up6=self.deconv_block_get(up5,graph_pipeline,self.filter_first)
-		kernel,bias=up6.variables
-		tf.summary.histogram('up6', kernel)
+		#kernel,bias=up6.variables
+		#tf.summary.histogram('up6', kernel)
 		
 		graph_pipeline=self.out_block_get(up6,self.n_classes)
 		#graph_pipeline = tf.layers.conv2d(up6, self.n_classes, self.kernel_size, activation=None,padding='same')
@@ -637,6 +668,8 @@ class SMCNN_UNet(NeuralNetSemantic):
 
 	def conv_2d(self,graph_pipeline,filters):
 		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(1,1), activation=None,padding='same')
+		graph_pipeline=self.batchnorm(graph_pipeline,training=self.training,axis=3)
+		
 		#graph_pipeline=self.batchnorm(graph_pipeline,training=True)
 		graph_pipeline = tf.nn.relu(graph_pipeline)
 		return graph_pipeline
@@ -655,7 +688,7 @@ class SMCNN_UNet(NeuralNetSemantic):
 		return graph_pipeline
 	def deconv_2d(self,graph_pipeline,filters):
 		graph_pipeline = tf.layers.conv2d_transpose(graph_pipeline, filters, self.kernel_size,strides=(2,2),activation=None,padding='same')
-		#graph_pipeline=self.batchnorm(graph_pipeline,training=True)
+		graph_pipeline=self.batchnorm(graph_pipeline,training=self.training)
 		graph_pipeline = tf.nn.relu(graph_pipeline)
 		return graph_pipeline
 	def deconv_block_get(self,graph_pipeline,layer,filters):
@@ -681,29 +714,31 @@ class SMCNN_UNet(NeuralNetSemantic):
 		super().__init__(*args, **kwargs)
 		self.model_build()
 		self.kernel_size=(3,3)
-		self.filters=10
+		self.filters=256
 	def model_graph_get(self,data):
 
 		graph_pipeline = data
 		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1])
-		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,6*6])
+		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
 
 		deb.prints(graph_pipeline.get_shape())
 
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding='same')
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding='same')
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding='same')
+		graph_pipeline = self.conv_block_get(graph_pipeline)
+		#graph_pipeline = self.conv_block_get(graph_pipeline)
+		#graph_pipeline = self.conv_block_get(graph_pipeline)				
 
 		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.n_classes, self.kernel_size, activation=None,padding='same')
 		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
 		#return tf.expand_dims(annotation_pred, dim=3), graph_pipeline
 		return graph_pipeline, prediction
 	def conv_block_get(self,graph_pipeline):
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh,padding='same')
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=None,padding='same')
+		graph_pipeline=self.batchnorm(graph_pipeline,training=self.training)
+		graph_pipeline = tf.nn.relu(graph_pipeline)
 		
 		return graph_pipeline
 
-class SMCNN_UNet(NeuralNetSemantic):
+class SMCNN_UNet_small(NeuralNetSemantic):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.model_build()
@@ -713,14 +748,14 @@ class SMCNN_UNet(NeuralNetSemantic):
 
 		graph_pipeline = data
 		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1])
-		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,6*6])
+		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
 
 		deb.prints(graph_pipeline.get_shape())
 
 		conv1 = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
 		conv2 = tf.layers.conv2d(conv1, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
 		conv3 = tf.layers.conv2d(conv2, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
-		conv4 = tf.layers.conv2d(conv3, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
+		#conv4 = tf.layers.conv2d(conv3, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
 
 		layer_in = tf.concat([conv4,conv2],axis=3)
 		conv5 = tf.layers.conv2d(layer_in, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
@@ -732,7 +767,9 @@ class SMCNN_UNet(NeuralNetSemantic):
 		#return tf.expand_dims(annotation_pred, dim=3), graph_pipeline
 		return graph_pipeline, prediction
 	def conv_block_get(self,graph_pipeline):
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh,padding='same')
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=None,padding='same')
+		graph_pipeline=self.batchnorm(graph_pipeline,training=self.training)
+		graph_pipeline = tf.nn.relu(graph_pipeline)
 		
 		return graph_pipeline
 
@@ -749,7 +786,8 @@ class conv_lstm(NeuralNetOneHot):
 		
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
-		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh)
+		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, strides=2, activation=None)
+		
 		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
@@ -840,12 +878,12 @@ class SMCNNlstm(NeuralNetOneHot):
 		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=[3,3],get_last=False,name="convlstm")
 
 		graph_pipeline = tf.transpose(data, [0, 2, 3, 4, 1])
-		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,6*6])
+		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
 
 		deb.prints(graph_pipeline.get_shape())
 
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		#graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
+		#if self.debug: deb.prints(graph_pipeline.get_shape())
 		
 		graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
@@ -864,3 +902,115 @@ class SMCNNlstm(NeuralNetOneHot):
 
 		return None,graph_pipeline
 
+class SMCNNlstm(NeuralNetOneHot):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.model_build()
+		self.activations=tf.nn.relu
+	def model_graph_get(self,data):
+		# Data if of shape [None,6,32,32,6]
+		graph_pipeline1 = data
+		graph_pipeline1 = tf.transpose(graph_pipeline1, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
+		graph_pipeline1 = tf.reshape(graph_pipeline1,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
+		deb.prints(graph_pipeline1.get_shape())
+		#graph_pipeline1 = tf.layers.conv2d(graph_pipeline1, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
+		if self.debug: deb.prints(graph_pipeline1.get_shape())
+		
+		graph_pipeline2=self.layer_lstm_get(data,filters=5,kernel=[3,3],get_last=True,name="convlstm")
+		deb.prints(graph_pipeline2.get_shape())
+		#graph_pipeline1 = tf.transpose(graph_pipeline1, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
+		#graph_pipeline1 = tf.reshape(graph_pipeline1,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
+		
+
+		graph_pipeline=tf.concat([graph_pipeline1,graph_pipeline2],axis=3)
+
+		deb.prints(graph_pipeline.get_shape())
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
+		
+		
+		graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		#graph_pipeline = tf.layers.dropout(graph_pipeline,rate=self.keep_prob,training=False,name='dropout')
+		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
+		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+
+
+		return None,graph_pipeline
+# ================================= Implements SMCNN ============================================== #
+# Remote: python main.py -mm="ram" --debug=1 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=2000 --filters=256 -m="smcnn"
+class SMCNN_conv3d(NeuralNetOneHot):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.kernel=[3,3,3]
+		self.model_build()
+		
+	def model_graph_get(self,data):
+		# Data if of shape [None,6,32,32,6]
+		graph_pipeline = data
+		#graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
+		#graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
+
+		deb.prints(graph_pipeline.get_shape())
+
+		#graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
+		graph_pipeline=tf.layers.conv3d(graph_pipeline,256,[3,3,3],padding='same',activation=tf.nn.tanh)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		graph_pipeline=tf.layers.max_pooling3d(inputs=graph_pipeline, pool_size=[2,1,1], strides=[2,1,1],padding='same')
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		#graph_pipeline = tf.layers.dropout(graph_pipeline,rate=self.keep_prob,training=False,name='dropout')
+		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
+		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+
+
+		return None,graph_pipeline
+
+
+
+
+class Conv3DMultitemp(NeuralNetOneHot):
+	def __init__(self, *args, **kwargs):
+		print(1)
+		super().__init__(*args, **kwargs)
+		self.kernel=[3,3,3]
+		deb.prints(self.kernel)
+		self.model_build()
+		
+	def model_graph_get(self,data):
+		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=[3,3],get_last=False,name="convlstm")
+		#graph_pipeline=tf.layers.conv3d(graph_pipeline,self.filters,[1,3,3],padding='same',activation=tf.nn.tanh)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		graph_pipeline=tf.layers.conv3d(graph_pipeline,16,[3,3,3],padding='same',activation=tf.nn.tanh)
+		
+		graph_pipeline=tf.layers.max_pooling3d(inputs=graph_pipeline, pool_size=[2,1,1], strides=[2,1,1],padding='same')
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+
+		#graph_pipeline=tf.layers.conv3d(graph_pipeline,self.filters,[],padding='same',activation=tf.nn.tanh)
+		
+		#graph_pipeline=tf.layers.conv3d(data,self.filters,self.kernel,padding='same',activation=tf.nn.tanh)
+		
+		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
+		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh)
+		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		graph_pipeline = tf.layers.dense(graph_pipeline, 128,activation=tf.nn.tanh)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		return None,graph_pipeline
