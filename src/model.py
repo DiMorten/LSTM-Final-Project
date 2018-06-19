@@ -217,7 +217,7 @@ class NeuralNet(object):
 				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1.0, self.training: True})
 				if self.debug>=1 and (idx % 30 == 0):
 					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
-			
+				
 			# =__________________________________ Test stats get and model save  _______________________________ = #
 			save_path = self.saver.save(self.sess, "./model.ckpt")
 			print("Model saved in path: %s" % save_path)
@@ -248,12 +248,13 @@ class NeuralNet(object):
 			pickle.dump(self.repeat, handle, protocol=pickle.HIGHEST_PROTOCOL)
 		self.repeat["best_metric1"]=0
 		for i in range(self.repeat["n"]):
-			self.repeat["results"].append(self.train_batch_loop(args,batch,data))
+			early_stop=self.train_batch_loop(args,batch,data)
+			self.repeat["results"].append(early_stop)
 			print("Repeat step: {}".format(i))
 			print("Resultls:",self.repeat["results"])
 			
-			if self.repeat["best"]["metric1"]>self.repeat["best_metric1"]:
-				self.repeat["best_metric1"]=self.repeat["best"]["metric1"]
+			if early_stop["best"]["metric1"]>self.repeat["best_metric1"]:
+				self.repeat["best_metric1"]=early_stop["best"]["metric1"]
 				save_path = self.saver.save(self.sess, "./model_best.ckpt")
 				print("Best model saved in path: %s" % save_path)
 
