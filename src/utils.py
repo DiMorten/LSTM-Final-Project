@@ -141,6 +141,7 @@ class DataForNet(object):
 		self.conf["label_type"]="one_hot"
 
 		print(self.conf)
+
 		#self.im_npy_get()
 	def im_npy_get(self):
 		pathlib.Path(self.conf["in_npy_path2"]).mkdir(parents=True, exist_ok=True) 

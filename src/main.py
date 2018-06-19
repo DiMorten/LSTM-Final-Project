@@ -28,7 +28,7 @@ import argparse
 # Local
 import utils
 import deb
-from model import (conv_lstm,Conv3DMultitemp,UNet,SMCNN,SMCNNlstm, SMCNN_UNet, SMCNN_conv3d)
+from model import (conv_lstm,Conv3DMultitemp,UNet,SMCNN,SMCNNlstm, SMCNN_UNet, SMCNN_conv3d, lstm)
 
 #import conf
 parser = argparse.ArgumentParser(description='')
@@ -140,10 +140,17 @@ def main(_):
                 timesteps=args.timesteps, patch_len=args.patch_len,
                 kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
                 checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
+        elif args.model=='lstm':
+            model = lstm(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
+                timesteps=args.timesteps, patch_len=args.patch_len,
+                kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
+                checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
 
         if args.phase == 'train':
             model.train(args)
         
+        elif args.phase == 'repeat':
+            model.train_repeat(args)
         elif args.phase == 'test':
             model.test(args)
         """

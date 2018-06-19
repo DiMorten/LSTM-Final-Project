@@ -83,3 +83,8 @@ ConvLSTM:
 [@debug] self.early_stop["best"] = 0.8355461461174106
 [@debug] self.early_stop["best_aa"] = 0.8134161141264326
 python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=200 --filters=256 -m="convlstm" 
+
+
+[@debug] early_stop["best"]["metric1"] = 0.8388346080501958
+[@debug] early_stop["best"]["metric2"] = 0.8177334733912126
+[@debug] early_stop["best"]["metric3"] = [0.90358998 0.80523872 0.87033873 0.82101485 0.80454534 0.70167322]

@@ -25,7 +25,7 @@ import pickle
 # Local
 import utils
 import deb
-from cell import ConvGRUCell
+#from cell import ConvGRUCell
 #from tf.keras.layers import Input, concatenate, Conv2D, MaxPooling2D, Conv2DTranspose
 
 np.set_printoptions(suppress=True)
@@ -38,7 +38,7 @@ class NeuralNet(object):
 						timesteps=utils.conf["t_len"], patch_len=32,
 						kernel=[3,3], channels=7, filters=32, n_classes=6,
 						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1, \
-						patience=5,squeeze_classes=True):
+						patience=5,squeeze_classes=True,n_repetitions=30):
 		self.squeeze_classes=squeeze_classes		
 		self.ram_data=data
 		self.sess = sess
@@ -61,6 +61,7 @@ class NeuralNet(object):
 		self.test_batch_size=1000
 		self.early_stop={}
 		self.early_stop["patience"]=patience
+		self.repeat={"n":n_repetitions, "filename": 'repeat_results.pickle'}
 		if self.debug>=1: print("Initializing NeuralNet instance")
 		print(self.log_dir)
 
@@ -76,6 +77,25 @@ class NeuralNet(object):
 		tf.summary.histogram('convlstm', kernel)
 		if get_last==True:
 			if self.debug: deb.prints(val.get_shape())
+			last = tf.gather(val, int(val.get_shape()[1]) - 1,axis=1)
+			if self.debug: deb.prints(last.get_shape())
+			return last
+		else:
+			return val
+	# =_______________ Generic Layer Getters ___________________= #
+	def layer_flat_lstm_get(self,data,filters,kernel,name="convlstm",get_last=True):
+		#filters=64
+		cell = tf.nn.rnn_cell.LSTMCell(filters,state_is_tuple=True)
+
+		val, state = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
+		if self.debug: deb.prints(val.get_shape())
+		kernel,bias=cell.variables
+		#self.hidden_weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, name)
+		tf.summary.histogram('convlstm', kernel)
+		if get_last==True:
+			if self.debug: deb.prints(val.get_shape())
+			#val = tf.transpose(val, [1, 0, 2])
+			#val = tf.transpose(va)
 			last = tf.gather(val, int(val.get_shape()[1]) - 1,axis=1)
 			if self.debug: deb.prints(last.get_shape())
 			return last
@@ -132,7 +152,7 @@ class NeuralNet(object):
 			sub_data=self.ram_data_sub_data_get(data,n,sub_data)
 		deb.prints(sub_data["ims"].shape)
 		return sub_data
-	def train_init(self):
+	def train_init(self,args):
 		init_op = tf.global_variables_initializer()
 		self.sess = tf.Session()
 		self.sess.run(init_op)
@@ -177,9 +197,9 @@ class NeuralNet(object):
 
 	def train_batch_loop(self,args,batch,data):
 		start_time = time.time()
-		early_stop={}
+		early_stop={"best":{}, "patience":self.early_stop["patience"]}
 		early_stop["count"]=0
-		early_stop["best"]=0
+		early_stop["best"]["metric1"]=0
 		counter=1
 		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
 		for epoch in range(args.epoch):
@@ -221,10 +241,55 @@ class NeuralNet(object):
 		
 		
 		early_stop=self.train_batch_loop(args,batch,data)
-	#def train_repeat(self,args):
+	def train_repeat(self,args):
+		batch,data=self.train_init(args)
+		self.repeat["results"]=[]
+		with open(self.repeat["filename"], 'wb') as handle:
+			pickle.dump(self.repeat, handle, protocol=pickle.HIGHEST_PROTOCOL)
+		self.repeat["best_metric1"]=0
+		for i in range(self.repeat["n"]):
+			self.repeat["results"].append(self.train_batch_loop(args,batch,data))
+			print("Repeat step: {}".format(i))
+			print("Resultls:",self.repeat["results"])
+			
+			if self.repeat["best"]["metric1"]>self.repeat["best_metric1"]:
+				self.repeat["best_metric1"]=self.repeat["best"]["metric1"]
+				save_path = self.saver.save(self.sess, "./model_best.ckpt")
+				print("Best model saved in path: %s" % save_path)
 
+			with open(self.repeat["filename"], 'wb') as handle:
+				pickle.dump(self.repeat, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+		self.repeat["best"]={}
+		self.repeat["overall_accuracy"]=np.asarray([exp["best"]["metric1"] for exp in self.repeat["results"]])
+		self.repeat["average_accuracy"]=np.asarray([exp["best"]["metric2"] for exp in self.repeat["results"]])
+	#	self.repeat["npy"]["overall_accuracy"]=np.asarray([exp["best"]["metric1"] for exp in self.repeat["results"]])
+		
+		deb.prints(self.repeat["overall_accuracy"])
+		deb.prints(self.repeat["average_accuracy"])
+		self.repeat["best"]["idx"]=np.argmax(self.repeat["overall_accuracy"]["value"])
+		self.repeat["best"]["overall_accuracy"]=self.repeat["overall_accuracy"][self.repeat["best"]["idx"]]
+		self.repeat["best"]["average_accuracy"]=self.repeat["average_accuracy"][self.repeat["best"]["idx"]]
+		
+		
+		#self.repeat["overall_accuracy"]["mean"]=float(sum(exp["best"]["metric1"] for exp in self.repeat["results"])) / len(self.repeat["results"])
+		#self.repeat["average_accuracy"]=float(sum(exp["best"]["metric2"] for exp in self.repeat["results"])) / len(self.repeat["results"])
+		self.repeat["per_class_accuracy"]=np.asarray([exp["best"]["metric3"] for exp in self.repeat["results"]])
+
+		print(self.repeat["overall_accuracy"])
+		print(self.repeat["average_accuracy"])
+		print(self.repeat["per_class_accuracy"])
+		
+		print(self.repeat)
+		with open(self.repeat["filename"], 'wb') as handle:
+			pickle.dump(self.repeat, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	def repeat_metric_average(self,repeat_results):
+		metric_average=float(sum(exp["metric1"] for exp in self.repeat["results"])) / len(self.repeat["results"])
+
+		return float(sum(metric))
 
 	def early_stop_check(self,early_stop,metric1,metric2,metric3):
+		early_stop["signal"]=False
 		if metric1>early_stop["best"]["metric1"]:
 			early_stop["best"]["metric1"]=metric1
 			early_stop["best"]["metric2"]=metric2
@@ -275,9 +340,12 @@ class NeuralNet(object):
 			stats["per_class_accuracy"],stats["average_accuracy"],stats["overall_accuracy"]=self.correct_per_class_average_get(stats["correct_per_class"], stats["per_class_label_count"])
 		else:
 			stats["per_class_accuracy"],stats["average_accuracy"],stats["overall_accuracy"]=self.correct_per_class_average_get(stats["correct_per_class"][1::], stats["per_class_label_count"][1::])
-		if self.debug>=1: 
-			deb.prints(stats["overall_accuracy"])
-			deb.prints(stats["average_accuracy"])
+		if self.debug>=1:
+			try: 
+				deb.prints(stats["overall_accuracy"])
+				deb.prints(stats["average_accuracy"])
+			except:
+				print("Deb prints error")
 		if self.debug>=2:
 			deb.prints(stats["per_class_accuracy"])
 		return stats
@@ -790,7 +858,7 @@ class conv_lstm(NeuralNetOneHot):
 		self.model_build()
 		
 	def model_graph_get(self,data):
-		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=self.kernel,name='convlstm')
+		graph_pipeline=self.layer_lstm_get(data,filters=32,kernel=self.kernel,name='convlstm')
 		
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
@@ -1022,3 +1090,33 @@ class Conv3DMultitemp(NeuralNetOneHot):
 		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		return None,graph_pipeline
+
+# ================================= Implements ConvLSTM ============================================== #
+class lstm(NeuralNetOneHot):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.model_build()
+		
+	def model_graph_get(self,data):
+		if self.debug: deb.prints(data.get_shape())
+		
+		graph_pipeline = tf.reshape(data,[-1,self.timesteps,self.patch_len*self.patch_len*self.channels]) # Shape [None,32,32,6*6]
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		graph_pipeline=self.layer_flat_lstm_get(graph_pipeline,filters=128,kernel=self.kernel,name='convlstm')
+		
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
+		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, strides=2, activation=None)
+		
+		#graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
+		#if self.debug: deb.prints(graph_pipeline.get_shape())
+		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
+		
+		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		return None,graph_pipeline
+
+
