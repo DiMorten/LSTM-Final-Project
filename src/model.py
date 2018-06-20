@@ -25,6 +25,7 @@ import pickle
 # Local
 import utils
 import deb
+import cv2
 #from cell import ConvGRUCell
 #from tf.keras.layers import Input, concatenate, Conv2D, MaxPooling2D, Conv2DTranspose
 
@@ -242,12 +243,13 @@ class NeuralNet(object):
 		
 		early_stop=self.train_batch_loop(args,batch,data)
 	def train_repeat(self,args):
-		batch,data=self.train_init(args)
+		
 		self.repeat["results"]=[]
 		with open(self.repeat["filename"], 'wb') as handle:
 			pickle.dump(self.repeat, handle, protocol=pickle.HIGHEST_PROTOCOL)
 		self.repeat["best_metric1"]=0
 		for i in range(self.repeat["n"]):
+			batch,data=self.train_init(args)
 			early_stop=self.train_batch_loop(args,batch,data)
 			self.repeat["results"].append(early_stop)
 			print("Repeat step: {}".format(i))
@@ -303,7 +305,7 @@ class NeuralNet(object):
 			else:
 				early_stop["signal"]=False
 		return early_stop
-	def data_stats_get(self,data,batch_size=1000):
+	def data_stats_get(self,data,batch_size=1000,im_reconstruct=False):
 
 		batch={}
 		batch["idxs"] = data["n"] // batch_size
@@ -312,7 +314,11 @@ class NeuralNet(object):
 
 		stats={"correct_per_class":np.zeros(self.n_classes).astype(np.float32)}
 		stats["per_class_label_count"]=np.zeros(self.n_classes).astype(np.float32)
-		
+		mask=cv2.imread(self.conf["train"]["mask"]["dir"],0)
+		label=cv2.imread("../data/labels/9.tif",0)
+		if im_reconstruct:
+			self.reconstruct=self.reconstruct_init()
+
 		for idx in range(0, batch["idxs"]):
 			batch=self.batch_ims_labels_get(batch,data,batch_size,idx,memory_mode=self.conf["memory_mode"])
 			batch["prediction"] = self.batch_prediction_from_sess_get(batch["ims"])
@@ -322,6 +328,11 @@ class NeuralNet(object):
 				deb.prints(batch["labels"].shape)
 
 			#self.prediction2old_labels_get(batch["prediction"])
+			if im_reconstruct:
+				self.reconstruct["idx"]+=idx*batch_size
+				#deb.prints(idx)
+				self.reconstruct=self.im_reconstruct(batch,self.reconstruct,self.reconstruct["idx"],batch_size,self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask,label)
+				#deb.prints(np.average(self.reconstruct["im"]))
 		   
 			batch["correct_per_class"]=self.correct_per_class_get(batch["labels"],batch["prediction"])
 			stats["correct_per_class"]+=batch["correct_per_class"]
@@ -332,6 +343,9 @@ class NeuralNet(object):
 			
 		stats["per_class_label_count"]=self.per_class_label_count_get(data["labels"])
 
+		if im_reconstruct:
+			deb.prints(np.unique(self.reconstruct["im"]))
+			cv2.imwrite("reconstructed.png",self.reconstruct["im"])
 		if self.debug>=2:
 			deb.prints(data["labels"].shape)
 			deb.prints(stats["correct_per_class"])
@@ -350,6 +364,78 @@ class NeuralNet(object):
 		if self.debug>=2:
 			deb.prints(stats["per_class_accuracy"])
 		return stats
+
+	def reconstruct_init(self):
+		reconstruct={}
+		reconstruct["im"]=np.zeros(self.conf["im_size"])
+		deb.prints(reconstruct["im"].shape)
+		reconstruct["idx"]=0
+		
+
+		return reconstruct
+
+
+		reconstruct["ids"]=self.reconstruct_ids_get(self.reconstruct["im"])
+
+	def im_reconstruct(self,batch,reconstruct,batch_idx,batch_size,window=5,overlap=4,mask=None,label=None):
+
+		patches_get={}
+		h, w = reconstruct["im"].shape
+		#mask=cv2.imread("TrainTestMask.png",0)
+		gridx = range(0, w - window, window - overlap)
+		gridx = np.hstack((gridx, w - window))
+
+		gridy = range(0, h - window, window - overlap)
+		gridy = np.hstack((gridy, h - window))
+		#deb.prints(gridx.shape)
+		#deb.prints(gridy.shape)
+		
+		counter=0
+		patches_get["train_n"]=0
+		patches_get["test_n"]=0
+		patches_get["test_n_limited"]=0
+		test_counter=0
+		reconstruct["train"]={}
+		reconstruct["test"]={}
+
+		reconstruct["train"]["count"]=0
+		reconstruct["test"]["count"]=0
+		
+		test_real_count=0
+		
+
+		count=0
+		for i in range(len(gridx)):
+			for j in range(len(gridy)):
+				count+=1
+				xx = gridx[i]
+				yy = gridy[j]
+				if count>=batch_idx and count<(batch_idx+batch_size):
+					mask_patch = mask[yy: yy + window, xx: xx + window]
+					label_patch = label[yy: yy + window, xx: xx + window]
+					is_mask_from_train=mask_patch[self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]]==1
+
+					#if np.any(label_patch==0):
+					#	continue
+					if is_mask_from_train==True: # Train sample
+						continue
+						#im=self.ram_data["ims"][reconstruct["train"]["count"]]
+						#reconstruct["im"][yy: yy + window, xx: xx + window]=mask_patch.copy()
+
+
+					elif np.all(mask_patch==2): # Test sample
+						test_counter+=1
+						if test_counter>=self.conf["extract"]["test_skip"]:
+							test_counter=0
+							#print(batch_idx,batch_size,count)
+							#print(batch["prediction"][test_counter])
+							#print(np.argmax(batch["prediction"][test_counter]))
+							#print(yy,xx)
+							reconstruct["im"][yy+self.conf["patch"]["center_pixel"], xx+self.conf["patch"]["center_pixel"]]=np.argmax(batch["prediction"][test_real_count]).astype(np.uint8)
+							test_real_count+=1
+							
+		return reconstruct
+
 	def correct_per_class_get(self,target,prediction,debug=0):
 		correct_per_class = np.zeros(self.n_classes).astype(np.float32)
 		targets_int,predictions_int=self.targets_predictions_int_get(target,prediction)
@@ -628,8 +714,8 @@ class NeuralNetOneHot(NeuralNet):
 
 		print("Model restored.")
 		data = self.data_load(self.conf,memory_mode=self.conf["memory_mode"])
-
-		test_stats=self.data_stats_get(data["test"])
+		deb.prints(args.im_reconstruct)
+		test_stats=self.data_stats_get(data["test"],im_reconstruct=args.im_reconstruct)
 
 	def model_test_on_samples(self,dataset,sample_range=range(15,20)):
 
@@ -859,7 +945,7 @@ class conv_lstm(NeuralNetOneHot):
 		self.model_build()
 		
 	def model_graph_get(self,data):
-		graph_pipeline=self.layer_lstm_get(data,filters=32,kernel=self.kernel,name='convlstm')
+		graph_pipeline=self.layer_lstm_get(data,filters=64,kernel=self.kernel,name='convlstm')
 		
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)

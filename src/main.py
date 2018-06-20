@@ -62,6 +62,8 @@ parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,d
 parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=1000000, help="Class number. 'local' or 'remote'")
 parser.add_argument('-sc','--squeeze_classes', dest='squeeze_classes',default=True, help="Class number. 'local' or 'remote'")
 
+parser.add_argument('-ir','--im_reconstruct', dest='im_reconstruct',default=False, help="Class number. 'local' or 'remote'")
+
 args = parser.parse_args()
 
 args.n_classes=args.class_n
@@ -114,37 +116,37 @@ def main(_):
             model = Conv3DMultitemp(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
                             timesteps=args.timesteps, patch_len=args.patch_len,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data,conf=data.conf, debug=args.debug)
         elif args.model=='unet':
             model = UNet(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
                             timesteps=args.timesteps, patch_len=args.patch_len,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data,conf=data.conf, debug=args.debug)
         elif args.model=='smcnn':
             model = SMCNN(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
                             timesteps=args.timesteps, patch_len=args.patch_len,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data,conf=data.conf, debug=args.debug)
         elif args.model=='smcnnlstm':
             model = SMCNNlstm(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
                             timesteps=args.timesteps, patch_len=args.patch_len,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data,conf=data.conf, debug=args.debug)
         elif args.model=='smcnn_unet':
             model = SMCNN_UNet(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
-                timesteps=args.timesteps, patch_len=args.patch_len,
-                kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
+                            timesteps=args.timesteps, patch_len=args.patch_len,
+                            kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data,conf=data.conf, debug=args.debug)
         elif args.model=='smcnn_conv3d':
             model = SMCNN_conv3d(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
-                timesteps=args.timesteps, patch_len=args.patch_len,
-                kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
+                            timesteps=args.timesteps, patch_len=args.patch_len,
+                            kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data,conf=data.conf, debug=args.debug)
         elif args.model=='lstm':
             model = lstm(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
-                timesteps=args.timesteps, patch_len=args.patch_len,
-                kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
-                checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data, debug=args.debug)
+                            timesteps=args.timesteps, patch_len=args.patch_len,
+                            kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data,conf=data.conf, debug=args.debug)
 
         if args.phase == 'train':
             model.train(args)
