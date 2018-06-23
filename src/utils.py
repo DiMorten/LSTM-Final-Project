@@ -29,9 +29,9 @@ import argparse
 
 
 class DataForNet(object):
-	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=7,t_len=6,path="../data/",class_n=6,pc_mode="local", \
+	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=7,t_len=6,path="../data/",class_n=9,pc_mode="local", \
 		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None, \
-		n_apriori=1000000, squeeze_classes=False):
+		n_apriori=16000, squeeze_classes=False):
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n}
 		self.conf["squeeze_classes"]=squeeze_classes
 		self.conf["memory_mode"]=memory_mode #"ram" or "hdd"
@@ -632,7 +632,7 @@ if __name__ == "__main__":
 	parser.add_argument('--band_n', dest='band_n', type=int, default=7, help='Debug')
 	parser.add_argument('--t_len', dest='t_len', type=int, default=6, help='Debug')
 	parser.add_argument('--path', dest='path', default="../data/", help='Data path')
-	parser.add_argument('--class_n', dest='class_n', type=int, default=6, help='Class number')
+	parser.add_argument('--class_n', dest='class_n', type=int, default=9, help='Class number')
 	parser.add_argument('--pc_mode', dest='pc_mode', default="local", help="Class number. 'local' or 'remote'")
 	parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=1000, help="Class number. 'local' or 'remote'")
 	parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="ram", help="Class number. 'local' or 'remote'")
@@ -659,6 +659,8 @@ if __name__ == "__main__":
 	#pass
 else:
 	data_onehot=DataOneHot()
+	data_onehot=DataSemantic()
+	
 	#data.onehot_create()
 	conf=data_onehot.conf
 	

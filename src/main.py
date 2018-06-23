@@ -28,7 +28,7 @@ import argparse
 # Local
 import utils
 import deb
-from model import (conv_lstm,Conv3DMultitemp,UNet,SMCNN,SMCNNlstm, SMCNN_UNet, SMCNN_conv3d, lstm)
+from model import (conv_lstm,Conv3DMultitemp,UNet,SMCNN,SMCNNlstm, SMCNN_UNet, SMCNN_conv3d, lstm, conv_lstm_semantic)
 
 #import conf
 parser = argparse.ArgumentParser(description='')
@@ -70,7 +70,7 @@ args.n_classes=args.class_n
 args.timesteps=args.t_len
 args.channels=args.band_n
 np.set_printoptions(suppress=True)
-if args.model=='unet' or args.model=='smcnn_unet':
+if args.model=='unet' or args.model=='smcnn_unet' or args.model=='convlstm_semantic':
     label_type='semantic'
 else:
     label_type='one_hot'
@@ -147,7 +147,11 @@ def main(_):
                             timesteps=args.timesteps, patch_len=args.patch_len,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
                             checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data,conf=data.conf, debug=args.debug)
-
+        elif args.model=='convlstm_semantic':
+            model = conv_lstm_semantic(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
+                            timesteps=args.timesteps, patch_len=args.patch_len,
+                            kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
+                            checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data,conf=data.conf, debug=args.debug)
         if args.phase == 'train':
             model.train(args)
         
