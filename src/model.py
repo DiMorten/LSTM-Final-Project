@@ -221,7 +221,7 @@ class conv_lstm_semantic(NeuralNetSemantic):
 		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, strides=2, activation=None)
 		self.layer_idx=0
 
-		graph_pipeline=self.conv2d_block_get(graph_pipeline1,10,training=self.training,layer_idx=self.layer_idx)
+		graph_pipeline=self.conv2d_block_get(graph_pipeline1,10,training=self.training,layer_idx=self.layer_idx,kernel=2)
 		self.layer_idx+=1
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		
