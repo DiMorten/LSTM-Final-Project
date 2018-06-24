@@ -100,7 +100,7 @@ def main(_):
                                 band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
                                 test_n_limit=args.test_n_limit,memory_mode=args.memory_mode, \
                                 balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
-                                n_apriori=args.n_apriori,patch_length=args.patch_len)
+                                n_apriori=args.n_apriori,patch_length=args.patch_len,squeeze_classes=args.squeeze_classes)
 
 
     if args.memory_mode=="ram":

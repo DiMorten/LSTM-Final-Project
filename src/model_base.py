@@ -39,7 +39,7 @@ class NeuralNet(object):
 						timesteps=utils.conf["t_len"], patch_len=32,
 						kernel=[3,3], channels=7, filters=32, n_classes=6,
 						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1, \
-						patience=5,squeeze_classes=True,n_repetitions=30):
+						patience=10,squeeze_classes=True,n_repetitions=30):
 		self.squeeze_classes=squeeze_classes		
 		self.ram_data=data
 		self.sess = sess
@@ -493,6 +493,26 @@ class NeuralNet(object):
 		graph_pipeline = tf.nn.relu(graph_pipeline,name='activation_'+str(layer_idx))
 		
 		return graph_pipeline
+	def resnet_block_get(self,graph_pipeline,filters,kernel=3,padding='same',training=True,layer_idx=0):
+		input_=tf.identity(graph_pipeline)
+		resnet_idx=0
+
+		layer_id='_'+str(layer_idx)+'_'+str(resnet_idx)
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, kernel, activation=None,padding=padding,name='resnet_conv2d'+layer_id)
+		graph_pipeline=self.batchnorm(graph_pipeline,training=training,name='batchnorm'+layer_id)
+		graph_pipeline = tf.nn.relu(graph_pipeline,name='activation'+layer_id)
+	
+		resnet_idx+=1
+		layer_id='_'+str(layer_idx)+'_'+str(resnet_idx)
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, kernel, activation=None,padding=padding,name='resnet_conv2d'+layer_id)
+		graph_pipeline=self.batchnorm(graph_pipeline,training=training,name='batchnorm'+layer_id)
+		
+		graph_pipeline=tf.add(input_,graph_pipeline)
+		graph_pipeline = tf.nn.relu(graph_pipeline,name='activation'+layer_id)
+		return graph_pipeline	
+
+	
+		
 
 # ============================ NeuralNetSemantic takes image output ============================================= #
 
@@ -648,6 +668,8 @@ class NeuralNetSemantic(NeuralNet):
 		graph_pipeline=tf.layers.conv2d(graph_pipeline, n_classes, kernel_size, activation=None,padding=padding,name='conv2d_'+str(layer_idx))
 		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
 		return graph_pipeline, prediction
+
+
 
 # ============================ NeuralNet takes onehot image output ============================================= #
 class NeuralNetOneHot(NeuralNet):

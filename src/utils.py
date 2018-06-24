@@ -332,10 +332,13 @@ class DataForNet(object):
 		self.ram_data["test"]["labels_int"]=self.ram_data["test"]["labels_int"][0:self.ram_data["test"]["n"]]
 
 		deb.prints(self.conf["squeeze_classes"])
-		if self.conf["squeeze_classes"] is True:
+		if self.conf["squeeze_classes"]:
+			print("here1")
 			self.ram_data["train"]=self.labels_unused_classes_eliminate(self.ram_data["train"])
 			self.ram_data["test"]=self.labels_unused_classes_eliminate(self.ram_data["test"])
-
+			count,unique=np.unique(self.ram_data["train"],return_counts=True)
+			#print("train count,unique",count,unique)
+		print("train count,unique",count,unique)
 		
 		return patches_get["train_n"],test_real_count
 
@@ -403,7 +406,12 @@ class DataSemantic(DataForNet):
 		return mask_test
 	def is_mask_from_train(self,mask_patch):
 		return np.all(mask_patch==1)
-	
+	def labels_unused_classes_eliminate(self,data):
+
+		data["labels"]=(data["labels"]-3).clip(min=0)
+		data["labels_int"]=(data["labels_int"]-3).clip(min=0)
+		
+		return data
 class DataOneHot(DataForNet):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args, **kwargs)
