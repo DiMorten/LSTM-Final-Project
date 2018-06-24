@@ -474,21 +474,25 @@ class NeuralNet(object):
 
 		return data
 	def model_build(self):
-		self.keep_prob = tf.placeholder(tf.float32)
-		self.global_step = tf.placeholder(tf.int32)
-		self.training = tf.placeholder(tf.bool, name='training')
-		self.data,self.target=self.placeholder_init(self.timesteps,self.shape,self.channels,self.n_classes)
-		self.logits, self.prediction = self.model_graph_get(self.data)
-
-		self.minimize,self.mistakes,self.error=self.loss_optimizer_set(self.target,self.prediction, self.logits)
-		self.error_sum, self.saver, self.merged = self.tensorboard_saver_init(self.error)
-		self.trainable_vars_print()
-	def conv2d_block_get(self,graph_pipeline,filters,kernel=3,padding='same',training=True):
-			graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, kernel, activation=None,padding=padding)
-			graph_pipeline=self.batchnorm(graph_pipeline,training=training)
-			graph_pipeline = tf.nn.relu(graph_pipeline)
-			
-			return graph_pipeline
+		with tf.name_scope('init_definitions'):
+			self.keep_prob = tf.placeholder(tf.float32, name='keep_prob')
+			self.global_step = tf.placeholder(tf.int32, name='global_step')
+			self.training = tf.placeholder(tf.bool, name='training')
+			self.data,self.target=self.placeholder_init(self.timesteps,self.shape,self.channels,self.n_classes)
+		with tf.name_scope('model_graph'):
+			self.logits, self.prediction = self.model_graph_get(self.data)
+		for var in tf.trainable_variables():
+			tf.summary.histogram(var.name, var)
+		with tf.name_scope('optimization'):
+			self.minimize,self.mistakes,self.error=self.loss_optimizer_set(self.target,self.prediction, self.logits)
+			self.error_sum, self.saver, self.merged = self.tensorboard_saver_init(self.error)
+			self.trainable_vars_print()
+	def conv2d_block_get(self,graph_pipeline,filters,kernel=3,padding='same',training=True,layer_idx=0):
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, kernel, activation=None,padding=padding,name='conv2d_'+str(layer_idx))
+		graph_pipeline=self.batchnorm(graph_pipeline,training=training,name='batchnorm'+str(layer_idx))
+		graph_pipeline = tf.nn.relu(graph_pipeline,name='activation_'+str(layer_idx))
+		
+		return graph_pipeline
 
 # ============================ NeuralNetSemantic takes image output ============================================= #
 
@@ -498,8 +502,8 @@ class NeuralNetSemantic(NeuralNet):
 		if self.debug>=1: print("Initializing NeuralNetSemantic instance")
 
 	def placeholder_init(self,timesteps,shape,channels,n_classes):
-		data = tf.placeholder(tf.float32, [None] +[timesteps] + shape + [channels])
-		target = tf.placeholder(tf.float32, [None] + shape[0::])
+		data = tf.placeholder(tf.float32, [None] +[timesteps] + shape + [channels], name='data')
+		target = tf.placeholder(tf.float32, [None] + shape[0::], name='target')
 		if self.debug: deb.prints(target.get_shape())
 		return data,target
 
@@ -553,6 +557,11 @@ class NeuralNetSemantic(NeuralNet):
 		return self.weighted_loss(logits, labels, num_classes=self.n_classes, head=loss_weight)
 
 	def loss_optimizer_set(self,target,prediction, logits):
+
+		tf.summary.image('prediction',tf.cast(tf.expand_dims(tf.multiply(prediction,20),axis=3),tf.uint8),max_outputs=10)
+
+		tf.summary.image('target',tf.cast(tf.expand_dims(tf.multiply(target,20),axis=3),tf.uint8),max_outputs=10)
+		
 		target_int=tf.cast(target,tf.int32)
 		deb.prints(target_int.get_shape())
 		deb.prints(logits.get_shape())
@@ -574,8 +583,8 @@ class NeuralNetSemantic(NeuralNet):
 
 
 #graph_pipeline = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
-		loss = self.cal_loss(logits, target_int)
-		#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits)
+		#loss = self.cal_loss(logits, target_int)
+		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits)
 
 		deb.prints(loss.get_shape())
 		cross_entropy = tf.reduce_mean(loss)
@@ -590,13 +599,17 @@ class NeuralNetSemantic(NeuralNet):
 		#optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 		#optimizer = tf.train.AdamOptimizer()
 		optimizer = tf.train.AdamOptimizer(0.001, epsilon=0.0001)
-		
+		grads = optimizer.compute_gradients(cross_entropy)
+		minimize = optimizer.apply_gradients(grads)
+		# Save the grads with tf.summary.histogram
+		for index, grad in enumerate(grads):
+			tf.summary.histogram("{}-grad".format(grads[index][1].name), grads[index])
 
 		error = tf.reduce_sum(-tf.cast(tf.abs(tf.subtract(tf.contrib.layers.flatten(tf.cast(prediction,tf.int64)),tf.contrib.layers.flatten(tf.cast(target,tf.int64)))), tf.float32))
 
 		tf.summary.scalar('error',error)
 		
-		minimize = optimizer.minimize(cross_entropy)
+		#minimize = optimizer.minimize(cross_entropy)
 		#minimize = optimizer.minimize(error)
 		
 		prediction=tf.cast(prediction,tf.float32)
@@ -629,10 +642,10 @@ class NeuralNetSemantic(NeuralNet):
 			per_class_label_count[int(clss)]=clss_count
 		deb.prints(per_class_label_count)
 		return per_class_label_count
-	def batchnorm(self,inputs,training=True,axis=3):
-		return tf.layers.batch_normalization(inputs, axis=axis, epsilon=1e-5, momentum=0.1, training=training, gamma_initializer=tf.random_normal_initializer(1.0, 0.02))
-	def conv2d_out_get(self,graph_pipeline,n_classes,kernel_size=3,padding='same'):
-		graph_pipeline=tf.layers.conv2d(graph_pipeline, n_classes, kernel_size, activation=None,padding=padding)
+	def batchnorm(self,inputs,training=True,axis=3,name=None):
+		return tf.layers.batch_normalization(inputs, axis=axis, epsilon=1e-5, momentum=0.1, training=training, gamma_initializer=tf.random_normal_initializer(1.0, 0.02), name=name)
+	def conv2d_out_get(self,graph_pipeline,n_classes,kernel_size=3,padding='same',layer_idx=0):
+		graph_pipeline=tf.layers.conv2d(graph_pipeline, n_classes, kernel_size, activation=None,padding=padding,name='conv2d_'+str(layer_idx))
 		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
 		return graph_pipeline, prediction
 
@@ -643,8 +656,8 @@ class NeuralNetOneHot(NeuralNet):
 		if self.debug>=1: print("Initializing NeuralNetOneHot instance")
 
 	def placeholder_init(self,timesteps,shape,channels,n_classes):
-		data = tf.placeholder(tf.float32, [None] +[timesteps] + shape + [channels])
-		target = tf.placeholder(tf.float32, [None, n_classes])
+		data = tf.placeholder(tf.float32, [None] +[timesteps] + shape + [channels], name='data')
+		target = tf.placeholder(tf.float32, [None, n_classes], name='target')
 		if self.debug: deb.prints(target.get_shape())
 		return data,target
 

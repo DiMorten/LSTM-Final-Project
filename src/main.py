@@ -45,7 +45,7 @@ parser.add_argument('--filters', dest='filters', type=int, default=32, help='# t
 #parser.add_argument('--n_classes', dest='n_classes', type=int, default=6, help='# timesteps used to train')
 parser.add_argument('--checkpoint_dir', dest='checkpoint_dir', default='./checkpoint', help='models are saved here')
 parser.add_argument('-m','--model', dest='model', default='convlstm', help='models are saved here')
-parser.add_argument('--log_dir', dest='log_dir', default=utils.conf["summaries_path"], help='models are saved here')
+parser.add_argument('--log_dir', dest='log_dir', default='/tmp/', help='models are saved here')
 
 parser.add_argument('--debug', type=int, default=1, help='Debug')
 parser.add_argument('-po','--patch_overlap', dest='patch_overlap', type=int, default=0, help='Debug')
