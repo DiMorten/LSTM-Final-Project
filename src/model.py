@@ -214,7 +214,7 @@ class conv_lstm_semantic(NeuralNetSemantic):
 		self.model_build()
 		
 	def model_graph_get(self,data):
-		graph_pipeline1=self.layer_lstm_get(data,filters=10,kernel=self.kernel,name='convlstm')
+		graph_pipeline1=self.layer_lstm_get(data,filters=20,kernel=self.kernel,name='convlstm')
 		
 		if self.debug: deb.prints(graph_pipeline1.get_shape())
 		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
@@ -222,7 +222,7 @@ class conv_lstm_semantic(NeuralNetSemantic):
 		self.layer_idx=0
 
 		###graph_pipeline=self.resnet_block_get(graph_pipeline1,10,training=self.training,layer_idx=self.layer_idx,kernel=2)
-		graph_pipeline=self.conv2d_block_get(graph_pipeline1,10,training=self.training,layer_idx=self.layer_idx,kernel=2)
+		graph_pipeline=self.conv2d_block_get(graph_pipeline1,20,training=self.training,layer_idx=self.layer_idx,kernel=2)
 		self.layer_idx+=1
 		##if self.debug: deb.prints(graph_pipeline.get_shape())
 		
