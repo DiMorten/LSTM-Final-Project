@@ -562,16 +562,20 @@ class NeuralNetSemantic(NeuralNet):
 		return loss
 
 	def cal_loss(self, logits, labels):
-		loss_weight = np.array([
-		  0,
-		  0.6326076,
-		  0,
-		  0,
-		  0.93579704,
-		  1.,
-		  0.82499779,
-		  0.5,
-		  0.74134727]) # class 0~11
+
+
+		loss_weight = np.power(np.array([1.7503536, 1.8357067, 2.5689862, 2.1147558, 1.4092183, 3.1495833])-1,3)
+
+		# loss_weight = np.array([
+		#   0,
+		#   0.6326076,
+		#   0,
+		#   0,
+		#   0.93579704,
+		#   1.,
+		#   0.82499779,
+		#   0.5,
+		#   0.74134727]) # class 0~11
 
 		labels = tf.cast(labels, tf.int32)
 		# return loss(logits, labels)
