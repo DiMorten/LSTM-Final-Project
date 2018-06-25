@@ -74,6 +74,7 @@ class NeuralNet(object):
 		val, state = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
 		if self.debug: deb.prints(val.get_shape())
 		kernel,bias=cell.variables
+		deb.prints(kernel.get_shape())
 		#self.hidden_weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, name)
 		tf.summary.histogram('convlstm', kernel)
 		if get_last==True:
