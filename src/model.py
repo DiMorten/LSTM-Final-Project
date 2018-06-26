@@ -248,7 +248,7 @@ class conv_lstm(NeuralNetOneHot):
 		self.model_build()
 		
 	def model_graph_get(self,data):
-		graph_pipeline=self.layer_lstm_get(data,filters=8,kernel=self.kernel,name='convlstm')
+		graph_pipeline=self.layer_lstm_get(data,filters=16,kernel=self.kernel,name='convlstm')
 		
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)

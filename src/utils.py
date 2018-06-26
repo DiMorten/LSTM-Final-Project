@@ -545,7 +545,8 @@ class DataOneHot(DataForNet):
 	#	classes = range(0,self.conf["class_n"])
 		classes,counts=np.unique(data["train"]["labels_int"],return_counts=True)
 		print(classes,counts)
-		if self.conf["squeeze_classes"] is not True:
+		deb.prints(self.conf["squeeze_classes"])
+		if self.conf["squeeze_classes"]==False:
 			if classes[0]==0: classes=classes[1::]
 		num_total_samples=len(classes)*samples_per_class
 		balance["out_labels"]=np.zeros(num_total_samples)
@@ -557,7 +558,7 @@ class DataOneHot(DataForNet):
 		#print(balance["unique"])
 		k=0
 		for clss in classes:
-			if self.conf["squeeze_classes"] is not True:
+			if self.conf["squeeze_classes"]==False:
 				if clss==0: 
 					continue
 			deb.prints(clss,fname)
@@ -652,8 +653,8 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 	patch_length=5
 	
-	#data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
-	data=DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+	data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+	#data=DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
 		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True, \
 		balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
@@ -667,7 +668,7 @@ if __name__ == "__main__":
 	#pass
 else:
 	data_onehot=DataOneHot()
-	data_onehot=DataSemantic()
+	#data_onehot=DataSemantic()
 	
 	#data.onehot_create()
 	conf=data_onehot.conf

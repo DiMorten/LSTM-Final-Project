@@ -39,7 +39,7 @@ class NeuralNet(object):
 						timesteps=utils.conf["t_len"], patch_len=32,
 						kernel=[3,3], channels=7, filters=32, n_classes=6,
 						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1, \
-						patience=10,squeeze_classes=True,n_repetitions=30):
+						patience=5,squeeze_classes=True,n_repetitions=30):
 		self.squeeze_classes=squeeze_classes		
 		self.ram_data=data
 		self.sess = sess
