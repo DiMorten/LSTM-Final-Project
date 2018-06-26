@@ -338,7 +338,7 @@ class DataForNet(object):
 			self.ram_data["test"]=self.labels_unused_classes_eliminate(self.ram_data["test"])
 			count,unique=np.unique(self.ram_data["train"],return_counts=True)
 			#print("train count,unique",count,unique)
-		print("train count,unique",count,unique)
+		#print("train count,unique",count,unique)
 		
 		return patches_get["train_n"],test_real_count
 
