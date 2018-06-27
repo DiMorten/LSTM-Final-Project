@@ -1,25 +1,15 @@
 
-"""
-Some codes from https://github.com/Newmu/dcgan_code
-"""
+
 from __future__ import division
 import os
 import math
-#import json
 import random
-#import pprint
-#import scipy.misc
 import numpy as np
 from time import gmtime, strftime
-#from osgeo import gdal
 import glob
-#from skimage.transform import resize
-#from sklearn import preprocessing as pre
-#import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
 from random import shuffle
-#from tensorflow.contrib.rnn import ConvLSTMCell
 import glob
 import sys
 import pickle
@@ -30,7 +20,7 @@ import utils
 import deb
 from model import (conv_lstm,Conv3DMultitemp,UNet,SMCNN,SMCNNlstm, SMCNN_UNet, SMCNN_conv3d, lstm, conv_lstm_semantic)
 
-#import conf
+#Input configuration
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--phase', dest='phase', default='train', help='phase')
 parser.add_argument('--dataset_name', dest='dataset_name', default='20160419', help='name of the dataset')
@@ -70,25 +60,21 @@ args.n_classes=args.class_n
 args.timesteps=args.t_len
 args.channels=args.band_n
 np.set_printoptions(suppress=True)
+
+
+# Check if selected model has one_hot (One pixel) or semantic (Image) output type
 if args.model=='unet' or args.model=='smcnn_unet' or args.model=='convlstm_semantic':
     label_type='semantic'
 else:
     label_type='one_hot'
 
-
-"""
-if args.memory_mode=="hdd":
-    with open(utils.conf["path"]+'data.pkl', 'rb') as handle: dataset=pickle.load(handle)
-    deb.prints(dataset["train"]["ims"].shape)
-    deb.prints(dataset["train"]["labels_onehot"].shape)
-    deb.prints(dataset["test"]["ims"].shape)
-    deb.prints(dataset["test"]["labels_onehot"].shape)
-    args.train_size = dataset["train"]["ims"].shape[0]
-"""
 def main(_):
+
+    # Make checkpoint directory
     if not os.path.exists(args.checkpoint_dir):
         os.makedirs(args.checkpoint_dir)
 
+    # Create a dataset object
     if label_type=='one_hot':
         data=utils.DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
                                 band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
@@ -103,10 +89,16 @@ def main(_):
                                 n_apriori=args.n_apriori,patch_length=args.patch_len,squeeze_classes=args.squeeze_classes)
 
 
+    # Load images and create dataset (Extract patches)
     if args.memory_mode=="ram":
         data.create()
         deb.prints(data.ram_data["train"]["ims"].shape)
+
+
+    # Run tensorflow session
     with tf.Session() as sess:
+
+        # Create a neural network object (Define model graph)
         if args.model=='convlstm':
             model = conv_lstm(sess, batch_size=args.batch_size, epoch=args.epoch, train_size=args.train_size,
                             timesteps=args.timesteps, patch_len=args.patch_len,
@@ -152,21 +144,19 @@ def main(_):
                             timesteps=args.timesteps, patch_len=args.patch_len,
                             kernel=args.kernel, channels=args.channels, filters=args.filters, n_classes=args.n_classes,
                             checkpoint_dir=args.checkpoint_dir,log_dir=args.log_dir,data=data.ram_data,conf=data.conf, debug=args.debug)
+        
+        
         if args.phase == 'train':
+            # Train only once
             model.train(args)
         
         elif args.phase == 'repeat':
+            # Train for a specific number of repetitions
             model.train_repeat(args)
+
         elif args.phase == 'test':
+            # Test best model from experiment repetitions
             model.test(args)
-        """
-        elif args.phase == 'generate_image':
-            model.generate_image(args)
-        elif args.phase == 'create_dataset':
-            model.create_dataset(args)
-        """
-        #else:
-        #    print ('...')
 
 
 if __name__ == '__main__':

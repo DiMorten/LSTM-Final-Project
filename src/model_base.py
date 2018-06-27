@@ -3,21 +3,14 @@
 from __future__ import division
 import os
 import math
-#import json
 import random
-#import pprint
 import time
-#import scipy.misc
 import numpy as np
 from time import gmtime, strftime
 import glob
-#from skimage.transform import resize
-#from sklearn import preprocessing as pre
-#import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
 from random import shuffle
-#from tensorflow.contrib.rnn import ConvLSTMCell
 import glob
 import sys
 import pickle
@@ -26,8 +19,6 @@ import pickle
 import utils
 import deb
 import cv2
-#from cell import ConvGRUCell
-#from tf.keras.layers import Input, concatenate, Conv2D, MaxPooling2D, Conv2DTranspose
 
 np.set_printoptions(suppress=True)
 
@@ -266,7 +257,6 @@ class NeuralNet(object):
 		self.repeat["best"]={}
 		self.repeat["overall_accuracy"]=np.asarray([exp["best"]["metric1"] for exp in self.repeat["results"]])
 		self.repeat["average_accuracy"]=np.asarray([exp["best"]["metric2"] for exp in self.repeat["results"]])
-	#	self.repeat["npy"]["overall_accuracy"]=np.asarray([exp["best"]["metric1"] for exp in self.repeat["results"]])
 		
 		deb.prints(self.repeat["overall_accuracy"])
 		deb.prints(self.repeat["average_accuracy"])
@@ -274,9 +264,6 @@ class NeuralNet(object):
 		self.repeat["best"]["overall_accuracy"]=self.repeat["overall_accuracy"][self.repeat["best"]["idx"]]
 		self.repeat["best"]["average_accuracy"]=self.repeat["average_accuracy"][self.repeat["best"]["idx"]]
 		
-		
-		#self.repeat["overall_accuracy"]["mean"]=float(sum(exp["best"]["metric1"] for exp in self.repeat["results"])) / len(self.repeat["results"])
-		#self.repeat["average_accuracy"]=float(sum(exp["best"]["metric2"] for exp in self.repeat["results"])) / len(self.repeat["results"])
 		self.repeat["per_class_accuracy"]=np.asarray([exp["best"]["metric3"] for exp in self.repeat["results"]])
 
 		print(self.repeat["overall_accuracy"])
@@ -328,9 +315,7 @@ class NeuralNet(object):
 			#self.prediction2old_labels_get(batch["prediction"])
 			if im_reconstruct:
 				self.reconstruct["idx"]+=idx*batch_size
-				#deb.prints(idx)
 				self.reconstruct=self.im_reconstruct(batch,self.reconstruct,self.reconstruct["idx"],batch_size,self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask,label)
-				#deb.prints(np.average(self.reconstruct["im"]))
 			
 			batch["correct_per_class"]=self.correct_per_class_get(batch["labels"],batch["prediction"])
 			stats["correct_per_class"]+=batch["correct_per_class"]
@@ -419,7 +404,6 @@ class NeuralNet(object):
 						continue
 						#im=self.ram_data["ims"][reconstruct["train"]["count"]]
 						#reconstruct["im"][yy: yy + window, xx: xx + window]=mask_patch.copy()
-
 
 					elif np.all(mask_patch==2): # Test sample
 						test_counter+=1
@@ -588,23 +572,6 @@ class NeuralNetSemantic(NeuralNet):
 		deb.prints(target_int.get_shape())
 		deb.prints(logits.get_shape())
 
-		# Estimate loss from prediction and target
-		#with tf.name_scope('cross_entropy'):
-		#weights=tf.transpose(tf.constant([[0, 0.6326076 ,  0, 0, 0.93579704,  1.        ,  0.82499779,  0.5       , 0.74134727]]))
-
-		#im_weights=tf.Variable(tf.zeros([32,32],dtype=tf.float32))
-		#for clss in range(0,8):
-		#	comparison = tf.equal( target_int, clss )
-		#	print(clss)
-		#	weight = tf.gather(weights, clss)
-		#	print(weights[clss])
-		#	print(weight.get_shape())
-		#	im_weights = im_weights.assign_add( tf.where (comparison, tf.multiply(weight,tf.ones_like(im_weights)), im_weights) )
-
-			#im_weights[target_int==clss]=weights[clss]
-
-
-#graph_pipeline = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
 		#loss = self.cal_loss(logits, target_int)
 		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits)
 
@@ -612,30 +579,22 @@ class NeuralNetSemantic(NeuralNet):
 		cross_entropy = tf.reduce_mean(loss)
 		deb.prints(cross_entropy.get_shape())
 
-		#with tf.name_scope('learning_rate'):
-		#learning_rate = tf.train.exponential_decay(0.1, self.global_step, 288, 0.96, staircase=True)
-		
-		#	learning_rate = tf.train.exponential_decay(opt.learning_rate, global_step, opt.iter_epoch, opt.lr_decay, staircase=True)
 		# Prepare the optimization function
 		##optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cross_entropy_loss, global_step=global_step)
-		#optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-		#optimizer = tf.train.AdamOptimizer()
 		optimizer = tf.train.AdamOptimizer(0.001, epsilon=0.0001)
 		grads = optimizer.compute_gradients(cross_entropy)
 		minimize = optimizer.apply_gradients(grads)
+
 		# Save the grads with tf.summary.histogram
 		for index, grad in enumerate(grads):
 			tf.summary.histogram("{}-grad".format(grads[index][1].name), grads[index])
 
+		# Distance L1
 		error = tf.reduce_sum(-tf.cast(tf.abs(tf.subtract(tf.contrib.layers.flatten(tf.cast(prediction,tf.int64)),tf.contrib.layers.flatten(tf.cast(target,tf.int64)))), tf.float32))
 
-		tf.summary.scalar('error',error)
-		
-		#minimize = optimizer.minimize(cross_entropy)
-		#minimize = optimizer.minimize(error)
+		tf.summary.scalar('error',error)		
 		
 		prediction=tf.cast(prediction,tf.float32)
-		# Distance L1
 		mistakes=None
 		return minimize, mistakes, error
 

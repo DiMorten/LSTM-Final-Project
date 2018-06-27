@@ -1,39 +1,65 @@
 
- 
-
-# from __future__ import division
-# import os
-# import math
-# #import json
-# import random
-# #import pprint
-# import time
-# #import scipy.misc
-# import numpy as np
-# from time import gmtime, strftime
-# import glob
-# #from skimage.transform import resize
-# #from sklearn import preprocessing as pre
-# #import matplotlib.pyplot as plt
-# import tensorflow as tf
-# import numpy as np
-# from random import shuffle
-# #from tensorflow.contrib.rnn import ConvLSTMCell
-# import glob
-# import sys
-# import pickle
-
-# # Local
-# import utils
-# import deb
-# import cv2
-# #from cell import ConvGRUCell
-# #from tf.keras.layers import Input, concatenate, Conv2D, MaxPooling2D, Conv2DTranspose
-
 from model_base import *
 
+# ================================= Implements ConvLSTM ============================================== #
+class conv_lstm(NeuralNetOneHot):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.model_build()
+		
+	def model_graph_get(self,data):
 
+		# ConvLSTM Layer (Get last image)
+		graph_pipeline=self.layer_lstm_get(data,filters=32,kernel=self.kernel,name='convlstm')
+		if self.debug: deb.prints(graph_pipeline.get_shape())
 
+		# Flatten		
+		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+
+		# Dense
+		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+
+		# Dropout
+		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
+		
+		# Final dense
+		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		return None,graph_pipeline
+
+# ================================= Implements BasicLSTM ============================================== #
+class lstm(NeuralNetOneHot):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.model_build()
+		
+	def model_graph_get(self,data):
+
+		# Prints data shape
+		if self.debug: deb.prints(data.get_shape())
+		
+		# Flatten images from each sequence member
+		graph_pipeline = tf.reshape(data,[-1,self.timesteps,self.patch_len*self.patch_len*self.channels]) 
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		# BasicLSTM layer (Get last image)
+		graph_pipeline=self.layer_flat_lstm_get(graph_pipeline,filters=128,kernel=self.kernel,name='convlstm')
+		
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		# Dense
+		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		
+		# Dropout
+		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
+		
+		# Final dense
+		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		return None,graph_pipeline
 
 # ================================= Implements U-Net ============================================== #
 
@@ -240,29 +266,6 @@ class conv_lstm_semantic(NeuralNetSemantic):
 		self.layer_idx+=1
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		return graph_pipeline,prediction
-
-# ================================= Implements ConvLSTM ============================================== #
-class conv_lstm(NeuralNetOneHot):
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.model_build()
-		
-	def model_graph_get(self,data):
-		graph_pipeline=self.layer_lstm_get(data,filters=32,kernel=self.kernel,name='convlstm')
-		
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
-		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, strides=2, activation=None)
-		
-		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.layers.dense(graph_pipeline, 320,activation=tf.nn.tanh,name='hidden')
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
-		
-		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		return None,graph_pipeline
 
 
 
@@ -484,32 +487,5 @@ class Conv3DMultitemp(NeuralNetOneHot):
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		return None,graph_pipeline
 
-# ================================= Implements ConvLSTM ============================================== #
-class lstm(NeuralNetOneHot):
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.model_build()
-		
-	def model_graph_get(self,data):
-		if self.debug: deb.prints(data.get_shape())
-		
-		graph_pipeline = tf.reshape(data,[-1,self.timesteps,self.patch_len*self.patch_len*self.channels]) # Shape [None,32,32,6*6]
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		
-		graph_pipeline=self.layer_flat_lstm_get(graph_pipeline,filters=128,kernel=self.kernel,name='convlstm')
-		
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
-		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, strides=2, activation=None)
-		
-		#graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
-		#if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
-		
-		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		return None,graph_pipeline
 
 
