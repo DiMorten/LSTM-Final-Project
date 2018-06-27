@@ -256,7 +256,7 @@ class conv_lstm(NeuralNetOneHot):
 		
 		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
 		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
+		graph_pipeline = tf.layers.dense(graph_pipeline, 320,activation=tf.nn.tanh,name='hidden')
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
 		

@@ -69,7 +69,8 @@ original_dataset/
 *ckpt*
 checkpoint
 *.pkl
-*.pickIe
+*.pickle
 *results*
 src/repeat_results.pickle
 *.tmp*
+*repeat_results.pickle

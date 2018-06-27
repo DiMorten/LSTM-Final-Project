@@ -467,9 +467,6 @@ class NeuralNet(object):
 			deb.prints(self.ram_data["train"]["ims"].shape)
 			deb.prints(data["train"]["ims"].shape)
 
-
-		
-		
 		data["train"]["index"] = range(data["test"]["n"])
 		data["test"]["index"] = range(data["test"]["n"])
 
