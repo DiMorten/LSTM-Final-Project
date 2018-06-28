@@ -545,7 +545,8 @@ class NeuralNetSemantic(NeuralNet):
 	def cal_loss(self, logits, labels):
 
 
-		loss_weight = np.power(np.array([1.7503536, 1.8357067, 2.5689862, 2.1147558, 1.4092183, 3.1495833])-1,3)
+		#loss_weight = np.power(np.array([1.7503536, 1.8357067, 2.5689862, 2.1147558, 1.4092183, 3.1495833])-1,3)
+		loss_weight = np.array([1,1,1,1,1,1])
 
 		# loss_weight = np.array([
 		#   0,
