@@ -32,7 +32,7 @@ class NeuralNet(object):
 						timesteps=utils.conf["t_len"], patch_len=32,
 						kernel=[3,3], channels=7, filters=32, n_classes=6,
 						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1, \
-						patience=15,squeeze_classes=True,n_repetitions=30):
+						patience=15,squeeze_classes=True,n_repetitions=200):
 		self.squeeze_classes=squeeze_classes		
 		self.ram_data=data
 		self.sess = sess
@@ -604,6 +604,8 @@ class NeuralNetSemantic(NeuralNet):
 		target_int=tf.cast(target,tf.int32)
 		deb.prints(target_int.get_shape())
 		deb.prints(logits.get_shape())
+
+		loss_weight = np.array([1,1,1,1,1,1])
 
 		#loss = self.cal_loss(logits, target_int)
 		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits)
