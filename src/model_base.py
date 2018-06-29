@@ -14,7 +14,9 @@ from random import shuffle
 import glob
 import sys
 import pickle
-
+from tensorflow.contrib.rnn import MultiRNNCell
+from tensorflow.contrib.rnn import ResidualWrapper
+from tensorflow.contrib.rnn import HighwayWrapper
 # Local
 import utils
 import deb
@@ -30,7 +32,7 @@ class NeuralNet(object):
 						timesteps=utils.conf["t_len"], patch_len=32,
 						kernel=[3,3], channels=7, filters=32, n_classes=6,
 						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1, \
-						patience=5,squeeze_classes=True,n_repetitions=30):
+						patience=15,squeeze_classes=True,n_repetitions=30):
 		self.squeeze_classes=squeeze_classes		
 		self.ram_data=data
 		self.sess = sess
@@ -60,14 +62,44 @@ class NeuralNet(object):
 	# =_______________ Generic Layer Getters ___________________= #
 	def layer_lstm_get(self,data,filters,kernel,name="convlstm",get_last=True):
 		#filters=64
+		#cell = ResidualWrapper(tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name))
+		#cell = HighwayWrapper(tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name))
 		cell = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
 		
 		val, state = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
 		if self.debug: deb.prints(val.get_shape())
-		kernel,bias=cell.variables
-		deb.prints(kernel.get_shape())
+		##kernel,bias=cell.variables
+		##deb.prints(kernel.get_shape())
 		#self.hidden_weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, name)
-		tf.summary.histogram('convlstm', kernel)
+		##tf.summary.histogram('convlstm', kernel)
+		if get_last==True:
+			if self.debug: deb.prints(val.get_shape())
+			last = tf.gather(val, int(val.get_shape()[1]) - 1,axis=1)
+			if self.debug: deb.prints(last.get_shape())
+			return last
+		else:
+			return val
+	def layer_lstm_multi_get(self,data,filters,kernel,name="convlstm",get_last=True):
+		
+		num_units = [32, 16]
+
+		cell1 = ResidualWrapper(tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], 7, kernel,name=name))
+
+		cell2 = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
+		
+		#cells = [tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], n, kernel,name=name+str(n)) for n in num_units]
+		stacked_rnn_cell = MultiRNNCell([cell1,cell2])
+
+
+		#cell = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
+		
+
+		val, state = tf.nn.dynamic_rnn(stacked_rnn_cell, data, dtype=tf.float32)
+		if self.debug: deb.prints(val.get_shape())
+		#kernel,bias=cell.variables
+		#deb.prints(kernel.get_shape())
+		#self.hidden_weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, name)
+		#tf.summary.histogram('convlstm', kernel)
 		if get_last==True:
 			if self.debug: deb.prints(val.get_shape())
 			last = tf.gather(val, int(val.get_shape()[1]) - 1,axis=1)

@@ -11,6 +11,8 @@ class conv_lstm(NeuralNetOneHot):
 
 		# ConvLSTM Layer (Get last image)
 		graph_pipeline=self.layer_lstm_get(data,filters=32,kernel=self.kernel,name='convlstm')
+		#graph_pipeline=self.layer_lstm_multi_get(data,filters=32,kernel=self.kernel,name='multi_convlstm')
+		
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 
 		# Flatten		
@@ -241,7 +243,9 @@ class conv_lstm_semantic(NeuralNetSemantic):
 		
 	def model_graph_get(self,data): #self.kernel
 		graph_pipeline1=self.layer_lstm_get(data,filters=20,kernel=[3,3],name='convlstm')
-		#tf.summary.image("lstm_out",tf.cast(graph_pipeline1,tf.uint8))
+		#graph_pipeline1=self.layer_lstm_multi_get(data,filters=20,kernel=[3,3],name='convlstm')
+		tf.summary.histogram("lstm_out1",graph_pipeline1)
+		tf.summary.image("lstm_out",tf.cast(tf.squeeze(tf.gather(graph_pipeline1,[0,1,2],axis=3)),tf.uint8))
 		if self.debug: deb.prints(graph_pipeline1.get_shape())
 		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
 		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, strides=2, activation=None)
