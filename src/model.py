@@ -5,6 +5,7 @@ from model_base import *
 class conv_lstm(NeuralNetOneHot):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
+		self.remove_sparse_loss=False
 		self.model_build()
 		
 	def model_graph_get(self,data):

@@ -58,6 +58,7 @@ class NeuralNet(object):
 		self.repeat={"n":n_repetitions, "filename": 'repeat_results.pickle'}
 		if self.debug>=1: print("Initializing NeuralNet instance")
 		print(self.log_dir)
+		self.remove_sparse_loss=False
 
 	# =_______________ Generic Layer Getters ___________________= #
 	def layer_lstm_get(self,data,filters,kernel,name="convlstm",get_last=True):
@@ -597,6 +598,7 @@ class NeuralNetSemantic(NeuralNet):
 
 	def loss_optimizer_set(self,target,prediction, logits):
 
+		targt={"int":{}}
 		tf.summary.image('prediction',tf.cast(tf.expand_dims(tf.multiply(prediction,20),axis=3),tf.uint8),max_outputs=10)
 
 		tf.summary.image('target',tf.cast(tf.expand_dims(tf.multiply(target,20),axis=3),tf.uint8),max_outputs=10)
@@ -608,6 +610,11 @@ class NeuralNetSemantic(NeuralNet):
 		loss_weight = np.array([1,1,1,1,1,1])
 
 		#loss = self.cal_loss(logits, target_int)
+		if self.remove_sparse_loss==True:
+			targt["int"]["flat"]= tf.reshape(target_int,[-1,self.patch_len*self.patch_len])
+			targt["int"]["hot"] = tf.one_hot(targt["int"]["flat"],self.n_classes)		
+
+
 		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits)
 
 		deb.prints(loss.get_shape())
