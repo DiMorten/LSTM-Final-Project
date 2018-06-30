@@ -32,7 +32,7 @@ class NeuralNet(object):
 						timesteps=utils.conf["t_len"], patch_len=32,
 						kernel=[3,3], channels=7, filters=32, n_classes=6,
 						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1, \
-						patience=15,squeeze_classes=True,n_repetitions=200):
+						patience=5,squeeze_classes=True,n_repetitions=200):
 		self.squeeze_classes=squeeze_classes		
 		self.ram_data=data
 		self.sess = sess
@@ -579,19 +579,13 @@ class NeuralNetSemantic(NeuralNet):
 
 
 		#loss_weight = np.power(np.array([1.7503536, 1.8357067, 2.5689862, 2.1147558, 1.4092183, 3.1495833])-1,3)
-		loss_weight = np.array([1,1,1,1,1,1])
+		#loss_weight = np.array([0.1666666,0.1666666,0.1666666,0.1666666,0.1666666,0.1666666])
+		#loss_weight = np.array([1,1,1,1,1,1])/6
+		##loss_weight = np.array([0.08707932,0.087526,0.1149431,0.07192364,0.08939595,0.54913199])
+		#loss_weight = np.array([0.11943255,0.18051959,0.18570891,0.18073187,0.15826751,0.17533958])
 
-		# loss_weight = np.array([
-		#   0,
-		#   0.6326076,
-		#   0,
-		#   0,
-		#   0.93579704,
-		#   1.,
-		#   0.82499779,
-		#   0.5,
-		#   0.74134727]) # class 0~11
-
+		#loss_weight = np.array([0.14507016, 0.14531779, 0.15913562, 0.13611218, 0.14634539, 0.26801885])
+		
 		labels = tf.cast(labels, tf.int32)
 		# return loss(logits, labels)
 		return self.weighted_loss(logits, labels, num_classes=self.n_classes, head=loss_weight)
@@ -623,7 +617,7 @@ class NeuralNetSemantic(NeuralNet):
 
 	def loss_optimizer_set(self,target,prediction, logits):
 		deb.prints(prediction.get_shape())
-
+		deb.prints(prediction.dtype)
 		targt={"int":{}}
 		tf.summary.image('prediction',tf.cast(tf.expand_dims(tf.multiply(prediction,20),axis=3),tf.uint8),max_outputs=10)
 
@@ -633,18 +627,17 @@ class NeuralNetSemantic(NeuralNet):
 		deb.prints(target_int.get_shape())
 		deb.prints(logits.get_shape())
 
-		loss_weight = np.array([1,1,1,1,1,1])
-
+		
 		#loss = self.cal_loss(logits, target_int)
 		if self.remove_sparse_loss==True:
 			targt["int"]["flat"]= tf.reshape(target_int,[-1,self.patch_len*self.patch_len])
 			targt["int"]["hot"] = tf.one_hot(targt["int"]["flat"],self.n_classes)		
 
 
-		##loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits)
-		cross_entropy = -self.IOU_(tf.expand_dims(tf.cast(prediction,tf.float32),axis=3),tf.expand_dims(tf.cast(target,tf.float32),axis=3))
-		##deb.prints(loss.get_shape())
-		##cross_entropy = tf.reduce_mean(loss)
+		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits)
+		#cross_entropy = -self.IOU_(tf.expand_dims(tf.cast(prediction,tf.float32),axis=3),tf.expand_dims(tf.cast(target,tf.float32),axis=3))
+		deb.prints(loss.get_shape())
+		cross_entropy = tf.reduce_mean(loss)
 		deb.prints(cross_entropy.get_shape())
 
 		# Prepare the optimization function
@@ -695,8 +688,8 @@ class NeuralNetSemantic(NeuralNet):
 		return tf.layers.batch_normalization(inputs, axis=axis, epsilon=1e-5, momentum=0.1, training=training, gamma_initializer=tf.random_normal_initializer(1.0, 0.02), name=name)
 	def conv2d_out_get(self,graph_pipeline,n_classes,kernel_size=3,padding='same',layer_idx=0):
 		graph_pipeline=tf.layers.conv2d(graph_pipeline, n_classes, kernel_size, activation=None,padding=padding,name='conv2d_'+str(layer_idx))
-		#prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
-		prediction = tf.reduce_max(graph_pipeline, axis=3, name="prediction")
+		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
+		#prediction = tf.cast(tf.reduce_max(graph_pipeline, axis=3, name="prediction"),tf.int64)
 		
 		return graph_pipeline, prediction
 
