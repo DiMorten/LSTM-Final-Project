@@ -264,7 +264,31 @@ class conv_lstm_semantic(NeuralNetSemantic):
 		self.layer_idx+=1
 		if self.debug: deb.prints(graph_pipeline.get_shape())
 		return graph_pipeline,prediction
+# ================================= Implements SMCNN ============================================== #
+# Remote: python main.py -mm="ram" --debug=1 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=2000 --filters=256 -m="smcnn"
+class SMCNN_semantic(NeuralNetSemantic):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.model_build()
+		
+	def model_graph_get(self,data):
+		# Data if of shape [None,6,32,32,6]
+		graph_pipeline = data
+		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
+		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
 
+		deb.prints(graph_pipeline.get_shape())
+
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
+		
+		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
+		self.layer_idx=10
+		graph_pipeline,prediction=self.conv2d_out_get(graph_pipeline,self.n_classes,kernel_size=1,layer_idx=self.layer_idx)
+		self.layer_idx+=1
+		if self.debug: deb.prints(graph_pipeline.get_shape())
+		return graph_pipeline,prediction
 
 
 
