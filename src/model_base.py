@@ -696,7 +696,7 @@ class NeuralNetSemantic(NeuralNet):
 	def conv2d_out_get(self,graph_pipeline,n_classes,kernel_size=3,padding='same',layer_idx=0):
 		graph_pipeline=tf.layers.conv2d(graph_pipeline, n_classes, kernel_size, activation=None,padding=padding,name='conv2d_'+str(layer_idx))
 		#prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
-		prediction = tf.reduce_max(graph_pipeline, axis=3, name="prediction")
+		prediction = tf.cast(tf.reduce_max(graph_pipeline, axis=3, name="prediction"),tf.int64)
 		
 		return graph_pipeline, prediction
 
