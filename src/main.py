@@ -60,7 +60,7 @@ args.n_classes=args.class_n
 args.timesteps=args.t_len
 args.channels=args.band_n
 np.set_printoptions(suppress=True)
-
+os.system("rm -rf ../data/summaries/")
 
 # Check if selected model has one_hot (One pixel) or semantic (Image) output type
 if args.model=='unet' or args.model=='smcnn_unet' or args.model=='convlstm_semantic':
