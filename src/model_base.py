@@ -611,6 +611,8 @@ class NeuralNetSemantic(NeuralNet):
 		pred_flat = tf.reshape(y_pred, [-1, self.patch_len * self.patch_len])
 		true_flat = tf.reshape(y_true, [-1, self.patch_len * self.patch_len])
 
+		deb.prints(pred_flat.get_shape())
+		deb.prints(true_flat.get_shape())
 		intersection = 2 * tf.reduce_sum(pred_flat * true_flat, axis=1) + 1e-7
 		denominator = tf.reduce_sum(
 			pred_flat, axis=1) + tf.reduce_sum(
@@ -620,6 +622,7 @@ class NeuralNetSemantic(NeuralNet):
 
 
 	def loss_optimizer_set(self,target,prediction, logits):
+		deb.prints(prediction.get_shape())
 
 		targt={"int":{}}
 		tf.summary.image('prediction',tf.cast(tf.expand_dims(tf.multiply(prediction,20),axis=3),tf.uint8),max_outputs=10)
@@ -638,10 +641,10 @@ class NeuralNetSemantic(NeuralNet):
 			targt["int"]["hot"] = tf.one_hot(targt["int"]["flat"],self.n_classes)		
 
 
-		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits)
-		loss = -self.IOU_(logits,target_int)
-		deb.prints(loss.get_shape())
-		cross_entropy = tf.reduce_mean(loss)
+		##loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits)
+		cross_entropy = -self.IOU_(tf.expand_dims(tf.cast(prediction,tf.float32),axis=3),tf.expand_dims(tf.cast(target,tf.float32),axis=3))
+		##deb.prints(loss.get_shape())
+		##cross_entropy = tf.reduce_mean(loss)
 		deb.prints(cross_entropy.get_shape())
 
 		# Prepare the optimization function
@@ -659,7 +662,7 @@ class NeuralNetSemantic(NeuralNet):
 
 		tf.summary.scalar('error',error)		
 		
-		prediction=tf.cast(prediction,tf.float32)
+		#prediction=tf.cast(prediction,tf.float32)
 		mistakes=None
 		return minimize, mistakes, error
 
@@ -692,7 +695,9 @@ class NeuralNetSemantic(NeuralNet):
 		return tf.layers.batch_normalization(inputs, axis=axis, epsilon=1e-5, momentum=0.1, training=training, gamma_initializer=tf.random_normal_initializer(1.0, 0.02), name=name)
 	def conv2d_out_get(self,graph_pipeline,n_classes,kernel_size=3,padding='same',layer_idx=0):
 		graph_pipeline=tf.layers.conv2d(graph_pipeline, n_classes, kernel_size, activation=None,padding=padding,name='conv2d_'+str(layer_idx))
-		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
+		#prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
+		prediction = tf.reduce_max(graph_pipeline, axis=3, name="prediction")
+		
 		return graph_pipeline, prediction
 
 
