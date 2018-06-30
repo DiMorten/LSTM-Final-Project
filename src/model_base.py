@@ -596,6 +596,29 @@ class NeuralNetSemantic(NeuralNet):
 		# return loss(logits, labels)
 		return self.weighted_loss(logits, labels, num_classes=self.n_classes, head=loss_weight)
 
+	def IOU_(self,y_pred, y_true):
+		"""Returns a (approx) IOU score
+		intesection = y_pred.flatten() * y_true.flatten()
+		Then, IOU = 2 * intersection / (y_pred.sum() + y_true.sum() + 1e-7) + 1e-7
+		Args:
+			y_pred (4-D array): (N, H, W, 1)
+			y_true (4-D array): (N, H, W, 1)
+		Returns:
+			float: IOU score
+		"""
+		H, W, _ = y_pred.get_shape().as_list()[1:]
+
+		pred_flat = tf.reshape(y_pred, [-1, self.patch_len * self.patch_len])
+		true_flat = tf.reshape(y_true, [-1, self.patch_len * self.patch_len])
+
+		intersection = 2 * tf.reduce_sum(pred_flat * true_flat, axis=1) + 1e-7
+		denominator = tf.reduce_sum(
+			pred_flat, axis=1) + tf.reduce_sum(
+				true_flat, axis=1) + 1e-7
+
+		return tf.reduce_mean(intersection / denominator)
+
+
 	def loss_optimizer_set(self,target,prediction, logits):
 
 		targt={"int":{}}
@@ -616,7 +639,7 @@ class NeuralNetSemantic(NeuralNet):
 
 
 		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits)
-
+		loss = -self.IOU_(logits,target_int)
 		deb.prints(loss.get_shape())
 		cross_entropy = tf.reduce_mean(loss)
 		deb.prints(cross_entropy.get_shape())
