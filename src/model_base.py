@@ -69,6 +69,8 @@ class NeuralNet(object):
 		
 		val, state = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
 		if self.debug: deb.prints(val.get_shape())
+		data_last = tf.gather(data, int(data.get_shape()[1]) - 1, axis=1)
+		deb.prints(data_last.get_shape())
 		##kernel,bias=cell.variables
 		##deb.prints(kernel.get_shape())
 		#self.hidden_weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, name)
@@ -83,6 +85,7 @@ class NeuralNet(object):
 	def layer_lstm_multi_get(self,data,filters,kernel,name="convlstm",get_last=True):
 		
 		num_units = [32, 16]
+		cell1 = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
 
 		cell1 = ResidualWrapper(tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], 7, kernel,name=name))
 
