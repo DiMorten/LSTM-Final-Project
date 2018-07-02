@@ -245,6 +245,8 @@ class conv_lstm_semantic(NeuralNetSemantic):
 	def model_graph_get(self,data): #self.kernel
 		
 		graph_pipeline1=self.layer_lstm_get(data,filters=20,kernel=[3,3],name='convlstm')
+		#graph_pipeline1=self.layer_lstm_multi_get(data,filters=20,kernel=[3,3],name='convlstm')
+		
 		tf.summary.histogram("lstm_out1",graph_pipeline1)
 		tf.summary.image("lstm_out",tf.cast(tf.squeeze(tf.gather(graph_pipeline1,[0,1,2],axis=3)),tf.uint8))
 

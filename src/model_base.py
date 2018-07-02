@@ -84,10 +84,10 @@ class NeuralNet(object):
 			return val
 	def layer_lstm_multi_get(self,data,filters,kernel,name="convlstm",get_last=True):
 		
-		num_units = [32, 16]
+		#num_units = [32, 16]
 		cell1 = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
 
-		cell1 = ResidualWrapper(tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], 7, kernel,name=name))
+		#cell1 = ResidualWrapper(tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], 7, kernel,name=name))
 
 		cell2 = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
 		

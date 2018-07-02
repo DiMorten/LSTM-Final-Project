@@ -7,6 +7,7 @@ source activate py361
 export PATH=/usr/local/cuda-9.2/bin${PATH:+:${PATH}}; export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/cuda-9.2/lib64;export PATH=~/anaconda3/bin:$PATH;source activate epyt;cd ~/Documents/Jorg/deep_learning/LSTM-Final-Project/src
 
 #pip install Cython
+#conda create -n epyt
 #conda install tensorflow-gpu
 #conda install scikit-learn
 #conda install scikit-image
