@@ -1,7 +1,7 @@
 export PATH=/usr/local/cuda-9.2/bin${PATH:+:${PATH}}; export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/cuda-9.2/lib64
 export PATH=~/anaconda3/bin:$PATH
 
-source activate py361
+source activate epyt
 
 
 export PATH=/usr/local/cuda-9.2/bin${PATH:+:${PATH}}; export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/cuda-9.2/lib64;export PATH=~/anaconda3/bin:$PATH;source activate epyt;cd ~/Documents/Jorg/deep_learning/LSTM-Final-Project/src
@@ -11,6 +11,7 @@ export PATH=/usr/local/cuda-9.2/bin${PATH:+:${PATH}}; export LD_LIBRARY_PATH=${L
 #conda install tensorflow-gpu
 #conda install scikit-learn
 #conda install scikit-image
+#conda install -c anaconda scikit-image 
 #conda install -c conda-forge opencv 
 #cp cuda/include/cudnn.h /usr/local/cuda-9.2/include
 
