@@ -279,7 +279,7 @@ class DataForNet(object):
 				mask_patch = mask[yy: yy + window, xx: xx + window]
 				is_mask_from_train=self.is_mask_from_train(mask_patch)
 				
-				no_zero=True
+				no_zero=False
 				if np.any(label_patch==0) and no_zero==True:
 					continue
 				#deb.prints(is_mask_from_train)
@@ -410,12 +410,12 @@ class DataSemantic(DataForNet):
 		return mask_test
 	def is_mask_from_train(self,mask_patch):
 		return np.any(mask_patch==1)
-	def labels_unused_classes_eliminate(self,data):
+	# def labels_unused_classes_eliminate(self,data):
 
-		data["labels"]=(data["labels"]-3).clip(min=0)
-		data["labels_int"]=(data["labels_int"]-3).clip(min=0)
+	# 	data["labels"]=(data["labels"]-3).clip(min=0)
+	# 	data["labels_int"]=(data["labels_int"]-3).clip(min=0)
 		
-		return data
+	# 	return data
 
 
 	def labels_unused_classes_eliminate(self,data):

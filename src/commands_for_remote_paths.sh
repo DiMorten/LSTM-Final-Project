@@ -92,3 +92,11 @@ python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 1 -tnl 10000000 -bs=20000 --b
 [@debug] early_stop["best"]["metric1"] = 0.8388346080501958
 [@debug] early_stop["best"]["metric2"] = 0.8177334733912126
 [@debug] early_stop["best"]["metric3"] = [0.90358998 0.80523872 0.87033873 0.82101485 0.80454534 0.70167322]
+
+
+
+
+
+
+python main.py -mm="ram" --debug=1 -pl 20 -po 15 -ts 10 -tnl 20000 -nap=20000 -bs=20000 --batch_size=20 --filters=256 -m="convlstm_semantic" --phase="repeat" --log_dir="../data/summaries/"
+
