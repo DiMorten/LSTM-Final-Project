@@ -11,26 +11,28 @@ class conv_lstm(NeuralNetOneHot):
 	def model_graph_get(self,data):
 
 		# ConvLSTM Layer (Get last image)
-		graph_pipeline=self.layer_lstm_get(data,filters=32,kernel=self.kernel,name='convlstm')
-		#graph_pipeline=self.layer_lstm_multi_get(data,filters=32,kernel=self.kernel,name='multi_convlstm')
+		pipe=self.layer_lstm_get(data,filters=32,kernel=self.kernel,name='convlstm')
+		#pipe=self.layer_lstm_multi_get(data,filters=32,kernel=self.kernel,name='multi_convlstm')
 		
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		if self.debug: deb.prints(pipe.get_shape())
 
 		# Flatten		
-		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe = tf.contrib.layers.flatten(pipe)
+		if self.debug: deb.prints(pipe.get_shape())
 
 		# Dense
-		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe = tf.layers.dense(pipe, 256,activation=tf.nn.tanh,name='hidden')
+
+		#pipe = tf.nn.tanh(pipe)
+		if self.debug: deb.prints(pipe.get_shape())
 
 		# Dropout
-		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
+		pipe = tf.nn.dropout(pipe, self.keep_prob)
 		
 		# Final dense
-		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		return None,graph_pipeline
+		pipe = tf.layers.dense(pipe, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(pipe.get_shape())
+		return None,pipe
 
 # ================================= Implements BasicLSTM ============================================== #
 class lstm(NeuralNetOneHot):
@@ -44,25 +46,25 @@ class lstm(NeuralNetOneHot):
 		if self.debug: deb.prints(data.get_shape())
 		
 		# Flatten images from each sequence member
-		graph_pipeline = tf.reshape(data,[-1,self.timesteps,self.patch_len*self.patch_len*self.channels]) 
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe = tf.reshape(data,[-1,self.timesteps,self.patch_len*self.patch_len*self.channels]) 
+		if self.debug: deb.prints(pipe.get_shape())
 		
 		# BasicLSTM layer (Get last image)
-		graph_pipeline=self.layer_flat_lstm_get(graph_pipeline,filters=128,kernel=self.kernel,name='convlstm')
+		pipe=self.layer_flat_lstm_get(pipe,filters=128,kernel=self.kernel,name='convlstm')
 		
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		if self.debug: deb.prints(pipe.get_shape())
 		
 		# Dense
-		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe = tf.layers.dense(pipe, 256,activation=tf.nn.tanh,name='hidden')
+		if self.debug: deb.prints(pipe.get_shape())
 		
 		# Dropout
-		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
+		pipe = tf.nn.dropout(pipe, self.keep_prob)
 		
 		# Final dense
-		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		return None,graph_pipeline
+		pipe = tf.layers.dense(pipe, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(pipe.get_shape())
+		return None,pipe
 
 # ================================= Implements U-Net ============================================== #
 
@@ -75,19 +77,19 @@ class UNet(NeuralNetSemantic):
 		self.kernel_size=(3,3)
 		self.filters=256
 	def model_graph_get(self,data):
-		graph_pipeline = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh,padding='same')
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.n_classes, self.kernel_size, activation=None,padding='same')
-		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
-		#return tf.expand_dims(annotation_pred, dim=3), graph_pipeline
-		return graph_pipeline, prediction
-	def conv_block_get(self,graph_pipeline):
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh,padding='same')
+		pipe = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
+		pipe = tf.layers.conv2d(pipe, self.filters, self.kernel_size, activation=tf.nn.tanh,padding='same')
+		pipe = tf.layers.conv2d(pipe, self.n_classes, self.kernel_size, activation=None,padding='same')
+		prediction = tf.argmax(pipe, dimension=3, name="prediction")
+		#return tf.expand_dims(annotation_pred, dim=3), pipe
+		return pipe, prediction
+	def conv_block_get(self,pipe):
+		pipe = tf.layers.conv2d(pipe, self.filters, self.kernel_size, activation=tf.nn.tanh,padding='same')
  
-		graph_pipeline=self.batchnorm(graph_pipeline,training=True)
+		pipe=self.batchnorm(pipe,training=True)
 
 
-		return graph_pipeline
+		return pipe
 class SMCNN_UNet_large(NeuralNetSemantic):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -96,16 +98,16 @@ class SMCNN_UNet_large(NeuralNetSemantic):
 		self.filters=10
 	def model_graph_get(self,data):
 
-		graph_pipeline = data
-		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1])
-		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
+		pipe = data
+		pipe = tf.transpose(pipe, [0, 2, 3, 4, 1])
+		pipe = tf.reshape(pipe,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
 
-		deb.prints(graph_pipeline.get_shape())
+		deb.prints(pipe.get_shape())
 
 		self.filter_first=64
-		#conv0=tf.layers.conv2d(graph_pipeline, self.filter_first, self.kernel_size, activation=tf.nn.relu,padding='same')
-		conv1=self.conv_block_get(graph_pipeline,self.filter_first*2)
-		#conv1=self.conv_block_get(graph_pipeline,256)
+		#conv0=tf.layers.conv2d(pipe, self.filter_first, self.kernel_size, activation=tf.nn.relu,padding='same')
+		conv1=self.conv_block_get(pipe,self.filter_first*2)
+		#conv1=self.conv_block_get(pipe,256)
 		
 		conv2=self.conv_block_get(conv1,self.filter_first*4)
 		conv3=self.conv_block_get(conv2,self.filter_first*8)
@@ -115,58 +117,58 @@ class SMCNN_UNet_large(NeuralNetSemantic):
 		#up3=self.deconv_block_get(conv4,conv2,self.filter_first*8)
 		
 		#self.hidden_weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, name)
-		#graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
+		#pipe = tf.nn.dropout(pipe, self.keep_prob)
 		up4=self.deconv_block_get(conv3,conv2,self.filter_first*4)
 		up5=self.deconv_block_get(up4,conv1,self.filter_first*2)
-		up6=self.deconv_block_get(up5,graph_pipeline,self.filter_first)
+		up6=self.deconv_block_get(up5,pipe,self.filter_first)
 		#kernel,bias=up6.variables
 		#tf.summary.histogram('up6', kernel)
 		
-		graph_pipeline=self.out_block_get(up6,self.n_classes)
-		#graph_pipeline = tf.layers.conv2d(up6, self.n_classes, self.kernel_size, activation=None,padding='same')
-		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
-		#return tf.expand_dims(annotation_pred, dim=3), graph_pipeline
-		return graph_pipeline, prediction
+		pipe=self.out_block_get(up6,self.n_classes)
+		#pipe = tf.layers.conv2d(up6, self.n_classes, self.kernel_size, activation=None,padding='same')
+		prediction = tf.argmax(pipe, dimension=3, name="prediction")
+		#return tf.expand_dims(annotation_pred, dim=3), pipe
+		return pipe, prediction
 
-	def conv_2d(self,graph_pipeline,filters):
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(1,1), activation=None,padding='same')
-		graph_pipeline=self.batchnorm(graph_pipeline,training=self.training,axis=3)
+	def conv_2d(self,pipe,filters):
+		pipe = tf.layers.conv2d(pipe, filters, self.kernel_size, strides=(1,1), activation=None,padding='same')
+		pipe=self.batchnorm(pipe,training=self.training,axis=3)
 		
-		#graph_pipeline=self.batchnorm(graph_pipeline,training=True)
-		graph_pipeline = tf.nn.relu(graph_pipeline)
-		return graph_pipeline
-	def conv_block_get(self,graph_pipeline,filters):
+		#pipe=self.batchnorm(pipe,training=True)
+		pipe = tf.nn.relu(pipe)
+		return pipe
+	def conv_block_get(self,pipe,filters):
 		
-		graph_pipeline = self.conv_2d(graph_pipeline,filters)
-		graph_pipeline = self.conv_2d(graph_pipeline,filters)
+		pipe = self.conv_2d(pipe,filters)
+		pipe = self.conv_2d(pipe,filters)
 		
-		##graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(1,1), activation=tf.nn.relu,padding='same')
-		##graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(1,1), activation=tf.nn.relu,padding='same')
+		##pipe = tf.layers.conv2d(pipe, filters, self.kernel_size, strides=(1,1), activation=tf.nn.relu,padding='same')
+		##pipe = tf.layers.conv2d(pipe, filters, self.kernel_size, strides=(1,1), activation=tf.nn.relu,padding='same')
 		
-		#graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, self.kernel_size, strides=(2,2), activation=tf.nn.relu,padding='same')
-		graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
-		deb.prints(graph_pipeline.get_shape())
+		#pipe = tf.layers.conv2d(pipe, filters, self.kernel_size, strides=(2,2), activation=tf.nn.relu,padding='same')
+		pipe=tf.layers.max_pooling2d(inputs=pipe, pool_size=[2, 2], strides=2)
+		deb.prints(pipe.get_shape())
 
-		return graph_pipeline
-	def deconv_2d(self,graph_pipeline,filters):
-		graph_pipeline = tf.layers.conv2d_transpose(graph_pipeline, filters, self.kernel_size,strides=(2,2),activation=None,padding='same')
-		graph_pipeline=self.batchnorm(graph_pipeline,training=self.training)
-		graph_pipeline = tf.nn.relu(graph_pipeline)
-		return graph_pipeline
-	def deconv_block_get(self,graph_pipeline,layer,filters):
-		##graph_pipeline = tf.layers.conv2d_transpose(graph_pipeline, filters, self.kernel_size,strides=(2,2),activation=tf.nn.relu,padding='same')
-		graph_pipeline = self.deconv_2d(graph_pipeline,filters)
-		graph_pipeline = tf.concat([graph_pipeline,layer],axis=3)
-		graph_pipeline = self.conv_2d(graph_pipeline,filters)
-		graph_pipeline = self.conv_2d(graph_pipeline,filters)
+		return pipe
+	def deconv_2d(self,pipe,filters):
+		pipe = tf.layers.conv2d_transpose(pipe, filters, self.kernel_size,strides=(2,2),activation=None,padding='same')
+		pipe=self.batchnorm(pipe,training=self.training)
+		pipe = tf.nn.relu(pipe)
+		return pipe
+	def deconv_block_get(self,pipe,layer,filters):
+		##pipe = tf.layers.conv2d_transpose(pipe, filters, self.kernel_size,strides=(2,2),activation=tf.nn.relu,padding='same')
+		pipe = self.deconv_2d(pipe,filters)
+		pipe = tf.concat([pipe,layer],axis=3)
+		pipe = self.conv_2d(pipe,filters)
+		pipe = self.conv_2d(pipe,filters)
 		
-		deb.prints(graph_pipeline.get_shape())
-		return graph_pipeline
-	def out_block_get(self,graph_pipeline,filters):
-		graph_pipeline = self.conv_2d(graph_pipeline,self.filter_first)
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, (1,1), activation=None,padding='same')
-		deb.prints(graph_pipeline.get_shape())
-		return graph_pipeline
+		deb.prints(pipe.get_shape())
+		return pipe
+	def out_block_get(self,pipe,filters):
+		pipe = self.conv_2d(pipe,self.filter_first)
+		pipe = tf.layers.conv2d(pipe, filters, (1,1), activation=None,padding='same')
+		deb.prints(pipe.get_shape())
+		return pipe
 
 
 #================= Small SMCNN_Unet ========================================#
@@ -179,26 +181,26 @@ class SMCNN_UNet(NeuralNetSemantic):
 		self.filters=256
 	def model_graph_get(self,data):
 
-		graph_pipeline = data
-		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1])
-		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
+		pipe = data
+		pipe = tf.transpose(pipe, [0, 2, 3, 4, 1])
+		pipe = tf.reshape(pipe,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
 
-		deb.prints(graph_pipeline.get_shape())
+		deb.prints(pipe.get_shape())
 
-		graph_pipeline = self.conv_block_get(graph_pipeline)
-		#graph_pipeline = self.conv_block_get(graph_pipeline)
-		#graph_pipeline = self.conv_block_get(graph_pipeline)				
+		pipe = self.conv_block_get(pipe)
+		#pipe = self.conv_block_get(pipe)
+		#pipe = self.conv_block_get(pipe)				
 
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.n_classes, self.kernel_size, activation=None,padding='same')
-		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
-		#return tf.expand_dims(annotation_pred, dim=3), graph_pipeline
-		return graph_pipeline, prediction
-	def conv_block_get(self,graph_pipeline):
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=None,padding='same')
-		graph_pipeline=self.batchnorm(graph_pipeline,training=self.training)
-		graph_pipeline = tf.nn.relu(graph_pipeline)
+		pipe = tf.layers.conv2d(pipe, self.n_classes, self.kernel_size, activation=None,padding='same')
+		prediction = tf.argmax(pipe, dimension=3, name="prediction")
+		#return tf.expand_dims(annotation_pred, dim=3), pipe
+		return pipe, prediction
+	def conv_block_get(self,pipe):
+		pipe = tf.layers.conv2d(pipe, self.filters, self.kernel_size, activation=None,padding='same')
+		pipe=self.batchnorm(pipe,training=self.training)
+		pipe = tf.nn.relu(pipe)
 		
-		return graph_pipeline
+		return pipe
 
 class SMCNN_UNet_small(NeuralNetSemantic):
 	def __init__(self, *args, **kwargs):
@@ -208,13 +210,13 @@ class SMCNN_UNet_small(NeuralNetSemantic):
 		self.filters=10
 	def model_graph_get(self,data):
 
-		graph_pipeline = data
-		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1])
-		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
+		pipe = data
+		pipe = tf.transpose(pipe, [0, 2, 3, 4, 1])
+		pipe = tf.reshape(pipe,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
 
-		deb.prints(graph_pipeline.get_shape())
+		deb.prints(pipe.get_shape())
 
-		conv1 = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
+		conv1 = tf.layers.conv2d(pipe, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
 		conv2 = tf.layers.conv2d(conv1, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
 		conv3 = tf.layers.conv2d(conv2, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
 		#conv4 = tf.layers.conv2d(conv3, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
@@ -223,17 +225,17 @@ class SMCNN_UNet_small(NeuralNetSemantic):
 		conv5 = tf.layers.conv2d(layer_in, 256, self.kernel_size, activation=tf.nn.relu,padding='same')
 
 		layer_in = tf.concat([conv5,conv1],axis=3)
-		graph_pipeline = tf.layers.conv2d(layer_in, self.n_classes, self.kernel_size, activation=None,padding='same')
+		pipe = tf.layers.conv2d(layer_in, self.n_classes, self.kernel_size, activation=None,padding='same')
 
-		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
-		#return tf.expand_dims(annotation_pred, dim=3), graph_pipeline
-		return graph_pipeline, prediction
-	def conv_block_get(self,graph_pipeline):
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=None,padding='same')
-		graph_pipeline=self.batchnorm(graph_pipeline,training=self.training)
-		graph_pipeline = tf.nn.relu(graph_pipeline)
+		prediction = tf.argmax(pipe, dimension=3, name="prediction")
+		#return tf.expand_dims(annotation_pred, dim=3), pipe
+		return pipe, prediction
+	def conv_block_get(self,pipe):
+		pipe = tf.layers.conv2d(pipe, self.filters, self.kernel_size, activation=None,padding='same')
+		pipe=self.batchnorm(pipe,training=self.training)
+		pipe = tf.nn.relu(pipe)
 		
-		return graph_pipeline
+		return pipe
 
 
 # ================================= Implements ConvLSTM ============================================== #
@@ -244,28 +246,28 @@ class conv_lstm_semantic(NeuralNetSemantic):
 		
 	def model_graph_get(self,data): #self.kernel
 		
-		graph_pipeline1=self.layer_lstm_get(data,filters=20,kernel=[3,3],name='convlstm')
-		#graph_pipeline1=self.layer_lstm_multi_get(data,filters=20,kernel=[3,3],name='convlstm')
+		pipe1=self.layer_lstm_get(data,filters=20,kernel=[3,3],name='convlstm')
+		#pipe1=self.layer_lstm_multi_get(data,filters=20,kernel=[3,3],name='convlstm')
 		
-		tf.summary.histogram("lstm_out1",graph_pipeline1)
-		tf.summary.image("lstm_out",tf.cast(tf.squeeze(tf.gather(graph_pipeline1,[0,1,2],axis=3)),tf.uint8))
+		tf.summary.histogram("lstm_out1",pipe1)
+		tf.summary.image("lstm_out",tf.cast(tf.squeeze(tf.gather(pipe1,[0,1,2],axis=3)),tf.uint8))
 
-		if self.debug: deb.prints(graph_pipeline1.get_shape())
+		if self.debug: deb.prints(pipe1.get_shape())
 
 		self.layer_idx=0
-		graph_pipeline=self.conv2d_block_get(graph_pipeline1,20,training=self.training,layer_idx=self.layer_idx,kernel=2)
+		pipe=self.conv2d_block_get(pipe1,20,training=self.training,layer_idx=self.layer_idx,kernel=2)
 		#self.layer_idx+=1
 		
-		#graph_pipeline=self.resnet_block_get(graph_pipeline1,20,training=self.training,layer_idx=self.layer_idx,kernel=2)
+		#pipe=self.resnet_block_get(pipe1,20,training=self.training,layer_idx=self.layer_idx,kernel=2)
 		self.layer_idx+=1
 
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.concat([graph_pipeline1,graph_pipeline],axis=3)
+		if self.debug: deb.prints(pipe.get_shape())
+		pipe = tf.concat([pipe1,pipe],axis=3)
 
-		graph_pipeline,prediction=self.conv2d_out_get(graph_pipeline,self.n_classes,kernel_size=1,layer_idx=self.layer_idx)
+		pipe,prediction=self.conv2d_out_get(pipe,self.n_classes,kernel_size=1,layer_idx=self.layer_idx)
 		self.layer_idx+=1
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		return graph_pipeline,prediction
+		if self.debug: deb.prints(pipe.get_shape())
+		return pipe,prediction
 # ================================= Implements SMCNN ============================================== #
 # Remote: python main.py -mm="ram" --debug=1 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=2000 --filters=256 -m="smcnn"
 class SMCNN_semantic(NeuralNetSemantic):
@@ -275,22 +277,22 @@ class SMCNN_semantic(NeuralNetSemantic):
 		
 	def model_graph_get(self,data):
 		# Data if of shape [None,6,32,32,6]
-		graph_pipeline = data
-		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
-		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
+		pipe = data
+		pipe = tf.transpose(pipe, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
+		pipe = tf.reshape(pipe,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
 
-		deb.prints(graph_pipeline.get_shape())
+		deb.prints(pipe.get_shape())
 
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
+		pipe = tf.layers.conv2d(pipe, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
+		if self.debug: deb.prints(pipe.get_shape())
+		pipe = tf.layers.conv2d(pipe, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
 		
-		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
+		pipe = tf.nn.dropout(pipe, self.keep_prob)
 		self.layer_idx=10
-		graph_pipeline,prediction=self.conv2d_out_get(graph_pipeline,self.n_classes,kernel_size=1,layer_idx=self.layer_idx)
+		pipe,prediction=self.conv2d_out_get(pipe,self.n_classes,kernel_size=1,layer_idx=self.layer_idx)
 		self.layer_idx+=1
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		return graph_pipeline,prediction
+		if self.debug: deb.prints(pipe.get_shape())
+		return pipe,prediction
 
 
 
@@ -305,27 +307,27 @@ class Conv3DMultitemp(NeuralNetOneHot):
 		self.model_build()
 		
 	def model_graph_get(self,data):
-		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=[3,3],get_last=False,name="convlstm")
-		#graph_pipeline=tf.layers.conv3d(graph_pipeline,self.filters,[1,3,3],padding='same',activation=tf.nn.tanh)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline=tf.layers.conv3d(graph_pipeline,16,[3,3,3],padding='same',activation=tf.nn.tanh)
+		pipe=self.layer_lstm_get(data,filters=self.filters,kernel=[3,3],get_last=False,name="convlstm")
+		#pipe=tf.layers.conv3d(pipe,self.filters,[1,3,3],padding='same',activation=tf.nn.tanh)
+		if self.debug: deb.prints(pipe.get_shape())
+		pipe=tf.layers.conv3d(pipe,16,[3,3,3],padding='same',activation=tf.nn.tanh)
 		
-		graph_pipeline=tf.layers.max_pooling3d(inputs=graph_pipeline, pool_size=[2,1,1], strides=[2,1,1],padding='same')
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe=tf.layers.max_pooling3d(inputs=pipe, pool_size=[2,1,1], strides=[2,1,1],padding='same')
+		if self.debug: deb.prints(pipe.get_shape())
 
-		#graph_pipeline=tf.layers.conv3d(graph_pipeline,self.filters,[],padding='same',activation=tf.nn.tanh)
+		#pipe=tf.layers.conv3d(pipe,self.filters,[],padding='same',activation=tf.nn.tanh)
 		
-		#graph_pipeline=tf.layers.conv3d(data,self.filters,self.kernel,padding='same',activation=tf.nn.tanh)
+		#pipe=tf.layers.conv3d(data,self.filters,self.kernel,padding='same',activation=tf.nn.tanh)
 		
-		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
-		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh)
-		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.layers.dense(graph_pipeline, 128,activation=tf.nn.tanh)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		return None,graph_pipeline
+		#pipe=tf.layers.max_pooling2d(inputs=pipe, pool_size=[2, 2], strides=2)
+		#pipe = tf.layers.conv2d(pipe, self.filters, self.kernel_size, activation=tf.nn.tanh)
+		pipe = tf.contrib.layers.flatten(pipe)
+		if self.debug: deb.prints(pipe.get_shape())
+		pipe = tf.layers.dense(pipe, 128,activation=tf.nn.tanh)
+		if self.debug: deb.prints(pipe.get_shape())
+		pipe = tf.layers.dense(pipe, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(pipe.get_shape())
+		return None,pipe
 # ================================= Implements SMCNN ============================================== #
 # Remote: python main.py -mm="ram" --debug=1 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=2000 --filters=256 -m="smcnn"
 class SMCNN(NeuralNetOneHot):
@@ -335,31 +337,31 @@ class SMCNN(NeuralNetOneHot):
 		
 	def model_graph_get(self,data):
 		# Data if of shape [None,6,32,32,6]
-		graph_pipeline = data
-		graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
-		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
+		pipe = data
+		pipe = tf.transpose(pipe, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
+		pipe = tf.reshape(pipe,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
 
-		deb.prints(graph_pipeline.get_shape())
+		deb.prints(pipe.get_shape())
 
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe = tf.layers.conv2d(pipe, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
+		if self.debug: deb.prints(pipe.get_shape())
 		
-		graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe=tf.layers.max_pooling2d(inputs=pipe, pool_size=[2, 2], strides=2)
+		if self.debug: deb.prints(pipe.get_shape())
 		
-		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe = tf.contrib.layers.flatten(pipe)
+		if self.debug: deb.prints(pipe.get_shape())
 		
-		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe = tf.layers.dense(pipe, 256,activation=tf.nn.tanh,name='hidden')
+		if self.debug: deb.prints(pipe.get_shape())
 		
-		#graph_pipeline = tf.layers.dropout(graph_pipeline,rate=self.keep_prob,training=False,name='dropout')
-		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
-		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		#pipe = tf.layers.dropout(pipe,rate=self.keep_prob,training=False,name='dropout')
+		pipe = tf.nn.dropout(pipe, self.keep_prob)
+		pipe = tf.layers.dense(pipe, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(pipe.get_shape())
 
 
-		return None,graph_pipeline
+		return None,pipe
 
 # ================================= Implements SMCNN ============================================== #
 class SMCNNlstm(NeuralNetOneHot):
@@ -368,35 +370,35 @@ class SMCNNlstm(NeuralNetOneHot):
 		self.model_build()
 		
 	def model_graph_get(self,data):
-		#graph_pipeline = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
-		graph_pipeline = data
+		#pipe = tf.gather(data, int(data.get_shape()[1]) - 1,axis=1)
+		pipe = data
 
-		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=[3,3],get_last=False,name="convlstm")
+		pipe=self.layer_lstm_get(data,filters=self.filters,kernel=[3,3],get_last=False,name="convlstm")
 
-		graph_pipeline = tf.transpose(data, [0, 2, 3, 4, 1])
-		graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
+		pipe = tf.transpose(data, [0, 2, 3, 4, 1])
+		pipe = tf.reshape(pipe,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
 
-		deb.prints(graph_pipeline.get_shape())
+		deb.prints(pipe.get_shape())
 
-		#graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
-		#if self.debug: deb.prints(graph_pipeline.get_shape())
+		#pipe = tf.layers.conv2d(pipe, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
+		#if self.debug: deb.prints(pipe.get_shape())
 		
-		graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe=tf.layers.max_pooling2d(inputs=pipe, pool_size=[2, 2], strides=2)
+		if self.debug: deb.prints(pipe.get_shape())
 		
-		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe = tf.contrib.layers.flatten(pipe)
+		if self.debug: deb.prints(pipe.get_shape())
 		
-		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe = tf.layers.dense(pipe, 256,activation=tf.nn.tanh,name='hidden')
+		if self.debug: deb.prints(pipe.get_shape())
 		
-		#graph_pipeline = tf.layers.dropout(graph_pipeline,rate=self.keep_prob,training=False,name='dropout')
-		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
-		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		#pipe = tf.layers.dropout(pipe,rate=self.keep_prob,training=False,name='dropout')
+		pipe = tf.nn.dropout(pipe, self.keep_prob)
+		pipe = tf.layers.dense(pipe, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(pipe.get_shape())
 
 
-		return None,graph_pipeline
+		return None,pipe
 
 class SMCNNlstm(NeuralNetOneHot):
 	def __init__(self, *args, **kwargs):
@@ -405,41 +407,41 @@ class SMCNNlstm(NeuralNetOneHot):
 		self.activations=tf.nn.relu
 	def model_graph_get(self,data):
 		# Data if of shape [None,6,32,32,6]
-		graph_pipeline1 = data
-		graph_pipeline1 = tf.transpose(graph_pipeline1, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
-		graph_pipeline1 = tf.reshape(graph_pipeline1,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
-		deb.prints(graph_pipeline1.get_shape())
-		#graph_pipeline1 = tf.layers.conv2d(graph_pipeline1, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
-		if self.debug: deb.prints(graph_pipeline1.get_shape())
+		pipe1 = data
+		pipe1 = tf.transpose(pipe1, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
+		pipe1 = tf.reshape(pipe1,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
+		deb.prints(pipe1.get_shape())
+		#pipe1 = tf.layers.conv2d(pipe1, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
+		if self.debug: deb.prints(pipe1.get_shape())
 		
-		graph_pipeline2=self.layer_lstm_get(data,filters=5,kernel=[3,3],get_last=True,name="convlstm")
-		deb.prints(graph_pipeline2.get_shape())
-		#graph_pipeline1 = tf.transpose(graph_pipeline1, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
-		#graph_pipeline1 = tf.reshape(graph_pipeline1,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
+		pipe2=self.layer_lstm_get(data,filters=5,kernel=[3,3],get_last=True,name="convlstm")
+		deb.prints(pipe2.get_shape())
+		#pipe1 = tf.transpose(pipe1, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
+		#pipe1 = tf.reshape(pipe1,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
 		
 
-		graph_pipeline=tf.concat([graph_pipeline1,graph_pipeline2],axis=3)
+		pipe=tf.concat([pipe1,pipe2],axis=3)
 
-		deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
+		deb.prints(pipe.get_shape())
+		pipe = tf.layers.conv2d(pipe, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
 		
 		
-		graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe=tf.layers.max_pooling2d(inputs=pipe, pool_size=[2, 2], strides=2)
+		if self.debug: deb.prints(pipe.get_shape())
 		
-		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe = tf.contrib.layers.flatten(pipe)
+		if self.debug: deb.prints(pipe.get_shape())
 		
-		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe = tf.layers.dense(pipe, 256,activation=tf.nn.tanh,name='hidden')
+		if self.debug: deb.prints(pipe.get_shape())
 		
-		#graph_pipeline = tf.layers.dropout(graph_pipeline,rate=self.keep_prob,training=False,name='dropout')
-		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
-		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		#pipe = tf.layers.dropout(pipe,rate=self.keep_prob,training=False,name='dropout')
+		pipe = tf.nn.dropout(pipe, self.keep_prob)
+		pipe = tf.layers.dense(pipe, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(pipe.get_shape())
 
 
-		return None,graph_pipeline
+		return None,pipe
 # ================================= Implements SMCNN ============================================== #
 # Remote: python main.py -mm="ram" --debug=1 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=2000 --filters=256 -m="smcnn"
 class SMCNN_conv3d(NeuralNetOneHot):
@@ -450,32 +452,32 @@ class SMCNN_conv3d(NeuralNetOneHot):
 		
 	def model_graph_get(self,data):
 		# Data if of shape [None,6,32,32,6]
-		graph_pipeline = data
-		#graph_pipeline = tf.transpose(graph_pipeline, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
-		#graph_pipeline = tf.reshape(graph_pipeline,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
+		pipe = data
+		#pipe = tf.transpose(pipe, [0, 2, 3, 4, 1]) # Transpose shape [None,32,32,6,6]
+		#pipe = tf.reshape(pipe,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps]) # Shape [None,32,32,6*6]
 
-		deb.prints(graph_pipeline.get_shape())
+		deb.prints(pipe.get_shape())
 
-		#graph_pipeline = tf.layers.conv2d(graph_pipeline, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
-		graph_pipeline=tf.layers.conv3d(graph_pipeline,256,[3,3,3],padding='same',activation=tf.nn.tanh)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		#pipe = tf.layers.conv2d(pipe, 256, self.kernel_size, activation=tf.nn.tanh,padding="same")
+		pipe=tf.layers.conv3d(pipe,256,[3,3,3],padding='same',activation=tf.nn.tanh)
+		if self.debug: deb.prints(pipe.get_shape())
 		
-		graph_pipeline=tf.layers.max_pooling3d(inputs=graph_pipeline, pool_size=[2,1,1], strides=[2,1,1],padding='same')
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe=tf.layers.max_pooling3d(inputs=pipe, pool_size=[2,1,1], strides=[2,1,1],padding='same')
+		if self.debug: deb.prints(pipe.get_shape())
 		
-		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe = tf.contrib.layers.flatten(pipe)
+		if self.debug: deb.prints(pipe.get_shape())
 		
-		graph_pipeline = tf.layers.dense(graph_pipeline, 256,activation=tf.nn.tanh,name='hidden')
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe = tf.layers.dense(pipe, 256,activation=tf.nn.tanh,name='hidden')
+		if self.debug: deb.prints(pipe.get_shape())
 		
-		#graph_pipeline = tf.layers.dropout(graph_pipeline,rate=self.keep_prob,training=False,name='dropout')
-		graph_pipeline = tf.nn.dropout(graph_pipeline, self.keep_prob)
-		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		#pipe = tf.layers.dropout(pipe,rate=self.keep_prob,training=False,name='dropout')
+		pipe = tf.nn.dropout(pipe, self.keep_prob)
+		pipe = tf.layers.dense(pipe, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(pipe.get_shape())
 
 
-		return None,graph_pipeline
+		return None,pipe
 
 
 
@@ -489,27 +491,27 @@ class Conv3DMultitemp(NeuralNetOneHot):
 		self.model_build()
 		
 	def model_graph_get(self,data):
-		graph_pipeline=self.layer_lstm_get(data,filters=self.filters,kernel=[3,3],get_last=False,name="convlstm")
-		#graph_pipeline=tf.layers.conv3d(graph_pipeline,self.filters,[1,3,3],padding='same',activation=tf.nn.tanh)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline=tf.layers.conv3d(graph_pipeline,16,[3,3,3],padding='same',activation=tf.nn.tanh)
+		pipe=self.layer_lstm_get(data,filters=self.filters,kernel=[3,3],get_last=False,name="convlstm")
+		#pipe=tf.layers.conv3d(pipe,self.filters,[1,3,3],padding='same',activation=tf.nn.tanh)
+		if self.debug: deb.prints(pipe.get_shape())
+		pipe=tf.layers.conv3d(pipe,16,[3,3,3],padding='same',activation=tf.nn.tanh)
 		
-		graph_pipeline=tf.layers.max_pooling3d(inputs=graph_pipeline, pool_size=[2,1,1], strides=[2,1,1],padding='same')
-		if self.debug: deb.prints(graph_pipeline.get_shape())
+		pipe=tf.layers.max_pooling3d(inputs=pipe, pool_size=[2,1,1], strides=[2,1,1],padding='same')
+		if self.debug: deb.prints(pipe.get_shape())
 
-		#graph_pipeline=tf.layers.conv3d(graph_pipeline,self.filters,[],padding='same',activation=tf.nn.tanh)
+		#pipe=tf.layers.conv3d(pipe,self.filters,[],padding='same',activation=tf.nn.tanh)
 		
-		#graph_pipeline=tf.layers.conv3d(data,self.filters,self.kernel,padding='same',activation=tf.nn.tanh)
+		#pipe=tf.layers.conv3d(data,self.filters,self.kernel,padding='same',activation=tf.nn.tanh)
 		
-		#graph_pipeline=tf.layers.max_pooling2d(inputs=graph_pipeline, pool_size=[2, 2], strides=2)
-		#graph_pipeline = tf.layers.conv2d(graph_pipeline, self.filters, self.kernel_size, activation=tf.nn.tanh)
-		graph_pipeline = tf.contrib.layers.flatten(graph_pipeline)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.layers.dense(graph_pipeline, 128,activation=tf.nn.tanh)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		graph_pipeline = tf.layers.dense(graph_pipeline, self.n_classes,activation=tf.nn.softmax)
-		if self.debug: deb.prints(graph_pipeline.get_shape())
-		return None,graph_pipeline
+		#pipe=tf.layers.max_pooling2d(inputs=pipe, pool_size=[2, 2], strides=2)
+		#pipe = tf.layers.conv2d(pipe, self.filters, self.kernel_size, activation=tf.nn.tanh)
+		pipe = tf.contrib.layers.flatten(pipe)
+		if self.debug: deb.prints(pipe.get_shape())
+		pipe = tf.layers.dense(pipe, 128,activation=tf.nn.tanh)
+		if self.debug: deb.prints(pipe.get_shape())
+		pipe = tf.layers.dense(pipe, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(pipe.get_shape())
+		return None,pipe
 
 
 

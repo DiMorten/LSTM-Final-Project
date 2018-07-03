@@ -35,7 +35,7 @@ parser.add_argument('--filters', dest='filters', type=int, default=32, help='# t
 #parser.add_argument('--n_classes', dest='n_classes', type=int, default=6, help='# timesteps used to train')
 parser.add_argument('--checkpoint_dir', dest='checkpoint_dir', default='./checkpoint', help='models are saved here')
 parser.add_argument('-m','--model', dest='model', default='convlstm', help='models are saved here')
-parser.add_argument('--log_dir', dest='log_dir', default='/tmp/', help='models are saved here')
+parser.add_argument('--log_dir', dest='log_dir', default='../data/summaries/', help='models are saved here')
 
 parser.add_argument('--debug', type=int, default=1, help='Debug')
 parser.add_argument('-po','--patch_overlap', dest='patch_overlap', type=int, default=0, help='Debug')
@@ -60,7 +60,7 @@ args.n_classes=args.class_n
 args.timesteps=args.t_len
 args.channels=args.band_n
 np.set_printoptions(suppress=True)
-os.system("rm -rf ../data/summaries/")
+os.system("rm -rf ../data/summaries/*")
 
 # Check if selected model has one_hot (One pixel) or semantic (Image) output type
 if args.model=='unet' or args.model=='smcnn_unet' or args.model=='convlstm_semantic' or args.model=='smcnn_semantic':

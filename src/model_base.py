@@ -21,6 +21,7 @@ from tensorflow.contrib.rnn import HighwayWrapper
 import utils
 import deb
 import cv2
+from cell import ConvLSTMCell, ConvGRUCell
 
 np.set_printoptions(suppress=True)
 
@@ -65,16 +66,25 @@ class NeuralNet(object):
 		#filters=64
 		#cell = ResidualWrapper(tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name))
 		#cell = HighwayWrapper(tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name))
-		cell = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
-		
+		convlstm_mode=1
+		if convlstm_mode==1:
+			cell = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
+		else:
+			cell = ConvLSTMCell(self.shape, filters, kernel)
+			#cell = ConvGRUCell(self.shape, filters, kernel)
+			
 		val, state = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
 		if self.debug: deb.prints(val.get_shape())
 		data_last = tf.gather(data, int(data.get_shape()[1]) - 1, axis=1)
 		deb.prints(data_last.get_shape())
-		##kernel,bias=cell.variables
+		if convlstm_mode==1:
+			kernel,bias=cell.variables
+		else:
+			kernel=cell.variables
+		#kernel,bias=cell.variables
 		##deb.prints(kernel.get_shape())
 		#self.hidden_weights = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, name)
-		##tf.summary.histogram('convlstm', kernel)
+		tf.summary.histogram('convlstm', kernel[0])
 		if get_last==True:
 			if self.debug: deb.prints(val.get_shape())
 			last = tf.gather(val, int(val.get_shape()[1]) - 1,axis=1)
@@ -85,11 +95,18 @@ class NeuralNet(object):
 	def layer_lstm_multi_get(self,data,filters,kernel,name="convlstm",get_last=True):
 		
 		#num_units = [32, 16]
-		cell1 = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
-
+		convlstm_mode=2
+		if convlstm_mode==1:
+			cell1 = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
+			cell2 = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
+		else:
+			cell1 = ConvLSTMCell(self.shape, filters, kernel)
+			cell2 = ConvLSTMCell(self.shape, filters, kernel)
+				
+		
 		#cell1 = ResidualWrapper(tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], 7, kernel,name=name))
 
-		cell2 = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
+		#cell2 = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
 		
 		#cells = [tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], n, kernel,name=name+str(n)) for n in num_units]
 		stacked_rnn_cell = MultiRNNCell([cell1,cell2])
@@ -505,29 +522,29 @@ class NeuralNet(object):
 			self.minimize,self.mistakes,self.error=self.loss_optimizer_set(self.target,self.prediction, self.logits)
 			self.error_sum, self.saver, self.merged = self.tensorboard_saver_init(self.error)
 			self.trainable_vars_print()
-	def conv2d_block_get(self,graph_pipeline,filters,kernel=3,padding='same',training=True,layer_idx=0):
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, kernel, activation=None,padding=padding,name='conv2d_'+str(layer_idx))
-		graph_pipeline=self.batchnorm(graph_pipeline,training=training,name='batchnorm'+str(layer_idx))
-		graph_pipeline = tf.nn.relu(graph_pipeline,name='activation_'+str(layer_idx))
+	def conv2d_block_get(self,pipe,filters,kernel=3,padding='same',training=True,layer_idx=0):
+		pipe = tf.layers.conv2d(pipe, filters, kernel, activation=None,padding=padding,name='conv2d_'+str(layer_idx))
+		pipe=self.batchnorm(pipe,training=training,name='batchnorm'+str(layer_idx))
+		pipe = tf.nn.relu(pipe,name='activation_'+str(layer_idx))
 		
-		return graph_pipeline
-	def resnet_block_get(self,graph_pipeline,filters,kernel=3,padding='same',training=True,layer_idx=0):
-		input_=tf.identity(graph_pipeline)
+		return pipe
+	def resnet_block_get(self,pipe,filters,kernel=3,padding='same',training=True,layer_idx=0):
+		input_=tf.identity(pipe)
 		resnet_idx=0
 
 		layer_id='_'+str(layer_idx)+'_'+str(resnet_idx)
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, kernel, activation=None,padding=padding,name='resnet_conv2d'+layer_id)
-		graph_pipeline=self.batchnorm(graph_pipeline,training=training,name='batchnorm'+layer_id)
-		graph_pipeline = tf.nn.relu(graph_pipeline,name='activation'+layer_id)
+		pipe = tf.layers.conv2d(pipe, filters, kernel, activation=None,padding=padding,name='resnet_conv2d'+layer_id)
+		pipe=self.batchnorm(pipe,training=training,name='batchnorm'+layer_id)
+		pipe = tf.nn.relu(pipe,name='activation'+layer_id)
 	
 		resnet_idx+=1
 		layer_id='_'+str(layer_idx)+'_'+str(resnet_idx)
-		graph_pipeline = tf.layers.conv2d(graph_pipeline, filters, kernel, activation=None,padding=padding,name='resnet_conv2d'+layer_id)
-		graph_pipeline=self.batchnorm(graph_pipeline,training=training,name='batchnorm'+layer_id)
+		pipe = tf.layers.conv2d(pipe, filters, kernel, activation=None,padding=padding,name='resnet_conv2d'+layer_id)
+		pipe=self.batchnorm(pipe,training=training,name='batchnorm'+layer_id)
 		
-		graph_pipeline=tf.add(input_,graph_pipeline)
-		graph_pipeline = tf.nn.relu(graph_pipeline,name='activation'+layer_id)
-		return graph_pipeline	
+		pipe=tf.add(input_,pipe)
+		pipe = tf.nn.relu(pipe,name='activation'+layer_id)
+		return pipe	
 
 	
 		
@@ -689,12 +706,12 @@ class NeuralNetSemantic(NeuralNet):
 		return per_class_label_count
 	def batchnorm(self,inputs,training=True,axis=3,name=None):
 		return tf.layers.batch_normalization(inputs, axis=axis, epsilon=1e-5, momentum=0.1, training=training, gamma_initializer=tf.random_normal_initializer(1.0, 0.02), name=name)
-	def conv2d_out_get(self,graph_pipeline,n_classes,kernel_size=3,padding='same',layer_idx=0):
-		graph_pipeline=tf.layers.conv2d(graph_pipeline, n_classes, kernel_size, activation=None,padding=padding,name='conv2d_'+str(layer_idx))
-		prediction = tf.argmax(graph_pipeline, dimension=3, name="prediction")
-		#prediction = tf.cast(tf.reduce_max(graph_pipeline, axis=3, name="prediction"),tf.int64)
+	def conv2d_out_get(self,pipe,n_classes,kernel_size=3,padding='same',layer_idx=0):
+		pipe=tf.layers.conv2d(pipe, n_classes, kernel_size, activation=None,padding=padding,name='conv2d_'+str(layer_idx))
+		prediction = tf.argmax(pipe, dimension=3, name="prediction")
+		#prediction = tf.cast(tf.reduce_max(pipe, axis=3, name="prediction"),tf.int64)
 		
-		return graph_pipeline, prediction
+		return pipe, prediction
 
 
 
