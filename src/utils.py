@@ -279,11 +279,12 @@ class DataForNet(object):
 				mask_patch = mask[yy: yy + window, xx: xx + window]
 				is_mask_from_train=self.is_mask_from_train(mask_patch)
 				
-				if np.any(label_patch==0):
+				no_zero=True
+				if np.any(label_patch==0) and no_zero==True:
 					continue
 				#deb.prints(is_mask_from_train)
 				#elif np.all(mask_patch==1): # Train sample
-				elif is_mask_from_train==True: # Train sample
+				if is_mask_from_train==True: # Train sample
 					
 					mask_train[yy: yy + window, xx: xx + window]=255
 					if memory_mode=="hdd":
@@ -331,7 +332,10 @@ class DataForNet(object):
 		self.ram_data["test"]["ims"]=self.ram_data["test"]["ims"][0:self.ram_data["test"]["n"]]
 		self.ram_data["test"]["labels_int"]=self.ram_data["test"]["labels_int"][0:self.ram_data["test"]["n"]]
 
+		count,unique=np.unique(self.ram_data["train"]["labels_int"],return_counts=True)
+		print("Before squeezing count",count,unique)
 		deb.prints(self.conf["squeeze_classes"])
+
 		if self.conf["squeeze_classes"]:
 			print("here1")
 			self.ram_data["train"]=self.labels_unused_classes_eliminate(self.ram_data["train"])
@@ -405,13 +409,43 @@ class DataSemantic(DataForNet):
 		mask_test[yy: yy + window, xx: xx + window]=255
 		return mask_test
 	def is_mask_from_train(self,mask_patch):
-		return np.all(mask_patch==1)
+		return np.any(mask_patch==1)
 	def labels_unused_classes_eliminate(self,data):
 
 		data["labels"]=(data["labels"]-3).clip(min=0)
 		data["labels_int"]=(data["labels_int"]-3).clip(min=0)
 		
 		return data
+
+
+	def labels_unused_classes_eliminate(self,data):
+		fname=sys._getframe().f_code.co_name
+		##deb.prints(data["labels_int"].shape[0])
+		##idxs=[i for i in range(data["labels_int"].shape[0]) if (data["labels_int"][i] == 0 or data["labels_int"][i] == 2 or data["labels_int"][i] == 3)]
+		##deb.prints(len(idxs))
+
+		# self.old_n_classes=self.n_classes
+		self.classes = np.unique(data["labels_int"])
+		# self.n_classes=self.classes.shape[0]
+		deb.prints(self.classes,fname)		
+		self.labels2new_labels = dict((c, i) for i, c in enumerate(self.classes))
+		self.new_labels2labels = dict((i, c) for i, c in enumerate(self.classes))
+
+		new_labels = data["labels_int"].copy()
+		for i in range(len(self.classes)):
+			new_labels[data["labels_int"] == self.classes[i]] = self.labels2new_labels[self.classes[i]]
+
+		# #data["old_labels_int"]=data["labels_int"].copy()
+		# #data["old_labels"]=data["labels"].copy()
+		
+		data["labels_int"]=new_labels.copy()
+		deb.prints(np.unique(data["labels_int"]))
+		#data["labels"]=utils.DataOneHot.labels_onehot_get(None,data["labels_int"],data["n"],self.n_classes)
+		# print(data.keys())
+
+
+		return data
+
 class DataOneHot(DataForNet):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args, **kwargs)
@@ -653,8 +687,8 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 	patch_length=5
 	
-	data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
-	#data=DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+	#data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+	data=DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
 		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True, \
 		balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
@@ -667,8 +701,8 @@ if __name__ == "__main__":
 	#conf=data_creator.conf
 	#pass
 else:
-	data_onehot=DataOneHot()
-	#data_onehot=DataSemantic()
+	#data_onehot=DataOneHot()
+	data_onehot=DataSemantic()
 	
 	#data.onehot_create()
 	conf=data_onehot.conf
