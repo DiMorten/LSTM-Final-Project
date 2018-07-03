@@ -66,7 +66,7 @@ class NeuralNet(object):
 		#filters=64
 		#cell = ResidualWrapper(tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name))
 		#cell = HighwayWrapper(tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name))
-		convlstm_mode=1
+		convlstm_mode=2
 		if convlstm_mode==1:
 			cell = tf.contrib.rnn.ConvLSTMCell(2,self.shape + [self.channels], filters, kernel,name=name)
 		else:
