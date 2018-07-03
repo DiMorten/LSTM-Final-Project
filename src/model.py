@@ -268,6 +268,38 @@ class conv_lstm_semantic(NeuralNetSemantic):
 		self.layer_idx+=1
 		if self.debug: deb.prints(pipe.get_shape())
 		return pipe,prediction
+
+class conv_lstm_semantic(NeuralNetSemantic):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.model_build()
+		
+	def model_graph_get(self,data): #self.kernel
+		
+		pipe1=self.layer_lstm_get(data,filters=20,kernel=[3,3],name='convlstm')
+		#pipe1=self.layer_lstm_multi_get(data,filters=20,kernel=[3,3],name='convlstm')
+		
+		tf.summary.histogram("lstm_out1",pipe1)
+		tf.summary.image("lstm_out",tf.cast(tf.squeeze(tf.gather(pipe1,[0,1,2],axis=3)),tf.uint8))
+
+		self.layer_idx=0
+		pipe={'down':[], 'up':[]}
+		c={'down':0, 'up':0}
+		filters=20
+		pipe['down'].append(self.transition_down(pipe1,filters)) #0 16x16
+		pipe['down'].append(self.transition_down(pipe['down'][0],filters)) #1 8x8
+		pipe['down'].append(self.transition_down(pipe['down'][1],filters)) #2 4x4
+		
+		pipe['down'].append(self.dense_block(pipe['down'][2],filters)) #3 4x4
+
+		pipe['up'].append(self.concatenate_transition_up(pipe['down'][3],pipe['down'][2],filters)) # 0 8x8
+		pipe['up'].append(self.concatenate_transition_up(pipe['up'][0],pipe['down'][1],filters)) # 1
+		pipe['up'].append(self.concatenate_transition_up(pipe['up'][1],pipe['down'][0],filters)) # 2
+		self.layer_idx+=1
+		out,prediction=self.conv2d_out_get(pipe['up'][-1],self.n_classes,kernel_size=1,layer_idx=self.layer_idx)
+		self.layer_idx+=1
+		if self.debug: deb.prints(out.get_shape())
+		return out,prediction
 # ================================= Implements SMCNN ============================================== #
 # Remote: python main.py -mm="ram" --debug=1 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=2000 --filters=256 -m="smcnn"
 class SMCNN_semantic(NeuralNetSemantic):

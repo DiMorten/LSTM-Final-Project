@@ -279,7 +279,7 @@ class DataForNet(object):
 				mask_patch = mask[yy: yy + window, xx: xx + window]
 				is_mask_from_train=self.is_mask_from_train(mask_patch)
 				
-				no_zero=False
+				no_zero=True
 				if np.any(label_patch==0) and no_zero==True:
 					continue
 				#deb.prints(is_mask_from_train)
@@ -340,6 +340,8 @@ class DataForNet(object):
 			print("here1")
 			self.ram_data["train"]=self.labels_unused_classes_eliminate(self.ram_data["train"])
 			self.ram_data["test"]=self.labels_unused_classes_eliminate(self.ram_data["test"])
+			if no_zero==False:
+				self.ram_data["test"]["labels_int"]+=1
 			count,unique=np.unique(self.ram_data["train"],return_counts=True)
 			#print("train count,unique",count,unique)
 		#print("train count,unique",count,unique)

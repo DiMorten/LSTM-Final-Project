@@ -33,7 +33,7 @@ class NeuralNet(object):
 						timesteps=utils.conf["t_len"], patch_len=32,
 						kernel=[3,3], channels=7, filters=32, n_classes=6,
 						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1, \
-						patience=5,squeeze_classes=True,n_repetitions=200):
+						patience=1000,squeeze_classes=True,n_repetitions=200):
 		self.squeeze_classes=squeeze_classes		
 		self.ram_data=data
 		self.sess = sess
@@ -483,6 +483,8 @@ class NeuralNet(object):
 		if debug>=3: deb.prints(correct_per_class)
 		return correct_per_class
 	def correct_per_class_average_get(self,correct_per_class,targets_label_count):
+		deb.prints(correct_per_class)
+		deb.prints(targets_label_count)
 		correct_per_class_average=np.divide(correct_per_class, targets_label_count)
 		accuracy_average=correct_per_class_average[~np.isnan(correct_per_class_average)]
 		accuracy_average=accuracy_average[np.nonzero(accuracy_average)]
@@ -605,7 +607,9 @@ class NeuralNetSemantic(NeuralNet):
 		#loss_weight = np.array([0.11943255,0.18051959,0.18570891,0.18073187,0.15826751,0.17533958])
 
 		#loss_weight = np.array([0.14507016, 0.14531779, 0.15913562, 0.13611218, 0.14634539, 0.26801885])
-		
+		#loss_weight = np.array([0,1,1,1,1,1,1])/7
+		#loss_weight = [0., 0.11830728, 0.18145774, 0.18512292, 0.18063012, 0.15888149, 0.17560045]
+		loss_weight = [0.11857354, 0.18215585, 0.18528317, 0.18133395, 0.15754083, 0.17511265]
 		labels = tf.cast(labels, tf.int32)
 		# return loss(logits, labels)
 		return self.weighted_loss(logits, labels, num_classes=self.n_classes, head=loss_weight)
@@ -648,13 +652,12 @@ class NeuralNetSemantic(NeuralNet):
 		deb.prints(logits.get_shape())
 
 		
-		#loss = self.cal_loss(logits, target_int)
 		if self.remove_sparse_loss==True:
 			targt["int"]["flat"]= tf.reshape(target_int,[-1,self.patch_len*self.patch_len])
 			targt["int"]["hot"] = tf.one_hot(targt["int"]["flat"],self.n_classes)		
 
-
-		loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits)
+		loss = self.cal_loss(logits, target_int)
+		#loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=target_int, logits=logits)
 		#cross_entropy = -self.IOU_(tf.expand_dims(tf.cast(prediction,tf.float32),axis=3),tf.expand_dims(tf.cast(target,tf.float32),axis=3))
 		deb.prints(loss.get_shape())
 		cross_entropy = tf.reduce_mean(loss)
@@ -705,13 +708,40 @@ class NeuralNetSemantic(NeuralNet):
 		deb.prints(per_class_label_count)
 		return per_class_label_count
 	def batchnorm(self,inputs,training=True,axis=3,name=None):
-		return tf.layers.batch_normalization(inputs, axis=axis, epsilon=1e-5, momentum=0.1, training=training, gamma_initializer=tf.random_normal_initializer(1.0, 0.02), name=name)
+		return tf.layers.batch_normalization(inputs, axis=axis, epsilon=1e-5, momentum=0.1, training=training, gamma_initializer=tf.random_normal_initializer(1.0, 0.02))
 	def conv2d_out_get(self,pipe,n_classes,kernel_size=3,padding='same',layer_idx=0):
-		pipe=tf.layers.conv2d(pipe, n_classes, kernel_size, activation=None,padding=padding,name='conv2d_'+str(layer_idx))
+		pipe=tf.layers.conv2d(pipe, n_classes, kernel_size, activation=None,padding=padding)
 		prediction = tf.argmax(pipe, dimension=3, name="prediction")
 		#prediction = tf.cast(tf.reduce_max(pipe, axis=3, name="prediction"),tf.int64)
 		
 		return pipe, prediction
+
+
+
+	def transition_down(self,pipe,filters):
+		pipe = tf.layers.conv2d(pipe, filters, 3, strides=(2,2),activation=None,padding='same')
+		pipe=self.batchnorm(pipe,training=self.training)
+		pipe = tf.nn.relu(pipe)
+		#pipe = Conv2D(filters , (3 , 3), strides=(2,2), activation='relu', padding='same')(pipe)
+		return pipe
+	def dense_block(self,pipe,filters):
+		pipe = tf.layers.conv2d(pipe, filters, 3, activation=None,padding='same')
+		pipe=self.batchnorm(pipe,training=self.training)
+		pipe = tf.nn.relu(pipe)
+		#pipe = Conv2D(filters , (3 , 3), activation='relu', padding='same')(pipe)
+		return pipe
+	
+	def transition_up(self,pipe,filters):
+		pipe = tf.layers.conv2d_transpose(pipe, filters, 3,strides=(2,2),activation=None,padding='same')
+		pipe=self.batchnorm(pipe,training=self.training)
+		pipe = tf.nn.relu(pipe)
+		#pipe = Conv2DTranspose(filters,(3,3),strides=(2,2),activation='relu',padding='same')(pipe)
+		return pipe
+	def concatenate_transition_up(self,pipe1,pipe2,filters):
+		pipe = tf.concat([pipe1,pipe2],axis=3)
+		#pipe = merge([pipe1,pipe2], mode = 'concat', concat_axis = 3)
+		pipe = self.transition_up(pipe,filters)
+		return pipe
 
 
 
