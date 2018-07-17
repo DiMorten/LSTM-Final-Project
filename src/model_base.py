@@ -354,7 +354,10 @@ class NeuralNet(object):
 		stats={"correct_per_class":np.zeros(self.n_classes).astype(np.float32)}
 		stats["per_class_label_count"]=np.zeros(self.n_classes).astype(np.float32)
 		mask=cv2.imread(self.conf["train"]["mask"]["dir"],0)
-		label=cv2.imread("../data/labels/9.tif",0)
+		label=cv2.imread(self.conf["label"]["last_dir"],0)
+		
+#		label=cv2.imread("../data/labels/9.tif",0)
+
 		if im_reconstruct:
 			self.reconstruct=self.reconstruct_init()
 

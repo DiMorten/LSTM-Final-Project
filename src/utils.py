@@ -31,15 +31,16 @@ import argparse
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=7,t_len=6,path="../data/",class_n=9,pc_mode="local", \
 		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None, \
-		n_apriori=16000, squeeze_classes=False):
-		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n}
+		n_apriori=16000, squeeze_classes=False, data_dir='data'):
+		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n, 'label':{}}
 		self.conf["squeeze_classes"]=squeeze_classes
 		self.conf["memory_mode"]=memory_mode #"ram" or "hdd"
 		self.debug=debug
 		self.test_n_limit=test_n_limit
-		
+		self.data_dir=data_dir
 		self.conf["pc_mode"]=pc_mode
-
+		self.conf["label"]["last_name"]="9.tif"
+		self.conf["label"]["last_dir"]=self.conf["path"]+"labels/"+self.conf["label"]["last_name"]
 		self.conf["out_path"]=self.conf["path"]+"results/"
 		self.conf["in_npy_path"]=self.conf["path"]+"in_np2/"
 		self.conf["in_npy_path2"]=self.conf["path"]+"in_np2/"
@@ -389,7 +390,9 @@ class DataSemantic(DataForNet):
 		deb.prints(self.ram_data["test"]["labels"].shape)
 		
 	def create(self):
-		os.system("rm -rf ../data/train_test")
+		os.system("rm -rf "+self.conf["path"]+"train_test")
+
+		#os.system("rm -rf ../data/train_test")
 
 		if self.conf["memory_mode"]=="ram":
 
@@ -468,7 +471,9 @@ class DataOneHot(DataForNet):
 		self.ram_data["test"]["labels"]=self.labels_onehot_get(self.ram_data["test"]["labels_int"], \
 			self.ram_data["test"]["n"],self.conf["class_n"])
 	def create(self):
-		os.system("rm -rf ../data/train_test")
+		os.system("rm -rf "+self.conf["path"]+"train_test")
+
+#		os.system("rm -rf ../data/train_test")
 
 		if self.conf["memory_mode"]=="ram":
 
@@ -523,7 +528,8 @@ class DataOneHot(DataForNet):
 		print(list(iter(data)))
 		if self.conf["utils_flag_store"]:
 			# Store data train, test ims and labels_one_hot
-			os.system("rm -rf ../data/balanced")
+			os.system("rm -rf "+self.conf["path"]+"balanced")
+#			os.system("rm -rf ../data/balanced")
 			self.data_save_to_npy(self.conf["train"],data["train"])
 			self.data_save_to_npy(self.conf["test"],data["test"])	
 
