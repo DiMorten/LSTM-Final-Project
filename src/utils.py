@@ -63,7 +63,8 @@ class DataForNet(object):
 		self.conf["test"]["labels_path"]=self.conf["path"]+"train_test/test/labels/"
 		#self.conf["im_size"]=im_size
 		self.conf["im_size"]=(im_h,im_w)
-		deb.prints(self.conf["im_size"])		
+		deb.prints(self.conf["im_size"])
+		deb.prints(self.conf["band_n"])		
 		self.conf["im_3d_size"]=self.conf["im_size"]+(self.conf["band_n"],)
 		self.conf["balanced"]={}
 
