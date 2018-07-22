@@ -31,7 +31,7 @@ import argparse
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=7,t_len=6,path="../data/",class_n=9,pc_mode="local", \
 		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None, \
-		n_apriori=16000, squeeze_classes=False, data_dir='data'):
+		n_apriori=16000, squeeze_classes=False, data_dir='data',im_h=948,im_w=1068):
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n, 'label':{}}
 		self.conf["squeeze_classes"]=squeeze_classes
 		self.conf["memory_mode"]=memory_mode #"ram" or "hdd"
@@ -61,7 +61,9 @@ class DataForNet(object):
 		self.conf["test"]={}
 		self.conf["test"]["ims_path"]=self.conf["path"]+"train_test/test/ims/"
 		self.conf["test"]["labels_path"]=self.conf["path"]+"train_test/test/labels/"
-		self.conf["im_size"]=im_size
+		#self.conf["im_size"]=im_size
+		self.conf["im_size"]=(im_h,im_w)
+		deb.prints(self.conf["im_size"])		
 		self.conf["im_3d_size"]=self.conf["im_size"]+(self.conf["band_n"],)
 		self.conf["balanced"]={}
 

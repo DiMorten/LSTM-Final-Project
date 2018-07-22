@@ -39,7 +39,10 @@ parser.add_argument('--log_dir', dest='log_dir', default='../data/summaries/', h
 
 parser.add_argument('--debug', type=int, default=1, help='Debug')
 parser.add_argument('-po','--patch_overlap', dest='patch_overlap', type=int, default=0, help='Debug')
-parser.add_argument('--im_size', dest='im_size', nargs='+',default=(948,1068), help='Debug')
+parser.add_argument('--im_size', dest='im_size',default=[948,1068], help='Debug')
+parser.add_argument('--im_h', dest='im_h',default=948, help='Debug')
+parser.add_argument('--im_w', dest='im_w',default=1068, help='Debug')
+
 parser.add_argument('--band_n', dest='band_n', type=int, default=7, help='Debug')
 parser.add_argument('--t_len', dest='t_len', type=int, default=6, help='Debug')
 parser.add_argument('--path', dest='path', default="../data/", help='Data path')
@@ -80,13 +83,13 @@ def main(_):
                                 band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
                                 test_n_limit=args.test_n_limit,memory_mode=args.memory_mode, \
                                 balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
-                                n_apriori=args.n_apriori,patch_length=args.patch_len,squeeze_classes=args.squeeze_classes)
+                                n_apriori=args.n_apriori,patch_length=args.patch_len,squeeze_classes=args.squeeze_classes,im_h=args.im_h,im_w=args.im_w)
     elif label_type=='semantic':
         data=utils.DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
                                 band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
                                 test_n_limit=args.test_n_limit,memory_mode=args.memory_mode, \
                                 balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
-                                n_apriori=args.n_apriori,patch_length=args.patch_len,squeeze_classes=args.squeeze_classes)
+                                n_apriori=args.n_apriori,patch_length=args.patch_len,squeeze_classes=args.squeeze_classes,im_h=args.im_h,im_w=args.im_w)
 
 
     # Load images and create dataset (Extract patches)
