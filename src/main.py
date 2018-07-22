@@ -39,7 +39,7 @@ parser.add_argument('--log_dir', dest='log_dir', default='../data/summaries/', h
 
 parser.add_argument('--debug', type=int, default=1, help='Debug')
 parser.add_argument('-po','--patch_overlap', dest='patch_overlap', type=int, default=0, help='Debug')
-parser.add_argument('--im_size', dest='im_size', type=int, default=(948,1068), help='Debug')
+parser.add_argument('--im_size', dest='im_size', nargs='+',default=(948,1068), help='Debug')
 parser.add_argument('--band_n', dest='band_n', type=int, default=7, help='Debug')
 parser.add_argument('--t_len', dest='t_len', type=int, default=6, help='Debug')
 parser.add_argument('--path', dest='path', default="../data/", help='Data path')
