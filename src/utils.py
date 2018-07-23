@@ -31,15 +31,22 @@ import argparse
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=7,t_len=6,path="../data/",class_n=9,pc_mode="local", \
 		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None, \
-		n_apriori=16000, squeeze_classes=False, data_dir='data',im_h=948,im_w=1068):
-		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n, 'label':{}}
+		n_apriori=16000, squeeze_classes=False, data_dir='data',im_h=948,im_w=1068,id_first=1):
+		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n, 'label':{}, 'seq':{}}
 		self.conf["squeeze_classes"]=squeeze_classes
 		self.conf["memory_mode"]=memory_mode #"ram" or "hdd"
 		self.debug=debug
 		self.test_n_limit=test_n_limit
 		self.data_dir=data_dir
 		self.conf["pc_mode"]=pc_mode
-		self.conf["label"]["last_name"]="9.tif"
+		self.conf['seq']['id_first']=id_first
+		label_list=os.listdir(self.conf['path']+'labels/')
+		self.conf['seq']['id_list']=np.sort(np.array([int(x.partition('.')[0]) for x in label_list])) # Getting all label ids
+		self.conf['seq']['id_max']=self.conf['seq']['id_list'][-1]
+		#deb.prints(self.conf['seq']['id_list'])
+		if self.debug>=1: deb.prints(self.conf['seq']['id_max'])
+		if self.debug>=2: deb.prints(self.conf['seq']['id_list'])
+		self.conf["label"]["last_name"]=str(self.conf['seq']['id_first']+t_len)+".tif"
 		self.conf["label"]["last_dir"]=self.conf["path"]+"labels/"+self.conf["label"]["last_name"]
 		self.conf["out_path"]=self.conf["path"]+"results/"
 		self.conf["in_npy_path"]=self.conf["path"]+"in_np2/"
@@ -201,6 +208,13 @@ class DataForNet(object):
 	def im_patches_npy_multitemporal_from_npy_store2(self,names,label_type,train_mask_save=True):
 		fname=sys._getframe().f_code.co_name
 		print('[@im_patches_npy_multitemporal_from_npy_store2]')
+		#add_id=self.conf['seq']['id_max']-self.conf["t_len"] # Future: deduce this 9 from data
+		add_id=self.conf['seq']['id_first']-1 # Future: deduce this 9 from data
+		
+		if self.debug>=1: 
+			deb.prints(add_id)
+			deb.prints(self.conf['seq']['id_max'])
+			deb.prints(self.conf["t_len"])
 		pathlib.Path(self.conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
 		pathlib.Path(self.conf["patch"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
 		patches_all=np.zeros((58,65,self.conf["t_len"])+self.patch_shape)
@@ -214,10 +228,10 @@ class DataForNet(object):
 		patch["full_label_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"][0:2])
 		#for t_step in range(0,self.conf["t_len"]):
 		for t_step in range(0,self.conf["t_len"]):	
-			deb.prints(self.conf["in_npy_path"]+names[t_step+3]+".npy")
-			patch["full_ims"][t_step] = np.load(self.conf["in_npy_path"]+names[t_step+3]+".npy")
+			deb.prints(self.conf["in_npy_path"]+names[t_step+add_id]+".npy")
+			patch["full_ims"][t_step] = np.load(self.conf["in_npy_path"]+names[t_step+add_id]+".npy")
 			#deb.prints(patch["full_ims"][t_step].dtype)
-			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step+3][2]+".tif",0)
+			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step+add_id][2]+".tif",0)
 
 		deb.prints(patch["full_ims"].shape,fname)
 		deb.prints(patch["full_label_ims"].shape,fname)
@@ -496,6 +510,7 @@ class DataOneHot(DataForNet):
 
 	def mask_test_update(self,mask_test,yy,xx,window):
 		mask_test[int(yy + window/2), int(xx + window/2)]=255
+		#print("here",int(yy + window/2),int(xx + window/2))
 		return mask_test
 
 	def data_onehot_load_balance_store(self):
