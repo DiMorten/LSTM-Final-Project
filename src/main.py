@@ -30,7 +30,7 @@ parser.add_argument('--train_size', dest='train_size', type=int, default=1e8, he
 parser.add_argument('--timesteps', dest='timesteps', type=int, default=utils.conf["t_len"], help='# timesteps used to train')
 parser.add_argument('-pl','--patch_len', dest='patch_len', type=int, default=5, help='# timesteps used to train')
 parser.add_argument('--kernel', dest='kernel', type=int, default=[3,3], help='# timesteps used to train')
-parser.add_argument('--channels', dest='channels', type=int, default=7, help='# timesteps used to train')
+#parser.add_argument('--channels', dest='channels', type=int, default=7, help='# timesteps used to train')
 parser.add_argument('--filters', dest='filters', type=int, default=32, help='# timesteps used to train')
 #parser.add_argument('--n_classes', dest='n_classes', type=int, default=6, help='# timesteps used to train')
 parser.add_argument('--checkpoint_dir', dest='checkpoint_dir', default='./checkpoint', help='models are saved here')

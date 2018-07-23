@@ -103,7 +103,13 @@ python main.py -mm="ram" --debug=1 -pl 20 -po 15 -ts 10 -tnl 20000 -nap=20000 -b
 
 # Ipua
 
-python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=200 --filters=256 -m="convlstm_semantic" --phase="train" -sc=True --class_n=6 --log_dir="../data/summaries/"
 
+python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 1 -tnl 10000000 -bs=20000 --batch_size=200 --filters=256 -m="convlstm" --phase="train" -sc=True --class_n=6 --log_dir="../data/summaries/"
 # Campo verde
 python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 1 -tnl 20000 -bs=20000 --batch_size=200 --filters=256 -m="convlstm" --phase="train" -sc=True --class_n=6 --log_dir="../data/summaries/" --path="../cv_data/" --im_size=(8492,7995) --channels=2 
+
+
+
+# Campo verde 2
+
+python main.py -mm="ram" --debug=1 -pl 5 -po 0 -ts 3 -tnl 100000 -bs=20000 --batch_size=200 --filters=256 -m="convlstm" --phase="train" -sc=True --class_n=9 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2
