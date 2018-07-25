@@ -27,11 +27,21 @@ import deb
 import argparse
 
 
+def mask_train_test_switch_from_path(path):
+	mask=cv2.imread(path)
+	out=mask_train_test_switch(mask)
+	return out
+def mask_train_test_switch(mask):
+	out=mask.copy()
+	out[mask==1]=2
+	out[mask==2]=1
+	return mask
 
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=7,t_len=6,path="../data/",class_n=9,pc_mode="local", \
 		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None, \
-		n_apriori=16000, squeeze_classes=False, data_dir='data',im_h=948,im_w=1068,id_first=1):
+		n_apriori=16000, squeeze_classes=False, data_dir='data',im_h=948,im_w=1068,id_first=1, \
+		train_test_mask_name="TrainTestMask.tif"):
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n, 'label':{}, 'seq':{}}
 		self.conf["squeeze_classes"]=squeeze_classes
 		self.conf["memory_mode"]=memory_mode #"ram" or "hdd"
@@ -62,7 +72,7 @@ class DataForNet(object):
 		deb.prints(self.conf['patch']['center_pixel'])
 		self.conf["train"]={}
 		self.conf["train"]["mask"]={}
-		self.conf["train"]["mask"]["dir"]=self.conf["path"]+"TrainTestMask.tif"
+		self.conf["train"]["mask"]["dir"]=self.conf["path"]+train_test_mask_name
 		self.conf["train"]["ims_path"]=self.conf["path"]+"train_test/train/ims/"
 		self.conf["train"]["labels_path"]=self.conf["path"]+"train_test/train/labels/"
 		self.conf["test"]={}
@@ -195,11 +205,11 @@ class DataForNet(object):
 	def im_patches_npy_multitemporal_from_npy_from_folder_store2(self,label_type="one_hot"):
 		im_names=[]
 		#for i in range(1,10):
-		for i in range(1,10):
-			im_name=glob.glob(self.conf["in_npy_path"]+'im'+str(i)+'*')[0]
+		for i in range(1,self.conf['t_len']+1):
+			im_name=glob.glob(self.conf["in_npy_path"]+'im'+str(i)+'.npy')[0]
 			print(im_name)
 			#im_name=im_name[-14:-4]
-			im_name=im_name[-7:-4]
+			im_name='im'+str(i)
 			im_names.append(im_name)
 			print(im_name)
 		print(im_names)
@@ -227,6 +237,7 @@ class DataForNet(object):
 		patch["full_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"])
 		patch["full_label_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"][0:2])
 		#for t_step in range(0,self.conf["t_len"]):
+		deb.prints(names)
 		for t_step in range(0,self.conf["t_len"]):	
 			deb.prints(self.conf["in_npy_path"]+names[t_step+add_id]+".npy")
 			patch["full_ims"][t_step] = np.load(self.conf["in_npy_path"]+names[t_step+add_id]+".npy")
@@ -322,6 +333,7 @@ class DataForNet(object):
 						patches_get["test_n_limited"]+=1					
 						if test_counter>=self.conf["extract"]["test_skip"]:
 							mask_test=self.mask_test_update(mask_test,yy,xx,window)
+							##deb.prints(np.average(mask_test))
 							#mask_test[yy: yy + window, xx: xx + window]=255
 							#mask_test[int(yy + window/2), int(xx + window/2)]=255
 							test_counter=0
@@ -333,6 +345,7 @@ class DataForNet(object):
 								self.ram_data["test"]=self.in_label_ram_store(self.ram_data["test"],patch,label_patch,data_idx=test_real_count,label_type=label_type)
 							test_real_count+=1
 					#np.random.choice(index, samples_per_class, replace=replace)
+		print("Final mask test average",np.average(mask_test))
 		cv2.imwrite("mask_train.png",mask_train)
 		cv2.imwrite("mask_test.png",mask_test)
 		

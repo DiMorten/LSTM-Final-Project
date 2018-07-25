@@ -33,7 +33,7 @@ class NeuralNet(object):
 						timesteps=utils.conf["t_len"], patch_len=32,
 						kernel=[3,3], channels=7, filters=32, n_classes=6,
 						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1, \
-						patience=1000,squeeze_classes=True,n_repetitions=200):
+						patience=5,squeeze_classes=True,n_repetitions=200,fine_early_stop=False,fine_early_stop_steps=500):
 		self.squeeze_classes=squeeze_classes		
 		self.ram_data=data
 		self.sess = sess
@@ -60,7 +60,8 @@ class NeuralNet(object):
 		if self.debug>=1: print("Initializing NeuralNet instance")
 		print(self.log_dir)
 		self.remove_sparse_loss=False
-
+		self.fine_early_stop_steps=fine_early_stop_steps
+		self.fine_early_stop=fine_early_stop
 	# =_______________ Generic Layer Getters ___________________= #
 	def layer_lstm_get(self,data,filters,kernel,name="convlstm",get_last=True):
 		#filters=64
@@ -263,6 +264,15 @@ class NeuralNet(object):
 				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1.0, self.training: True})
 				if self.debug>=1 and (idx % 30 == 0):
 					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
+				if self.fine_early_stop and (idx % self.fine_early_stop_steps == 0):
+					early_stop=self.early_stop_check(early_stop,stats["overall_accuracy"],stats["average_accuracy"],stats["per_class_accuracy"])
+					if early_stop["signal"]:
+						deb.prints(early_stop["best"]["metric1"])
+						deb.prints(early_stop["best"]["metric2"])
+						deb.prints(early_stop["best"]["metric3"])
+						
+						break
+					
 				
 			# =__________________________________ Test stats get and model save  _______________________________ = #
 			save_path = self.saver.save(self.sess, "./model.ckpt")
