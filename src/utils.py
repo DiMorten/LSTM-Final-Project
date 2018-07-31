@@ -41,8 +41,9 @@ class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=7,t_len=6,path="../data/",class_n=9,pc_mode="local", \
 		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None, \
 		n_apriori=16000, squeeze_classes=False, data_dir='data',im_h=948,im_w=1068,id_first=1, \
-		train_test_mask_name="TrainTestMask.tif"):
+		train_test_mask_name="TrainTestMask.tif",test_overlap_full=True):
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n, 'label':{}, 'seq':{}}
+		self.conf["test"]["overlap_full"]=test_overlap_full
 		self.conf["squeeze_classes"]=squeeze_classes
 		self.conf["memory_mode"]=memory_mode #"ram" or "hdd"
 		self.debug=debug
@@ -263,13 +264,21 @@ class DataForNet(object):
 		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
 			self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
 			path_test=self.conf["test"],patches_save=self.conf["utils_flag_store"],label_type=label_type,memory_mode=self.conf["memory_mode"])
+
+		if self.conf["test"]["overlap_full"]:
+			# Make test with overlap full
+			_,self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
+				self.conf["patch"]["size"],self.conf["patch"]["size"]-1,mask=patch["train_mask"],path_train=self.conf["train"], \
+				path_test=self.conf["test"],patches_save=self.conf["utils_flag_store"],label_type=label_type,memory_mode=self.conf["memory_mode"],test_only=True)
+
 		deb.prints(self.conf["test"]["n"])
 		if self.conf["utils_flag_store"]:
 			np.save(self.conf["path"]+"train_n.npy",self.conf["train"]["n"])
 			np.save(self.conf["path"]+"test_n.npy",self.conf["test"]["n"])
 
 	def patches_multitemporal_get(self,img,label,window,overlap,mask,path_train,path_test,patches_save=False, \
-		label_type="one_hot",memory_mode="hdd"):
+		label_type="one_hot",memory_mode="hdd",test_only=False):
+		
 		fname=sys._getframe().f_code.co_name
 
 		deb.prints(window,fname)
@@ -323,7 +332,8 @@ class DataForNet(object):
 							np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
 							np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch)
 					elif self.conf["memory_mode"]=="ram":
-						self.ram_data["train"]=self.in_label_ram_store(self.ram_data["train"],patch,label_patch,data_idx=patches_get["train_n"],label_type=label_type)
+						if not test_only:
+							self.ram_data["train"]=self.in_label_ram_store(self.ram_data["train"],patch,label_patch,data_idx=patches_get["train_n"],label_type=label_type)
 					patches_get["train_n"]+=1	
 				elif np.all(mask_patch==2): # Test sample
 					test_counter+=1
@@ -356,22 +366,23 @@ class DataForNet(object):
 		deb.prints(patches_get["test_n"],fname)
 		deb.prints(patches_get["test_n_limited"],fname)
 		deb.prints(test_real_count)
+		if not test_only:
+			self.ram_data["train"]["n"]=patches_get["train_n"]
+			self.ram_data["train"]["ims"]=self.ram_data["train"]["ims"][0:self.ram_data["train"]["n"]]
+			self.ram_data["train"]["labels_int"]=self.ram_data["train"]["labels_int"][0:self.ram_data["train"]["n"]]
+			count,unique=np.unique(self.ram_data["train"]["labels_int"],return_counts=True)
+			print("Before squeezing count",count,unique)
+			deb.prints(self.conf["squeeze_classes"])
 		
-		self.ram_data["train"]["n"]=patches_get["train_n"]
 		self.ram_data["test"]["n"]=test_real_count
-		
-		self.ram_data["train"]["ims"]=self.ram_data["train"]["ims"][0:self.ram_data["train"]["n"]]
-		self.ram_data["train"]["labels_int"]=self.ram_data["train"]["labels_int"][0:self.ram_data["train"]["n"]]
 		self.ram_data["test"]["ims"]=self.ram_data["test"]["ims"][0:self.ram_data["test"]["n"]]
 		self.ram_data["test"]["labels_int"]=self.ram_data["test"]["labels_int"][0:self.ram_data["test"]["n"]]
 
-		count,unique=np.unique(self.ram_data["train"]["labels_int"],return_counts=True)
-		print("Before squeezing count",count,unique)
-		deb.prints(self.conf["squeeze_classes"])
 
 		if self.conf["squeeze_classes"]:
 			print("here1")
-			self.ram_data["train"]=self.labels_unused_classes_eliminate(self.ram_data["train"])
+			if not test_only:
+				self.ram_data["train"]=self.labels_unused_classes_eliminate(self.ram_data["train"])
 			self.ram_data["test"]=self.labels_unused_classes_eliminate(self.ram_data["test"])
 			if no_zero==False:
 				self.ram_data["test"]["labels_int"]+=1

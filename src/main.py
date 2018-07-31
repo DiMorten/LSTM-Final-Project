@@ -56,6 +56,7 @@ parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=4000
 parser.add_argument('-sc','--squeeze_classes', dest='squeeze_classes',default=True, help="Class number. 'local' or 'remote'")
 
 
+parser.add_argument('-tof','--test_overlap_full', dest='test_overlap_full',default=True, help="Class number. 'local' or 'remote'")
 parser.add_argument('-fes','--fine_early_stop', dest='fine_early_stop',default=True, help="Class number. 'local' or 'remote'")
 parser.add_argument('-ttmn','--train_test_mask_name', dest='train_test_mask_name',default="TrainTestMask.tif", help="Class number. 'local' or 'remote'")
 parser.add_argument('--id_first', dest='id_first', type=int, default=1, help='Class number')
@@ -88,14 +89,16 @@ def main(_):
                                 test_n_limit=args.test_n_limit,memory_mode=args.memory_mode, \
                                 balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
                                 n_apriori=args.n_apriori,patch_length=args.patch_len,squeeze_classes=args.squeeze_classes,im_h=args.im_h,im_w=args.im_w, \
-                                id_first=args.id_first, train_test_mask_name=args.train_test_mask_name)
+                                id_first=args.id_first, train_test_mask_name=args.train_test_mask_name, \
+                                test_overlap_full=args.test_overlap_full)
     elif label_type=='semantic':
         data=utils.DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
                                 band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
                                 test_n_limit=args.test_n_limit,memory_mode=args.memory_mode, \
                                 balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
                                 n_apriori=args.n_apriori,patch_length=args.patch_len,squeeze_classes=args.squeeze_classes,im_h=args.im_h,im_w=args.im_w, \
-                                id_first=args.id_first, train_test_mask_name=args.train_test_mask_name)
+                                id_first=args.id_first, train_test_mask_name=args.train_test_mask_name, \
+                                test_overlap_full=args.test_overlap_full)
 
 
     # Load images and create dataset (Extract patches)
