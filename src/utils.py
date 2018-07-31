@@ -257,6 +257,8 @@ class DataForNet(object):
 
 		patch["train_mask"]=cv2.imread(self.conf["train"]["mask"]["dir"],0)
 
+		deb.prints(patch["train_mask"])
+		deb.prints(self.conf["train"]["mask"]["dir"])
 		
 		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
 			self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \

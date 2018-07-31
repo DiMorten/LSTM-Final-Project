@@ -33,7 +33,7 @@ class NeuralNet(object):
 						timesteps=utils.conf["t_len"], patch_len=32,
 						kernel=[3,3], channels=7, filters=32, n_classes=6,
 						checkpoint_dir='./checkpoint',log_dir=utils.conf["summaries_path"],data=None, conf=utils.conf, debug=1, \
-						patience=5,squeeze_classes=True,n_repetitions=200,fine_early_stop=False,fine_early_stop_steps=500):
+						patience=5,squeeze_classes=True,n_repetitions=10,fine_early_stop=False,fine_early_stop_steps=400):
 		self.squeeze_classes=squeeze_classes		
 		self.ram_data=data
 		self.sess = sess
@@ -265,6 +265,7 @@ class NeuralNet(object):
 				if self.debug>=1 and (idx % 30 == 0):
 					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
 				if self.fine_early_stop and (idx % self.fine_early_stop_steps == 0):
+					stats = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
 					early_stop=self.early_stop_check(early_stop,stats["overall_accuracy"],stats["average_accuracy"],stats["per_class_accuracy"])
 					if early_stop["signal"]:
 						deb.prints(early_stop["best"]["metric1"])

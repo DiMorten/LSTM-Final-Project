@@ -52,11 +52,12 @@ parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, defau
 parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="hdd", help="Class number. 'local' or 'remote'")
 parser.add_argument('-bs','--balance_samples_per_class', dest='balance_samples_per_class',type=int,default=None, help="Class number. 'local' or 'remote'")
 parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,default=8, help="Class number. 'local' or 'remote'")
-parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=1000000, help="Class number. 'local' or 'remote'")
+parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=4000000, help="Class number. 'local' or 'remote'")
 parser.add_argument('-sc','--squeeze_classes', dest='squeeze_classes',default=True, help="Class number. 'local' or 'remote'")
 
 
-parser.add_argument('-ttmn','--train_test_mask_name', dest='train_test_mask_name',default=True, help="Class number. 'local' or 'remote'")
+parser.add_argument('-fes','--fine_early_stop', dest='fine_early_stop',default=True, help="Class number. 'local' or 'remote'")
+parser.add_argument('-ttmn','--train_test_mask_name', dest='train_test_mask_name',default="TrainTestMask.tif", help="Class number. 'local' or 'remote'")
 parser.add_argument('--id_first', dest='id_first', type=int, default=1, help='Class number')
 parser.add_argument('-ir','--im_reconstruct', dest='im_reconstruct',default=False, help="Class number. 'local' or 'remote'")
 

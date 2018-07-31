@@ -1,5 +1,5 @@
 
-mode="4"
+mode="2"
 
 if [ "$mode" -eq "1" ]; then
 	cd ~/Downloads/
@@ -24,7 +24,7 @@ if [ "$mode" -eq "4" ]; then
 
 	conda update cairo
 
-	pip install -U numpy
+	pip install -y -U numpy
 
 	sudo nano ~/.keras/keras.json
 fi
