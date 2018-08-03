@@ -56,7 +56,7 @@ parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=4000
 parser.add_argument('-sc','--squeeze_classes', dest='squeeze_classes',default=True, help="Class number. 'local' or 'remote'")
 
 
-parser.add_argument('-tof','--test_overlap_full', dest='test_overlap_full',default=True, help="Class number. 'local' or 'remote'")
+parser.add_argument('-tof','--test_overlap_full', dest='test_overlap_full',default=False, help="Class number. 'local' or 'remote'")
 parser.add_argument('-fes','--fine_early_stop', dest='fine_early_stop',default=True, help="Class number. 'local' or 'remote'")
 parser.add_argument('-ttmn','--train_test_mask_name', dest='train_test_mask_name',default="TrainTestMask.tif", help="Class number. 'local' or 'remote'")
 parser.add_argument('--id_first', dest='id_first', type=int, default=1, help='Class number')

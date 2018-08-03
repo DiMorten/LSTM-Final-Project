@@ -43,7 +43,6 @@ class DataForNet(object):
 		n_apriori=16000, squeeze_classes=False, data_dir='data',im_h=948,im_w=1068,id_first=1, \
 		train_test_mask_name="TrainTestMask.tif",test_overlap_full=True):
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n, 'label':{}, 'seq':{}}
-		self.conf["test"]["overlap_full"]=test_overlap_full
 		self.conf["squeeze_classes"]=squeeze_classes
 		self.conf["memory_mode"]=memory_mode #"ram" or "hdd"
 		self.debug=debug
@@ -79,6 +78,8 @@ class DataForNet(object):
 		self.conf["test"]={}
 		self.conf["test"]["ims_path"]=self.conf["path"]+"train_test/test/ims/"
 		self.conf["test"]["labels_path"]=self.conf["path"]+"train_test/test/labels/"
+		self.conf["test"]["overlap_full"]=test_overlap_full
+		
 		#self.conf["im_size"]=im_size
 		self.conf["im_size"]=(im_h,im_w)
 		deb.prints(self.conf["im_size"])
@@ -265,7 +266,7 @@ class DataForNet(object):
 			self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
 			path_test=self.conf["test"],patches_save=self.conf["utils_flag_store"],label_type=label_type,memory_mode=self.conf["memory_mode"])
 
-		if self.conf["test"]["overlap_full"]:
+		if self.conf["test"]["overlap_full"]==True:
 			# Make test with overlap full
 			_,self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
 				self.conf["patch"]["size"],self.conf["patch"]["size"]-1,mask=patch["train_mask"],path_train=self.conf["train"], \
@@ -311,6 +312,8 @@ class DataForNet(object):
 		for i in range(len(gridx)):
 			for j in range(len(gridy)):
 				counter=counter+1
+				if counter % 10000000 == 0:
+					deb.prints(counter,fname)
 				xx = gridx[i]
 				yy = gridy[j]
 				#patch_clouds=Bclouds[yy: yy + window, xx: xx + window]
@@ -525,8 +528,10 @@ class DataOneHot(DataForNet):
 				deb.prints(self.ram_data["train"]["labels_int"].shape)
 			deb.prints(np.unique(self.ram_data["train"]["labels_int"],return_counts=True)[1])
 			self.ram_data=self.data_normalize_per_band(self.ram_data)
-			self.ram_data["train"]["ims"],self.ram_data["train"]["labels_int"],self.ram_data["train"]["labels"]=self.data_balance(self.ram_data, \
-				self.conf["balanced"]["samples_per_class"])
+			data_balance=True
+			if data_balance:
+				self.ram_data["train"]["ims"],self.ram_data["train"]["labels_int"],self.ram_data["train"]["labels"]=self.data_balance(self.ram_data, \
+					self.conf["balanced"]["samples_per_class"])
 
 			#with open(self.conf["path"]+'data.pkl', 'wb') as f: pickle.dump(self.ram_data, f)
 

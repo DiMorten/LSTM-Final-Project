@@ -11,7 +11,7 @@ class conv_lstm(NeuralNetOneHot):
 	def model_graph_get(self,data):
 
 		# ConvLSTM Layer (Get last image)
-		pipe=self.layer_lstm_get(data,filters=32,kernel=self.kernel,name='convlstm')
+		pipe=self.layer_lstm_get(data,filters=16,kernel=self.kernel,name='convlstm')
 		#pipe=self.layer_lstm_multi_get(data,filters=32,kernel=self.kernel,name='multi_convlstm')
 		
 		if self.debug: deb.prints(pipe.get_shape())
