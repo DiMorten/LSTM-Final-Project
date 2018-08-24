@@ -207,7 +207,7 @@ class DataForNet(object):
 	def im_patches_npy_multitemporal_from_npy_from_folder_store2(self,label_type="one_hot"):
 		im_names=[]
 		#for i in range(1,10):
-		for i in range(1,self.conf['t_len']+1):
+		for i in range(self.conf['seq']['id_first'],self.conf['t_len']+self.conf['seq']['id_first']):
 			im_name=glob.glob(self.conf["in_npy_path"]+'im'+str(i)+'.npy')[0]
 			print(im_name)
 			#im_name=im_name[-14:-4]
@@ -221,8 +221,8 @@ class DataForNet(object):
 		fname=sys._getframe().f_code.co_name
 		print('[@im_patches_npy_multitemporal_from_npy_store2]')
 		#add_id=self.conf['seq']['id_max']-self.conf["t_len"] # Future: deduce this 9 from data
-		add_id=self.conf['seq']['id_first']-1 # Future: deduce this 9 from data
-		
+		##add_id=self.conf['seq']['id_first']-1 # Future: deduce this 9 from data
+		add_id=0
 		if self.debug>=1: 
 			deb.prints(add_id)
 			deb.prints(self.conf['seq']['id_max'])
@@ -241,6 +241,7 @@ class DataForNet(object):
 		#for t_step in range(0,self.conf["t_len"]):
 		deb.prints(names)
 		for t_step in range(0,self.conf["t_len"]):	
+			print(t_step,add_id)
 			deb.prints(self.conf["in_npy_path"]+names[t_step+add_id]+".npy")
 			patch["full_ims"][t_step] = np.load(self.conf["in_npy_path"]+names[t_step+add_id]+".npy")
 			#deb.prints(patch["full_ims"][t_step].dtype)
@@ -277,8 +278,8 @@ class DataForNet(object):
 			np.save(self.conf["path"]+"train_n.npy",self.conf["train"]["n"])
 			np.save(self.conf["path"]+"test_n.npy",self.conf["test"]["n"])
 
-	def patches_multitemporal_get(self,img,label,window,overlap,mask,path_train,path_test,patches_save=False, \
-		label_type="one_hot",memory_mode="hdd",test_only=False):
+	def patches_multitemporal_get(self,img,label,window,overlap,mask,path_train,path_test,patches_save=True, \
+		label_type="one_hot",memory_mode="hdd",test_only=False, ram_save=True):
 		
 		fname=sys._getframe().f_code.co_name
 
@@ -352,11 +353,13 @@ class DataForNet(object):
 							#mask_test[yy: yy + window, xx: xx + window]=255
 							#mask_test[int(yy + window/2), int(xx + window/2)]=255
 							test_counter=0
-							if self.conf["memory_mode"]=="hdd":
-								if patches_save==True:
-									np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
-									np.save(path_test["labels_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",label_patch)
-							elif self.conf["memory_mode"]=="ram":
+							if patches_save==True:
+								np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
+								np.save(path_test["labels_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",label_patch)
+
+							#if self.conf["memory_mode"]=="hdd":
+								
+							if self.conf["memory_mode"]=="ram":
 								self.ram_data["test"]=self.in_label_ram_store(self.ram_data["test"],patch,label_patch,data_idx=test_real_count,label_type=label_type)
 							test_real_count+=1
 					#np.random.choice(index, samples_per_class, replace=replace)
