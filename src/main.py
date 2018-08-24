@@ -49,7 +49,7 @@ parser.add_argument('--path', dest='path', default="../data/", help='Data path')
 parser.add_argument('--class_n', dest='class_n', type=int, default=6, help='Class number')
 parser.add_argument('--pc_mode', dest='pc_mode', default="local", help="Class number. 'local' or 'remote'")
 parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=1000, help="Class number. 'local' or 'remote'")
-parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="hdd", help="Class number. 'local' or 'remote'")
+parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="ram", help="Class number. 'local' or 'remote'")
 parser.add_argument('-bs','--balance_samples_per_class', dest='balance_samples_per_class',type=int,default=None, help="Class number. 'local' or 'remote'")
 parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,default=8, help="Class number. 'local' or 'remote'")
 parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=4000000, help="Class number. 'local' or 'remote'")
@@ -61,6 +61,8 @@ parser.add_argument('-fes','--fine_early_stop', dest='fine_early_stop',default=T
 parser.add_argument('-ttmn','--train_test_mask_name', dest='train_test_mask_name',default="TrainTestMask.tif", help="Class number. 'local' or 'remote'")
 parser.add_argument('--id_first', dest='id_first', type=int, default=1, help='Class number')
 parser.add_argument('-ir','--im_reconstruct', dest='im_reconstruct',default=False, help="Class number. 'local' or 'remote'")
+
+parser.add_argument('-rst','--ram_store', dest='ram_store',default=True, help="Ram store")
 
 args = parser.parse_args()
 
@@ -75,7 +77,7 @@ if args.model=='unet' or args.model=='smcnn_unet' or args.model=='convlstm_seman
     label_type='semantic'
 else:
     label_type='one_hot'
-
+deb.prints(label_type)
 def main(_):
 
     # Make checkpoint directory
@@ -90,7 +92,7 @@ def main(_):
                                 balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
                                 n_apriori=args.n_apriori,patch_length=args.patch_len,squeeze_classes=args.squeeze_classes,im_h=args.im_h,im_w=args.im_w, \
                                 id_first=args.id_first, train_test_mask_name=args.train_test_mask_name, \
-                                test_overlap_full=args.test_overlap_full)
+                                test_overlap_full=args.test_overlap_full,ram_store=args.ram_store)
     elif label_type=='semantic':
         data=utils.DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
                                 band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
@@ -98,7 +100,7 @@ def main(_):
                                 balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
                                 n_apriori=args.n_apriori,patch_length=args.patch_len,squeeze_classes=args.squeeze_classes,im_h=args.im_h,im_w=args.im_w, \
                                 id_first=args.id_first, train_test_mask_name=args.train_test_mask_name, \
-                                test_overlap_full=args.test_overlap_full)
+                                test_overlap_full=args.test_overlap_full,ram_store=args.ram_store)
 
 
     # Load images and create dataset (Extract patches)
