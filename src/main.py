@@ -63,6 +63,7 @@ parser.add_argument('--id_first', dest='id_first', type=int, default=1, help='Cl
 parser.add_argument('-ir','--im_reconstruct', dest='im_reconstruct',default=False, help="Class number. 'local' or 'remote'")
 
 parser.add_argument('-rst','--ram_store', dest='ram_store',default=True, help="Ram store")
+parser.add_argument('-psv','--patches_save', dest='patches_save',default=True, help="Ram store")
 
 args = parser.parse_args()
 
@@ -78,6 +79,7 @@ if args.model=='unet' or args.model=='smcnn_unet' or args.model=='convlstm_seman
 else:
     label_type='one_hot'
 deb.prints(label_type)
+deb.prints(args.patches_save)
 def main(_):
 
     # Make checkpoint directory
@@ -92,7 +94,7 @@ def main(_):
                                 balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
                                 n_apriori=args.n_apriori,patch_length=args.patch_len,squeeze_classes=args.squeeze_classes,im_h=args.im_h,im_w=args.im_w, \
                                 id_first=args.id_first, train_test_mask_name=args.train_test_mask_name, \
-                                test_overlap_full=args.test_overlap_full,ram_store=args.ram_store)
+                                test_overlap_full=args.test_overlap_full,ram_store=args.ram_store,patches_save=args.patches_save)
     elif label_type=='semantic':
         data=utils.DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
                                 band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
@@ -100,7 +102,7 @@ def main(_):
                                 balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
                                 n_apriori=args.n_apriori,patch_length=args.patch_len,squeeze_classes=args.squeeze_classes,im_h=args.im_h,im_w=args.im_w, \
                                 id_first=args.id_first, train_test_mask_name=args.train_test_mask_name, \
-                                test_overlap_full=args.test_overlap_full,ram_store=args.ram_store)
+                                test_overlap_full=args.test_overlap_full,ram_store=args.ram_store,patches_save=args.patches_save)
 
 
     # Load images and create dataset (Extract patches)

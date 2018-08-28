@@ -42,6 +42,7 @@ class DataForNet(object):
 		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None, \
 		n_apriori=16000, squeeze_classes=False, data_dir='data',im_h=948,im_w=1068,id_first=1, \
 		train_test_mask_name="TrainTestMask.tif",test_overlap_full=True,ram_store=True,patches_save=False):
+		deb.prints(patches_save)
 		self.patches_save=patches_save
 		self.ram_store=ram_store
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n, 'label':{}, 'seq':{}}
@@ -326,7 +327,7 @@ class DataForNet(object):
 				patch = img[:,yy: yy + window, xx: xx + window,:]
 				label_patch = label[:,yy: yy + window, xx: xx + window]
 				mask_patch = mask[yy: yy + window, xx: xx + window].astype(np.float64)
-				is_mask_from_train=self.is_mask_from_train(mask_patch)
+				is_mask_from_train=self.is_mask_from_train(mask_patch,label_patch[self.conf["t_len"]-1])
 				
 				no_zero=True
 				#if np.all(label_patch==0) and no_zero==True:
@@ -336,6 +337,7 @@ class DataForNet(object):
 				#elif np.all(mask_patch==1): # Train sample
 				if is_mask_from_train==True: # Train sample
 					
+					#deb.prints("train")
 					mask_train_areas=mask_patch.copy()
 					mask_train_areas[mask_train_areas==2]=0 # Remove test from this patch
 					mask_train[yy: yy + window, xx: xx + window]=mask_train_areas.astype(np.uint8)*255
@@ -344,16 +346,18 @@ class DataForNet(object):
 						label_patch[t_step]=cv2.bitwise_and(label_patch[t_step],label_patch[t_step],mask=mask_train_areas.astype(np.uint8))
 					if self.conf["memory_mode"]=="ram" and self.ram_store==True:
 						if not test_only:
-							self.ram_data["train"]=self.in_label_ram_store(self.ram_data["train"],patch,label_patch,data_idx=patches_get["train_n"],label_type=label_type)
-					print("herherher")
-					#if self.patches_save==True:
-					label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch)
-					print("HEERERER")
-					np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
-					np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch_parsed)
+							self.ram_data["train"]=self.in_label_ram_store(self.ram_data["train"],patch,label_patch,data_idx=patches_get["train_n"],label_type=label_type,name="train")
+					#print("herherher")
+					if self.patches_save==True:
+						label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
+						#print("HEERERER")
+						np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
+						np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch_parsed)
 
 					patches_get["train_n"]+=1	
-				elif np.any(mask_patch==2): # Test sample
+				is_mask_from_test=self.is_mask_from_test(mask_patch,label_patch[self.conf["t_len"]-1])
+				if is_mask_from_test==True: # Test sample
+					#deb.prints("test")
 					test_counter+=1
 					
 					#if np.random.rand(1)[0]>=0.7:
@@ -361,25 +365,25 @@ class DataForNet(object):
 					patches_get["test_n"]+=1
 					if patches_get["test_n"]<=self.test_n_limit:
 						patches_get["test_n_limited"]+=1					
-						if test_counter>=self.conf["extract"]["test_skip"]:
-							mask_test,label_patch=self.mask_test_update(mask_test,yy,xx,window,label_patch,mask_patch)
+						##if test_counter>=self.conf["extract"]["test_skip"]:
+						mask_test,label_patch=self.mask_test_update(mask_test,yy,xx,window,label_patch,mask_patch)
 							##deb.prints(np.average(mask_test))
 							#mask_test[yy: yy + window, xx: xx + window]=255
 							#mask_test[int(yy + window/2), int(xx + window/2)]=255
-							test_counter=0
+						##	test_counter=0
 							
 							
 					
 							#if self.conf["memory_mode"]=="hdd":
 							#deb.prints(self.ram_store)
-							if self.conf["memory_mode"]=="ram" and self.ram_store==True:
-								self.ram_data["test"]=self.in_label_ram_store(self.ram_data["test"],patch,label_patch,data_idx=test_real_count,label_type=label_type)
-							#if self.patches_save==True:
-							label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch)
+						if self.conf["memory_mode"]=="ram" and self.ram_store==True:
+							self.ram_data["test"]=self.in_label_ram_store(self.ram_data["test"],patch,label_patch,data_idx=test_real_count,label_type=label_type,name="test")
+						if self.patches_save==True:
+							label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
 							np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
 							np.save(path_test["labels_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",label_patch_parsed)
 
-							test_real_count+=1
+						test_real_count+=1
 					#np.random.choice(index, samples_per_class, replace=replace)
 		print("Final mask test average",np.average(mask_test))
 		cv2.imwrite("mask_train.png",mask_train)
@@ -418,11 +422,13 @@ class DataForNet(object):
 		return patches_get["train_n"],test_real_count
 
 
-	def in_label_ram_store(self,data,patch,label_patch,data_idx,label_type):
+	def in_label_ram_store(self,data,patch,label_patch,data_idx,label_type,name):
 		data["ims"][data_idx]=patch
+		
 		if label_type=="one_hot":
 			data["labels_int"][data_idx]=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
 			if data["labels_int"][data_idx]==0:
+				print(name)
 				deb.prints("here")
 		elif label_type=="semantic":
 			data["labels_int"][data_idx]=label_patch[self.conf["t_len"]-1]
@@ -490,9 +496,12 @@ class DataSemantic(DataForNet):
 		
 			label_patch[t_step]=cv2.bitwise_and(label_patch[t_step],label_patch[t_step],mask=mask_test_areas.astype(np.uint8))
 		return mask_test,label_patch
-	def is_mask_from_train(self,mask_patch):
+	def is_mask_from_train(self,mask_patch,label_patch):
 		#return np.any(mask_patch==1)
 		return np.count_nonzero(mask_patch[mask_patch==1])>64
+
+	def is_mask_from_test(self,mask_patch,label_patch):
+		return np.any(mask_patch==2)
 		
 	# def labels_unused_classes_eliminate(self,data):
 
@@ -549,12 +558,12 @@ class DataSemantic(DataForNet):
 		# self.old_n_classes=self.n_classes
 		label_classes = np.unique(labels_int).astype(np.int)
 		# self.n_classes=self.classes.shape[0]
-		deb.prints(label_classes,fname)		
+		##deb.prints(label_classes,fname)		
 		
 		new_labels = labels_int.copy()
 		for label_class in label_classes:
 			#print(len(unused_map))
-			print(label_class)
+			##print(label_class)
 			if unused_map[label_class][1]==-1:
 				print("Unused map error!")
 			new_labels[labels_int == label_class] = unused_map[label_class][1]
@@ -580,8 +589,18 @@ class DataOneHot(DataForNet):
 		self.ram_data["test"]["labels_int"]=np.zeros((self.conf["test"]["n_apriori"],))
 		self.conf["label_type"]="one_hot"
 
-	def is_mask_from_train(self,mask_patch):
-		return (mask_patch[self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]]==1)
+	def is_mask_from_train(self,mask_patch,label_patch):
+		condition_1=(mask_patch[self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]]==1)
+		condition_2=(label_patch[self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]]>0)
+		return (condition_1 and condition_2)
+	def is_mask_from_test(self,mask_patch,label_patch):
+		condition_1=(mask_patch[self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]]==2)
+		condition_2=(label_patch[self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]]>0)
+		#deb.prints(condition_1)
+		#deb.prints(condition_2)
+		
+		#deb.prints((condition_1 and condition_2))
+		return (condition_1 and condition_2)
 	def im_patches_npy_multitemporal_from_npy_from_folder_store2_onehot(self):
 		self.im_patches_npy_multitemporal_from_npy_from_folder_store2(label_type=self.conf["label_type"])
 		self.ram_data["train"]["labels"]=self.labels_onehot_get(self.ram_data["train"]["labels_int"], \
