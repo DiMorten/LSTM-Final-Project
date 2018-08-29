@@ -90,6 +90,38 @@ class UNet(NeuralNetSemantic):
 
 
 		return pipe
+
+#================= Small SMCNN_Unet ========================================#
+# Remote: python main.py -mm="ram" --debug=1 -po 1 -ts 1 -tnl 1000000 --batch_size=2000 --filters=256 -pl=5 -m="smcnn_unet" -nap=160000
+class SMCNN_UNet(NeuralNetSemantic):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.model_build()
+		self.kernel_size=(3,3)
+		self.filters=256
+	def model_graph_get(self,data):
+
+		pipe = data
+		pipe = tf.transpose(pipe, [0, 2, 3, 4, 1])
+		pipe = tf.reshape(pipe,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
+
+		deb.prints(pipe.get_shape())
+
+		pipe = self.conv_block_get(pipe)
+		#pipe = self.conv_block_get(pipe)
+		#pipe = self.conv_block_get(pipe)				
+
+		pipe = tf.layers.conv2d(pipe, self.n_classes, self.kernel_size, activation=None,padding='same')
+		prediction = tf.argmax(pipe, dimension=3, name="prediction")
+		#return tf.expand_dims(annotation_pred, dim=3), pipe
+		return pipe, prediction
+	def conv_block_get(self,pipe):
+		pipe = tf.layers.conv2d(pipe, self.filters, self.kernel_size, activation=None,padding='same')
+		pipe=self.batchnorm(pipe,training=self.training)
+		pipe = tf.nn.relu(pipe)
+		
+		return pipe
+
 class SMCNN_UNet_large(NeuralNetSemantic):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -170,37 +202,70 @@ class SMCNN_UNet_large(NeuralNetSemantic):
 		deb.prints(pipe.get_shape())
 		return pipe
 
-
-#================= Small SMCNN_Unet ========================================#
-# Remote: python main.py -mm="ram" --debug=1 -po 1 -ts 1 -tnl 1000000 --batch_size=2000 --filters=256 -pl=5 -m="smcnn_unet" -nap=160000
 class SMCNN_UNet(NeuralNetSemantic):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
-		self.model_build()
+
 		self.kernel_size=(3,3)
-		self.filters=256
-	def model_graph_get(self,data):
-
-		pipe = data
-		pipe = tf.transpose(pipe, [0, 2, 3, 4, 1])
-		pipe = tf.reshape(pipe,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
-
-		deb.prints(pipe.get_shape())
-
-		pipe = self.conv_block_get(pipe)
-		#pipe = self.conv_block_get(pipe)
-		#pipe = self.conv_block_get(pipe)				
-
-		pipe = tf.layers.conv2d(pipe, self.n_classes, self.kernel_size, activation=None,padding='same')
-		prediction = tf.argmax(pipe, dimension=3, name="prediction")
-		#return tf.expand_dims(annotation_pred, dim=3), pipe
-		return pipe, prediction
-	def conv_block_get(self,pipe):
-		pipe = tf.layers.conv2d(pipe, self.filters, self.kernel_size, activation=None,padding='same')
+		self.gr=16
+		self.model_build()
+	def conv_block(self,pipe,gr):
 		pipe=self.batchnorm(pipe,training=self.training)
 		pipe = tf.nn.relu(pipe)
-		
+		pipe = tf.layers.conv2d(pipe, gr, self.kernel_size, strides=(1,1), activation=None,padding='same')
+		pipe = tf.nn.dropout(pipe, self.keep_prob)
 		return pipe
+
+	def dense_block(self,pipe,gr,long_concat=True):
+		
+		pipe1 = self.conv_block(pipe,gr)
+		pipe2 = tf.concat([pipe1,pipe],axis=3)
+		pipe2 = self.conv_block(pipe2,gr)
+		if long_concat:
+			pipe3 = tf.concat([pipe,pipe1,pipe2],axis=3)
+		else:
+			pipe3 = tf.concat([pipe1,pipe2],axis=3)
+	#def transition_block(self,pipe,gr):
+		return pipe3
+
+	def model_graph_get(self,data):
+
+		x = data
+		x = tf.transpose(x, [0, 2, 3, 4, 1])
+		x = tf.reshape(x,[-1,self.patch_len,self.patch_len,self.channels*self.timesteps])
+
+		deb.prints(x.get_shape())
+
+		x = tf.layers.conv2d(x, 48, self.kernel_size, strides=(1,1), activation=None,padding='same')
+		deb.prints(x.get_shape())
+
+		pipe2 = self.dense_block(x,self.gr)
+		deb.prints(pipe2.get_shape())
+
+		x = self.conv_block(pipe2,80)
+		x=tf.layers.average_pooling2d(inputs=x, pool_size=[2, 2], strides=2,padding='same')
+		pipe4 = self.dense_block(x,self.gr)
+		deb.prints(pipe4.get_shape())
+
+		x = self.conv_block(pipe4,112)
+		x=tf.layers.average_pooling2d(inputs=x, pool_size=[2, 2], strides=2,padding='same')
+		deb.prints(x.get_shape())
+
+		x = self.dense_block(x,self.gr,long_concat=False)
+		deb.prints(x.get_shape())
+
+		x = tf.layers.conv2d_transpose(x, 32, self.kernel_size,strides=(2,2),activation=None,padding='same')
+		deb.prints(x.get_shape())
+
+		x = tf.concat([x,pipe4],axis=3)
+		
+		x = self.dense_block(x,self.gr,long_concat=False)
+		x = tf.layers.conv2d_transpose(x, 32, self.kernel_size,strides=(2,2),activation=None,padding='same')
+		x = tf.concat([x,pipe2],axis=3)
+		x = tf.layers.conv2d(x, self.n_classes, (1,1), activation=None,padding='same')
+		prediction = tf.argmax(x, dimension=3, name="prediction")
+		return x,prediction
+
 
 class SMCNN_UNet_small(NeuralNetSemantic):
 	def __init__(self, *args, **kwargs):
