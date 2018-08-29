@@ -63,7 +63,7 @@ parser.add_argument('--id_first', dest='id_first', type=int, default=1, help='Cl
 parser.add_argument('-ir','--im_reconstruct', dest='im_reconstruct',default=False, help="Class number. 'local' or 'remote'")
 
 parser.add_argument('-rst','--ram_store', dest='ram_store',default=True, help="Ram store")
-parser.add_argument('-psv','--patches_save', dest='patches_save',default=True, help="Ram store")
+parser.add_argument('-psv','--patches_save', dest='patches_save',default=True, help="Patches npy store")
 
 args = parser.parse_args()
 
