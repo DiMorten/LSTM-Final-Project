@@ -351,7 +351,10 @@ class DataForNet(object):
 							self.ram_data["train"]=self.in_label_ram_store(self.ram_data["train"],patch,label_patch,data_idx=patches_get["train_n"],label_type=label_type,name="train")
 					#print("herherher")
 					if self.patches_save==True or self.patches_save=="True":
-						label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
+						if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
+							label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
+						else:
+							label_patch_parsed=label_patch.copy()
 						#print("HEERERER")
 						np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
 						np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch_parsed)
@@ -381,7 +384,10 @@ class DataForNet(object):
 						if self.conf["memory_mode"]=="ram" and self.ram_store==True:
 							self.ram_data["test"]=self.in_label_ram_store(self.ram_data["test"],patch,label_patch,data_idx=test_real_count,label_type=label_type,name="test")
 						if self.patches_save==True or self.patches_save=="True":
-							label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
+							if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
+								label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
+							else:
+								label_patch_parsed=label_patch.copy()
 							np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
 							np.save(path_test["labels_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",label_patch_parsed)
 
@@ -415,7 +421,7 @@ class DataForNet(object):
 				self.ram_data["test"]["labels_int"]=self.ram_data["test"]["labels_int"][0:self.ram_data["test"]["n"]]
 
 
-			if self.conf["squeeze_classes"]:
+			if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
 				print("here1")
 				if not test_only:
 					self.ram_data["train"]=self.labels_unused_classes_eliminate(self.ram_data["train"])

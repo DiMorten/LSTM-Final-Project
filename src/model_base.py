@@ -623,7 +623,10 @@ class NeuralNetSemantic(NeuralNet):
 		#loss_weight = np.array([0.14507016, 0.14531779, 0.15913562, 0.13611218, 0.14634539, 0.26801885])
 		#loss_weight = np.array([0,1,1,1,1,1,1])/7
 		#loss_weight = [0., 0.11830728, 0.18145774, 0.18512292, 0.18063012, 0.15888149, 0.17560045]
-		loss_weight = [0.11857354, 0.18215585, 0.18528317, 0.18133395, 0.15754083, 0.17511265]
+		#loss_weight = [0.11857354, 0.18215585, 0.18528317, 0.18133395, 0.15754083, 0.17511265]
+		#loss_weight = np.array([0,1,1,1,1,1,1,1,1,1,1,1])/11
+		loss_weight = np.array([0,0.04274219, 0.12199843, 0.11601452, 0.12202774, 0,0.12183601,                                      
+       0.1099085 , 0.11723573, 0.00854844, 0.12208636, 0.11760209])
 		labels = tf.cast(labels, tf.int32)
 		# return loss(logits, labels)
 		return self.weighted_loss(logits, labels, num_classes=self.n_classes, head=loss_weight)
