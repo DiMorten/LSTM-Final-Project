@@ -271,8 +271,10 @@ class DataForNet(object):
 		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
 			self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
 			path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
-
-		if self.conf["test"]["overlap_full"]==True:
+		deb.prints(self.conf["test"]["overlap_full"])
+		#print(self.conf["test"]["overlap_full"]==True)
+		#print(self.conf["test"]["overlap_full"]=="True")
+		if self.conf["test"]["overlap_full"]=="True" or self.conf["test"]["overlap_full"]==True:
 			# Make test with overlap full
 			_,self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
 				self.conf["patch"]["size"],self.conf["patch"]["size"]-1,mask=patch["train_mask"],path_train=self.conf["train"], \
@@ -285,7 +287,7 @@ class DataForNet(object):
 
 	def patches_multitemporal_get(self,img,label,window,overlap,mask,path_train,path_test,patches_save=True, \
 		label_type="one_hot",memory_mode="hdd",test_only=False, ram_store=True):
-		
+
 		fname=sys._getframe().f_code.co_name
 
 		deb.prints(window,fname)
@@ -403,16 +405,23 @@ class DataForNet(object):
 				print("Before squeezing count",count,unique)
 				deb.prints(self.conf["squeeze_classes"])
 			
-			self.ram_data["test"]["n"]=test_real_count
-			self.ram_data["test"]["ims"]=self.ram_data["test"]["ims"][0:self.ram_data["test"]["n"]]
-			self.ram_data["test"]["labels_int"]=self.ram_data["test"]["labels_int"][0:self.ram_data["test"]["n"]]
+			if self.conf["test"]["overlap_full"]!="True":
+				self.ram_data["test"]["n"]=test_real_count
+				self.ram_data["test"]["ims"]=self.ram_data["test"]["ims"][0:self.ram_data["test"]["n"]]
+				self.ram_data["test"]["labels_int"]=self.ram_data["test"]["labels_int"][0:self.ram_data["test"]["n"]]
+			elif test_only:
+				self.ram_data["test"]["n"]=test_real_count
+				self.ram_data["test"]["ims"]=self.ram_data["test"]["ims"][0:self.ram_data["test"]["n"]]
+				self.ram_data["test"]["labels_int"]=self.ram_data["test"]["labels_int"][0:self.ram_data["test"]["n"]]
 
 
 			if self.conf["squeeze_classes"]:
 				print("here1")
 				if not test_only:
 					self.ram_data["train"]=self.labels_unused_classes_eliminate(self.ram_data["train"])
-				self.ram_data["test"]=self.labels_unused_classes_eliminate(self.ram_data["test"])
+				if self.conf["test"]["overlap_full"]!="True" or test_only:
+					self.ram_data["test"]=self.labels_unused_classes_eliminate(self.ram_data["test"],training=False)
+
 				if no_zero==False:
 					self.ram_data["test"]["labels_int"]+=1
 				count,unique=np.unique(self.ram_data["train"],return_counts=True)
@@ -521,8 +530,9 @@ class DataSemantic(DataForNet):
 		self.classes = np.unique(data["labels_int"])
 		# self.n_classes=self.classes.shape[0]
 		deb.prints(self.classes,fname)		
-		self.labels2new_labels = dict((c, i) for i, c in enumerate(self.classes))
-		self.new_labels2labels = dict((i, c) for i, c in enumerate(self.classes))
+		if training:
+			self.labels2new_labels = dict((c, i) for i, c in enumerate(self.classes))
+			self.new_labels2labels = dict((i, c) for i, c in enumerate(self.classes))
 
 		new_labels = data["labels_int"].copy()
 		for i in range(len(self.classes)):
@@ -691,7 +701,7 @@ class DataOneHot(DataForNet):
 		return data	
 
 	# From data_get()
-	def labels_unused_classes_eliminate(self,data):
+	def labels_unused_classes_eliminate(self,data,training=True):
 		fname=sys._getframe().f_code.co_name
 		##deb.prints(data["labels_int"].shape[0])
 		##idxs=[i for i in range(data["labels_int"].shape[0]) if (data["labels_int"][i] == 0 or data["labels_int"][i] == 2 or data["labels_int"][i] == 3)]
@@ -701,8 +711,10 @@ class DataOneHot(DataForNet):
 		self.classes = np.unique(data["labels_int"])
 		# self.n_classes=self.classes.shape[0]
 		deb.prints(self.classes,fname)		
-		self.labels2new_labels = dict((c, i) for i, c in enumerate(self.classes))
-		self.new_labels2labels = dict((i, c) for i, c in enumerate(self.classes))
+		
+		if training:
+			self.labels2new_labels = dict((c, i) for i, c in enumerate(self.classes))
+			self.new_labels2labels = dict((i, c) for i, c in enumerate(self.classes))
 
 		new_labels = data["labels_int"].copy()
 		for i in range(len(self.classes)):
@@ -835,8 +847,8 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 	patch_length=5
 	
-	#data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
-	data=DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+	#data=DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
+	data=DataOneHot(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
 		band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
 		test_n_limit=args.test_n_limit, memory_mode=args.memory_mode, flag_store=True, \
 		balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
@@ -849,8 +861,8 @@ if __name__ == "__main__":
 	#conf=data_creator.conf
 	#pass
 else:
-	#data_onehot=DataOneHot()
-	data_onehot=DataSemantic()
+	data_onehot=DataOneHot()
+	#data_onehot=DataSemantic()
 	
 	#data.onehot_create()
 	conf=data_onehot.conf
