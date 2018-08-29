@@ -237,21 +237,35 @@ class DataForNet(object):
 		patches_all=np.zeros((58,65,self.conf["t_len"])+self.patch_shape)
 		label_patches_all=np.zeros((58,65,self.conf["t_len"])+self.label_shape)
 		
+
 		patch={}
+		patch["train_mask"]=cv2.imread(self.conf["train"]["mask"]["dir"],0)
+
 		deb.prints((self.conf["t_len"],)+self.patch_shape)
 
 		#patch["values"]=np.zeros((self.conf["t_len"],)+patch_shape)
 		patch["full_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"])
 		patch["full_label_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"][0:2])
+
+		patch["full_ims_train"]=patch["full_ims"].copy()
+		patch["full_ims_test"]=patch["full_ims"].copy()
+		
 		#for t_step in range(0,self.conf["t_len"]):
 		deb.prints(names)
 		for t_step in range(0,self.conf["t_len"]):	
 			print(t_step,add_id)
 			deb.prints(self.conf["in_npy_path"]+names[t_step+add_id]+".npy")
 			patch["full_ims"][t_step] = np.load(self.conf["in_npy_path"]+names[t_step+add_id]+".npy")
+			deb.prints(np.average(patch["full_ims"][t_step]))
+			deb.prints(np.max(patch["full_ims"][t_step]))
+			deb.prints(np.min(patch["full_ims"][t_step]))
+			
 			#deb.prints(patch["full_ims"][t_step].dtype)
 			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step+add_id][2]+".tif",0)
 
+			for band in range(0,self.conf["band_n"]):
+				patch["full_ims_train"][t_step,:,:,band][patch["train_mask"]!=1]=-1
+			# Do the masking here. Do we have the train labels?
 		deb.prints(patch["full_ims"].shape,fname)
 		deb.prints(patch["full_label_ims"].shape,fname)
 
@@ -263,7 +277,6 @@ class DataForNet(object):
 		pathlib.Path(self.conf["test"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
 		pathlib.Path(self.conf["test"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
 
-		patch["train_mask"]=cv2.imread(self.conf["train"]["mask"]["dir"],0)
 
 		deb.prints(patch["train_mask"])
 		deb.prints(self.conf["train"]["mask"]["dir"])
@@ -447,6 +460,20 @@ class DataForNet(object):
 				deb.prints("here")
 		elif label_type=="semantic":
 			data["labels_int"][data_idx]=label_patch[self.conf["t_len"]-1]
+		return data
+
+	def data_normalize_full(self,im):
+		whole_data={}
+		whole_data["value"]=np.concatenate((data["train"]["ims"],data["test"]["ims"]),axis=0)
+		data["normalize"]={}
+		data["normalize"]["avg"]=np.zeros(self.conf["band_n"])
+		data["normalize"]["std"]=np.zeros(self.conf["band_n"])
+		if self.debug>=1: print(data["train"]["ims"].dtype)
+		for i in range(0,self.conf["band_n"]):
+			data["normalize"]["avg"][i]=np.average(whole_data["value"][:,:,:,:,i])
+			data["normalize"]["std"][i]=np.std(whole_data["value"][:,:,:,:,i])
+			data["train"]["ims"][:,:,:,:,i]=(data["train"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
+			data["test"]["ims"][:,:,:,:,i]=(data["test"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
 		return data
 
 	def data_normalize_per_band(self,data):
