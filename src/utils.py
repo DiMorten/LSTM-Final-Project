@@ -247,8 +247,7 @@ class DataForNet(object):
 		patch["full_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"])
 		patch["full_label_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"][0:2])
 
-		patch["full_ims_train"]=patch["full_ims"].copy()
-		patch["full_ims_test"]=patch["full_ims"].copy()
+
 		
 		#for t_step in range(0,self.conf["t_len"]):
 		deb.prints(names)
@@ -263,11 +262,15 @@ class DataForNet(object):
 			#deb.prints(patch["full_ims"][t_step].dtype)
 			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step+add_id][2]+".tif",0)
 
-			for band in range(0,self.conf["band_n"]):
-				patch["full_ims_train"][t_step,:,:,band][patch["train_mask"]!=1]=-1
+			#for band in range(0,self.conf["band_n"]):
+			#	patch["full_ims_train"][t_step,:,:,band][patch["train_mask"]!=1]=-1
 			# Do the masking here. Do we have the train labels?
 		deb.prints(patch["full_ims"].shape,fname)
 		deb.prints(patch["full_label_ims"].shape,fname)
+
+		patch["full_ims"]=self.im_seq_normalize(patch["full_ims"])
+
+		patch["full_ims_train"],patch["full_ims_test"]=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
 
 		# Load train mask
 		#self.conf["patch"]["overlap"]=26
@@ -462,19 +465,56 @@ class DataForNet(object):
 			data["labels_int"][data_idx]=label_patch[self.conf["t_len"]-1]
 		return data
 
-	def data_normalize_full(self,im):
-		whole_data={}
-		whole_data["value"]=np.concatenate((data["train"]["ims"],data["test"]["ims"]),axis=0)
-		data["normalize"]={}
-		data["normalize"]["avg"]=np.zeros(self.conf["band_n"])
-		data["normalize"]["std"]=np.zeros(self.conf["band_n"])
-		if self.debug>=1: print(data["train"]["ims"].dtype)
+	def im_seq_normalize(self,im,norm_type="zscore"):
+		normalize={}
+		normalize["avg"]=np.zeros(self.conf["band_n"])
+		normalize["std"]=np.zeros(self.conf["band_n"])
+		normalize["max"]=np.zeros(self.conf["band_n"])
+		normalize["min"]=np.zeros(self.conf["band_n"])
+		
+		#if self.debug>=1: print(data["train"]["ims"].dtype)
 		for i in range(0,self.conf["band_n"]):
-			data["normalize"]["avg"][i]=np.average(whole_data["value"][:,:,:,:,i])
-			data["normalize"]["std"][i]=np.std(whole_data["value"][:,:,:,:,i])
-			data["train"]["ims"][:,:,:,:,i]=(data["train"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
-			data["test"]["ims"][:,:,:,:,i]=(data["test"]["ims"][:,:,:,:,i]-data["normalize"]["avg"][i])/data["normalize"]["std"][i]
-		return data
+			if norm_type=="zscore":
+				normalize["avg"][i]=np.average(im[:,:,:,i])
+				normalize["std"][i]=np.std(im[:,:,:,i])
+				#deb.prints(np.average(im[:,:,:,i]))
+				#deb.prints(np.max(im[:,:,:,i]))
+				#deb.prints(np.min(im[:,:,:,i]))
+				#deb.prints(np.std(im[:,:,:,i]))
+				im[:,:,:,i]=(im[:,:,:,i]-normalize["avg"][i])/normalize["std"][i]
+				#deb.prints(np.average(im[:,:,:,i]))
+				#deb.prints(np.max(im[:,:,:,i]))
+				#deb.prints(np.min(im[:,:,:,i]))
+				#deb.prints(np.std(im[:,:,:,i]))
+			else:
+				#im=im-np.min(im,axis=3)
+				normalize["max"][i]=np.max(im[:,:,:,i])
+				normalize["min"][i]=np.min(im[:,:,:,i])
+
+				deb.prints(np.average(im[:,:,:,i]))
+				deb.prints(np.max(im[:,:,:,i]))
+				deb.prints(np.min(im[:,:,:,i]))
+				deb.prints(np.std(im[:,:,:,i]))	
+				#im[:,:,:,i]=im[:,:,:,i]-normalize["min"][i]
+				im[:,:,:,i]=(im[:,:,:,i]-normalize["min"][i])/(normalize["max"][i]-normalize["min"][i])
+				deb.prints(np.average(im[:,:,:,i]))
+				deb.prints(np.max(im[:,:,:,i]))
+				deb.prints(np.min(im[:,:,:,i]))
+				deb.prints(np.std(im[:,:,:,i]))	
+
+		
+
+		return im
+	def im_seq_mask(self,im,mask):
+		im_train=im.copy()
+		im_test=im.copy()
+		
+		for band in range(0,self.conf["band_n"]):
+			for t_step in range(0,self.conf["t_len"]-self.conf["seq"]["id_first"]+1):
+				im_train[t_step,:,:,band][mask!=1]=-4
+				im_test[t_step,:,:,band][mask!=2]=-4
+		
+		return im_train,im_test
 
 	def data_normalize_per_band(self,data):
 		whole_data={}
@@ -518,7 +558,7 @@ class DataSemantic(DataForNet):
 			self.ram_data["test"]["labels"]=self.ram_data["test"]["labels_int"]
 						
 
-			self.ram_data=self.data_normalize_per_band(self.ram_data)
+			#self.ram_data=self.data_normalize_per_band(self.ram_data)
 			if self.debug>=1:
 				deb.prints(self.ram_data["train"]["labels"].shape)
 
@@ -661,7 +701,7 @@ class DataOneHot(DataForNet):
 			if self.debug>=1:
 				deb.prints(self.ram_data["train"]["labels_int"].shape)
 			deb.prints(np.unique(self.ram_data["train"]["labels_int"],return_counts=True)[1])
-			self.ram_data=self.data_normalize_per_band(self.ram_data)
+			#self.ram_data=self.data_normalize_per_band(self.ram_data)
 			data_balance=True
 			if data_balance:
 				self.ram_data["train"]["ims"],self.ram_data["train"]["labels_int"],self.ram_data["train"]["labels"]=self.data_balance(self.ram_data, \
