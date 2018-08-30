@@ -208,21 +208,7 @@ class DataForNet(object):
 			#im_names.append(im_name)
 			#print(im_name)
 
-
-	def im_patches_npy_multitemporal_from_npy_from_folder_store2(self,label_type="one_hot"):
-		im_names=[]
-		#for i in range(1,10):
-		for i in range(self.conf['seq']['id_first'],self.conf['t_len']+self.conf['seq']['id_first']):
-			im_name=glob.glob(self.conf["in_npy_path"]+'im'+str(i)+'.npy')[0]
-			print(im_name)
-			#im_name=im_name[-14:-4]
-			im_name='im'+str(i)
-			im_names.append(im_name)
-			print(im_name)
-		print(im_names)
-		self.im_patches_npy_multitemporal_from_npy_store2(im_names,label_type)
-
-	def im_patches_npy_multitemporal_from_npy_store2(self,names,label_type,train_mask_save=True):
+	def patches_load(self,label_type="one_hot"):
 		fname=sys._getframe().f_code.co_name
 		print('[@im_patches_npy_multitemporal_from_npy_store2]')
 		#add_id=self.conf['seq']['id_max']-self.conf["t_len"] # Future: deduce this 9 from data
@@ -238,6 +224,11 @@ class DataForNet(object):
 		label_patches_all=np.zeros((58,65,self.conf["t_len"])+self.label_shape)
 		
 
+		#========================== GET IMAGE FILENAMES =================================#
+		im_filenames=self.im_filenames_get()
+
+
+
 		patch={}
 		patch["train_mask"]=cv2.imread(self.conf["train"]["mask"]["dir"],0)
 
@@ -247,26 +238,14 @@ class DataForNet(object):
 		patch["full_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"])
 		patch["full_label_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"][0:2])
 
-
-		
 		#for t_step in range(0,self.conf["t_len"]):
-		deb.prints(names)
-		for t_step in range(0,self.conf["t_len"]):	
-			print(t_step,add_id)
-			deb.prints(self.conf["in_npy_path"]+names[t_step+add_id]+".npy")
-			patch["full_ims"][t_step] = np.load(self.conf["in_npy_path"]+names[t_step+add_id]+".npy")
-			deb.prints(np.average(patch["full_ims"][t_step]))
-			deb.prints(np.max(patch["full_ims"][t_step]))
-			deb.prints(np.min(patch["full_ims"][t_step]))
-			
-			#deb.prints(patch["full_ims"][t_step].dtype)
-			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step+add_id][2]+".tif",0)
+		deb.prints(im_filenames)
 
-			#for band in range(0,self.conf["band_n"]):
-			#	patch["full_ims_train"][t_step,:,:,band][patch["train_mask"]!=1]=-1
-			# Do the masking here. Do we have the train labels?
-		deb.prints(patch["full_ims"].shape,fname)
-		deb.prints(patch["full_label_ims"].shape,fname)
+
+		#=======================LOAD, NORMALIZE AND MASK FULL IMAGES ================#
+		patch=self.im_load(patch,im_filenames,add_id)
+
+
 
 		patch["full_ims"]=self.im_seq_normalize(patch["full_ims"])
 
@@ -284,6 +263,9 @@ class DataForNet(object):
 		deb.prints(patch["train_mask"])
 		deb.prints(self.conf["train"]["mask"]["dir"])
 		
+
+		#========================== BEGIN PATCH EXTRACTION ============================#
+
 		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
 			self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
 			path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
@@ -301,6 +283,44 @@ class DataForNet(object):
 			np.save(self.conf["path"]+"train_n.npy",self.conf["train"]["n"])
 			np.save(self.conf["path"]+"test_n.npy",self.conf["test"]["n"])
 
+
+
+
+	def im_filenames_get(self):
+		im_names=[]
+		#for i in range(1,10):
+		for i in range(self.conf['seq']['id_first'],self.conf['t_len']+self.conf['seq']['id_first']):
+			im_name=glob.glob(self.conf["in_npy_path"]+'im'+str(i)+'.npy')[0]
+			print(im_name)
+			#im_name=im_name[-14:-4]
+			im_name='im'+str(i)
+			im_names.append(im_name)
+			print(im_name)
+		print(im_names)
+		return im_names
+		self.im_patches_npy_multitemporal_from_npy_store2(im_names,label_type)
+
+	def im_load(self,patch,names,add_id):
+		fname=sys._getframe().f_code.co_name
+		for t_step in range(0,self.conf["t_len"]):	
+			print(t_step,add_id)
+			deb.prints(self.conf["in_npy_path"]+names[t_step+add_id]+".npy")
+			patch["full_ims"][t_step] = np.load(self.conf["in_npy_path"]+names[t_step+add_id]+".npy")
+			deb.prints(np.average(patch["full_ims"][t_step]))
+			deb.prints(np.max(patch["full_ims"][t_step]))
+			deb.prints(np.min(patch["full_ims"][t_step]))
+			
+			#deb.prints(patch["full_ims"][t_step].dtype)
+			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step+add_id][2]+".tif",0)
+
+			#for band in range(0,self.conf["band_n"]):
+			#	patch["full_ims_train"][t_step,:,:,band][patch["train_mask"]!=1]=-1
+			# Do the masking here. Do we have the train labels?
+		deb.prints(patch["full_ims"].shape,fname)
+		deb.prints(patch["full_label_ims"].shape,fname)
+		return patch
+		
+		
 	def patches_multitemporal_get(self,img,label,window,overlap,mask,path_train,path_test,patches_save=True, \
 		label_type="one_hot",memory_mode="hdd",test_only=False, ram_store=True):
 
@@ -549,7 +569,7 @@ class DataSemantic(DataForNet):
 		self.conf["label_type"]="semantic"
 		deb.prints(self.ram_data["train"]["labels"].shape)
 		deb.prints(self.ram_data["test"]["labels"].shape)
-		
+
 	def create(self):
 		os.system("rm -rf "+self.conf["path"]+"train_test")
 
@@ -557,7 +577,7 @@ class DataSemantic(DataForNet):
 
 		if self.conf["memory_mode"]=="ram":
 
-			self.im_patches_npy_multitemporal_from_npy_from_folder_store2(label_type=self.conf["label_type"])
+			self.patches_load(label_type=self.conf["label_type"])
 
 			self.ram_data["train"]["labels"]=self.ram_data["train"]["labels_int"]
 			self.ram_data["test"]["labels"]=self.ram_data["test"]["labels_int"]
@@ -690,7 +710,9 @@ class DataOneHot(DataForNet):
 		#deb.prints((condition_1 and condition_2))
 		return (condition_1 and condition_2)
 	def im_patches_npy_multitemporal_from_npy_from_folder_store2_onehot(self):
-		self.im_patches_npy_multitemporal_from_npy_from_folder_store2(label_type=self.conf["label_type"])
+		#self.im_patches_npy_multitemporal_from_npy_from_folder_store2(label_type=self.conf["label_type"])
+		self.patches_load(label_type=self.conf["label_type"])
+
 		self.ram_data["train"]["labels"]=self.labels_onehot_get(self.ram_data["train"]["labels_int"], \
 			self.ram_data["train"]["n"],self.conf["class_n"])
 		self.ram_data["test"]["labels"]=self.labels_onehot_get(self.ram_data["test"]["labels_int"], \
