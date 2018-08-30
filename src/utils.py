@@ -246,7 +246,7 @@ class DataForNet(object):
 		patch=self.im_load(patch,im_filenames,add_id)
 
 
-
+		patch["full_ims"][patch["full_ims"]>1]=1
 		patch["full_ims"]=self.im_seq_normalize(patch["full_ims"])
 
 		self.full_ims_train,self.full_ims_test=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
@@ -284,7 +284,7 @@ class DataForNet(object):
 			np.save(self.conf["path"]+"test_n.npy",self.conf["test"]["n"])
 
 
-
+		# ================== PATCHES ARE STORED IN self.ram_data ========================#
 
 	def im_filenames_get(self):
 		im_names=[]
@@ -354,6 +354,7 @@ class DataForNet(object):
 
 		deb.prints(self.patches_save)
 
+		#======================== START IMG LOOP ==================================#
 		for i in range(len(gridx)):
 			for j in range(len(gridy)):
 				counter=counter+1
@@ -377,6 +378,7 @@ class DataForNet(object):
 					continue
 				#deb.prints(is_mask_from_train)
 				#elif np.all(mask_patch==1): # Train sample
+				#=======================IS PATCH FROM TRAIN =================================#
 				if is_mask_from_train==True: # Train sample
 					patch = patch_train.copy()
 					#deb.prints("train")
@@ -401,6 +403,8 @@ class DataForNet(object):
 
 					patches_get["train_n"]+=1	
 				is_mask_from_test=self.is_mask_from_test(mask_patch,label_patch[self.conf["t_len"]-1])
+				
+				#============================ IS PATCH FROM TEST ===============================#
 				if is_mask_from_test==True: # Test sample
 					patch=patch_test.copy()
 					#deb.prints("test")
@@ -434,6 +438,7 @@ class DataForNet(object):
 
 						test_real_count+=1
 					#np.random.choice(index, samples_per_class, replace=replace)
+		#==========================END IMG LOOP=============================================#
 		print("Final mask test average",np.average(mask_test))
 		cv2.imwrite("mask_train.png",mask_train)
 		cv2.imwrite("mask_test.png",mask_test)
@@ -445,6 +450,7 @@ class DataForNet(object):
 		deb.prints(test_real_count)
 		if self.ram_store:
 			if not test_only:
+				#===================CLIP TRAIN DATA.================================#
 				self.ram_data["train"]["n"]=patches_get["train_n"]
 				self.ram_data["train"]["ims"]=self.ram_data["train"]["ims"][0:self.ram_data["train"]["n"]]
 				self.ram_data["train"]["labels_int"]=self.ram_data["train"]["labels_int"][0:self.ram_data["train"]["n"]]
@@ -452,6 +458,8 @@ class DataForNet(object):
 				print("Before squeezing count",count,unique)
 				deb.prints(self.conf["squeeze_classes"])
 			
+
+			#============ CLIP TEST DATA.=============================#
 			if self.conf["test"]["overlap_full"]!="True":
 				self.ram_data["test"]["n"]=test_real_count
 				self.ram_data["test"]["ims"]=self.ram_data["test"]["ims"][0:self.ram_data["test"]["n"]]
@@ -461,9 +469,10 @@ class DataForNet(object):
 				self.ram_data["test"]["ims"]=self.ram_data["test"]["ims"][0:self.ram_data["test"]["n"]]
 				self.ram_data["test"]["labels_int"]=self.ram_data["test"]["labels_int"][0:self.ram_data["test"]["n"]]
 
+			#===============ELIMINATE UNUSED CLASSES ==============================#
 
 			if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
-				print("here1")
+				print("Elminating unused classes")
 				if not test_only:
 					self.ram_data["train"]=self.labels_unused_classes_eliminate(self.ram_data["train"])
 				if self.conf["test"]["overlap_full"]!="True" or test_only:
