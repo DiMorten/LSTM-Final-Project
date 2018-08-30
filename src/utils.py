@@ -270,7 +270,7 @@ class DataForNet(object):
 
 		patch["full_ims"]=self.im_seq_normalize(patch["full_ims"])
 
-		patch["full_ims_train"],patch["full_ims_test"]=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
+		self.full_ims_train,self.full_ims_test=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
 
 		# Load train mask
 		#self.conf["patch"]["overlap"]=26
@@ -345,16 +345,20 @@ class DataForNet(object):
 				patch = img[:,yy: yy + window, xx: xx + window,:]
 				label_patch = label[:,yy: yy + window, xx: xx + window]
 				mask_patch = mask[yy: yy + window, xx: xx + window].astype(np.float64)
+				
+				patch_train = self.full_ims_train[:,yy: yy + window, xx: xx + window,:]
+				patch_test = self.full_ims_test[:,yy: yy + window, xx: xx + window,:]
+				
 				is_mask_from_train=self.is_mask_from_train(mask_patch,label_patch[self.conf["t_len"]-1])
 				
 				no_zero=True
 				#if np.all(label_patch==0) and no_zero==True:
-				if np.count_nonzero(label_patch[label_patch==0])>=64 and no_zero==True:				
+				if np.count_nonzero(label_patch[label_patch==0])>=500 and no_zero==True:				
 					continue
 				#deb.prints(is_mask_from_train)
 				#elif np.all(mask_patch==1): # Train sample
 				if is_mask_from_train==True: # Train sample
-					
+					patch = patch_train.copy()
 					#deb.prints("train")
 					mask_train_areas=mask_patch.copy()
 					mask_train_areas[mask_train_areas==2]=0 # Remove test from this patch
@@ -370,7 +374,7 @@ class DataForNet(object):
 						if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
 							label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
 						else:
-							label_patch_parsed=label_patch.copy()
+							label_patch_parsed=label_patch[self.conf["t_len"]-1].copy()
 						#print("HEERERER")
 						np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
 						np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch_parsed)
@@ -378,6 +382,7 @@ class DataForNet(object):
 					patches_get["train_n"]+=1	
 				is_mask_from_test=self.is_mask_from_test(mask_patch,label_patch[self.conf["t_len"]-1])
 				if is_mask_from_test==True: # Test sample
+					patch=patch_test.copy()
 					#deb.prints("test")
 					test_counter+=1
 					
@@ -403,7 +408,7 @@ class DataForNet(object):
 							if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
 								label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
 							else:
-								label_patch_parsed=label_patch.copy()
+								label_patch_parsed=label_patch[self.conf["t_len"]-1].copy()
 							np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
 							np.save(path_test["labels_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",label_patch_parsed)
 
@@ -502,7 +507,7 @@ class DataForNet(object):
 				deb.prints(np.min(im[:,:,:,i]))
 				deb.prints(np.std(im[:,:,:,i]))	
 
-		
+		deb.prints(im.shape)
 
 		return im
 	def im_seq_mask(self,im,mask):
@@ -511,9 +516,9 @@ class DataForNet(object):
 		
 		for band in range(0,self.conf["band_n"]):
 			for t_step in range(0,self.conf["t_len"]-self.conf["seq"]["id_first"]+1):
-				im_train[t_step,:,:,band][mask!=1]=-4
-				im_test[t_step,:,:,band][mask!=2]=-4
-		
+				im_train[t_step,:,:,band][mask!=1]=-1
+				im_test[t_step,:,:,band][mask!=2]=-1
+		deb.prints(im_train.shape)
 		return im_train,im_test
 
 	def data_normalize_per_band(self,data):
