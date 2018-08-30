@@ -376,7 +376,7 @@ class NeuralNet(object):
 		for idx in range(0, batch["idxs"]):
 			batch=self.batch_ims_labels_get(batch,data,batch_size,idx,memory_mode=self.conf["memory_mode"])
 			batch["prediction"] = self.batch_prediction_from_sess_get(batch["ims"])
-			if self.debug>=3:
+			if self.debug>=1:
 				deb.prints(batch["prediction"].shape)
 				deb.prints(batch["labels"].shape)
 
