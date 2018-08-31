@@ -266,6 +266,11 @@ class DataForNet(object):
 
 		#========================== BEGIN PATCH EXTRACTION ============================#
 
+		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get2(patch["full_ims"],patch["full_label_ims"], \
+			self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
+			path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
+		
+
 		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
 			self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
 			path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
@@ -320,6 +325,17 @@ class DataForNet(object):
 		deb.prints(patch["full_label_ims"].shape,fname)
 		return patch
 		
+
+	def patches_multitemporal_get2(self,img,label,window,overlap,mask,path_train,path_test,patches_save=True, \
+		label_type="one_hot",memory_mode="hdd",test_only=False, ram_store=True):
+		fname=sys._getframe().f_code.co_name
+		deb.prints(img.shape,fname)
+		for t_step in self.t_len:
+			out = np.squeeze(view_as_windows(img, (window,window,self.conf["band_n"]), step=step))
+			deb.prints(out.shape,fname)
+
+
+		return patches_get["train_n"],test_real_count
 		
 	def patches_multitemporal_get(self,img,label,window,overlap,mask,path_train,path_test,patches_save=True, \
 		label_type="one_hot",memory_mode="hdd",test_only=False, ram_store=True):
