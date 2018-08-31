@@ -17,8 +17,26 @@ print(np.max(dif))
 print(np.count_nonzero(dif))
 cv2.imwrite('dif.png',dif)
 
-#==== Test 2
+#=== Test test
+print("Test test")
+mask_test=mask.copy()
+mask_test[mask_test==1]=0
+mask_test[mask_test==2]=1
 
+print(np.max(mask_test))
+print(mask_test.dtype)
+mask_test*=255
+mask_patch_test=cv2.imread('mask_test.png',0)
+print(mask_patch_test.shape)
+print(mask_patch_test.dtype)
+print(np.max(mask_patch_test))
+dif=cv2.absdiff(mask_test,mask_patch_test)
+print(np.max(dif))
+print(np.count_nonzero(dif))
+cv2.imwrite('dif.png',dif)
+
+#==== Test 2
+print("Test label")
 mask[mask==2]=1
 valid=cv2.imread('../cv_data/labels/7.tif',0)
 
