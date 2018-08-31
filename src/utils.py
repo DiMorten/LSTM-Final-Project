@@ -373,8 +373,9 @@ class DataForNet(object):
 				is_mask_from_train=self.is_mask_from_train(mask_patch,label_patch[self.conf["t_len"]-1])
 				
 				no_zero=True
-				#if np.all(label_patch==0) and no_zero==True:
-				if np.count_nonzero(label_patch[label_patch==0])>=500 and no_zero==True:				
+				#if np.count_nonzero(label_patch[label_patch==0])>=1000 and no_zero==True:				
+				
+				if np.all(label_patch==0) and no_zero==True:
 					continue
 				#deb.prints(is_mask_from_train)
 				#elif np.all(mask_patch==1): # Train sample
@@ -613,8 +614,9 @@ class DataSemantic(DataForNet):
 			label_patch[t_step]=cv2.bitwise_and(label_patch[t_step],label_patch[t_step],mask=mask_test_areas.astype(np.uint8))
 		return mask_test,label_patch
 	def is_mask_from_train(self,mask_patch,label_patch):
-		#return np.any(mask_patch==1)
-		return np.count_nonzero(mask_patch[mask_patch==1])>64
+		return np.any(mask_patch==1)
+		#return np.count_nonzero(mask_patch[mask_patch==1])>64
+
 
 	def is_mask_from_test(self,mask_patch,label_patch):
 		return np.any(mask_patch==2)

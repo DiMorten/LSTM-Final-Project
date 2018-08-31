@@ -220,6 +220,7 @@ class NeuralNet(object):
 			deb.prints(batch["idxs"])
 		
 		self.unique_classes_print(data["train"],memory_mode=self.conf["memory_mode"])
+		self.unique_classes_print(data["test"],memory_mode=self.conf["memory_mode"])
 
 		
 		if self.data_len_get(data["test"],memory_mode=self.conf["memory_mode"])>1000:
@@ -702,7 +703,7 @@ class NeuralNetSemantic(NeuralNet):
 
 	def unique_classes_print(self,data,memory_mode):
 		count,unique=np.unique(data["labels"],return_counts=True)
-		print("Train count,unique=",count,unique)
+		print("Train/test count,unique=",count,unique)
 		pass
 
 	def data_stats_get2(self,data,batch_size=1000):
