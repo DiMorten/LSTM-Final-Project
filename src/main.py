@@ -27,7 +27,7 @@ parser.add_argument('--dataset_name', dest='dataset_name', default='20160419', h
 parser.add_argument('--epoch', dest='epoch', type=int, default=200, help='# of epoch')
 parser.add_argument('--batch_size', dest='batch_size', type=int, default=200, help='# images in batch')
 parser.add_argument('--train_size', dest='train_size', type=int, default=1e8, help='# images used to train')
-parser.add_argument('--timesteps', dest='timesteps', type=int, default=utils.conf["t_len"], help='# timesteps used to train')
+parser.add_argument('--timesteps', dest='timesteps', type=int, default=7, help='# timesteps used to train')
 parser.add_argument('-pl','--patch_len', dest='patch_len', type=int, default=5, help='# timesteps used to train')
 parser.add_argument('--kernel', dest='kernel', type=int, default=[3,3], help='# timesteps used to train')
 #parser.add_argument('--channels', dest='channels', type=int, default=7, help='# timesteps used to train')
@@ -80,6 +80,7 @@ else:
     label_type='one_hot'
 deb.prints(label_type)
 deb.prints(args.patches_save)
+
 def main(_):
 
     # Make checkpoint directory

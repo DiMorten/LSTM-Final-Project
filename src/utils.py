@@ -55,7 +55,10 @@ class DataForNet(object):
 		self.conf["pc_mode"]=pc_mode
 		self.conf['seq']['id_first']=id_first
 		label_list=os.listdir(self.conf['path']+'labels/')
+		deb.prints(self.conf['path']+'labels/')
+		deb.prints(label_list)
 		self.conf['seq']['id_list']=np.sort(np.array([int(x.partition('.')[0]) for x in label_list])) # Getting all label ids
+		deb.prints(self.conf['seq']['id_list'])
 		self.conf['seq']['id_max']=self.conf['seq']['id_list'][-1]
 		#deb.prints(self.conf['seq']['id_list'])
 		if self.debug>=1: deb.prints(self.conf['seq']['id_max'])
@@ -1109,10 +1112,10 @@ if __name__ == "__main__":
 	##data.im_npy_get()
 	#conf=data_creator.conf
 	#pass
-else:
+#else:
 	#data_onehot=DataOneHot()
-	data_onehot=DataSemantic()
+	##data_onehot=DataSemantic()
 	
 	#data.onehot_create()
-	conf=data_onehot.conf
+	##conf=data_onehot.conf
 	
