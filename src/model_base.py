@@ -164,6 +164,7 @@ class NeuralNet(object):
 		if memory_mode=="hdd":
 			data_len=len(data["im_paths"])
 		elif memory_mode=="ram":
+			deb.prints(data["ims"].shape)
 			data_len=data["ims"].shape[0]
 		deb.prints(data_len)
 		return data_len
@@ -218,6 +219,9 @@ class NeuralNet(object):
 			deb.prints(data["train"]["labels"].shape)
 			deb.prints(data["test"]["labels"].shape)
 			deb.prints(batch["idxs"])
+			deb.prints(data["test"]["ims"].shape)
+			deb.prints(data["train"]["ims"].shape)
+			
 		
 		self.unique_classes_print(data["train"],memory_mode=self.conf["memory_mode"])
 		self.unique_classes_print(data["test"],memory_mode=self.conf["memory_mode"])
@@ -227,6 +231,10 @@ class NeuralNet(object):
 			data["sub_test"]=self.data_sub_data_get(data["test"],1000,memory_mode=self.conf["memory_mode"])
 		else:
 			data["sub_test"]=data["test"]
+
+		deb.prints(data['sub_test']['labels'].shape)
+		deb.prints(data['sub_test']['ims'].shape)
+		
 		#deb.prints(data["train"]["ims"].shape)
 		deb.prints(data["train"]["labels"].shape)
 		#deb.prints(data["test"]["ims"].shape)
@@ -252,8 +260,8 @@ class NeuralNet(object):
 		counter=1
 		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
 		for epoch in range(args.epoch):
-			data["train"]["ims"]=self.data_shuffle(data["train"]["ims"])
-			data["train"]["labels"]=self.data_shuffle(data["train"]["labels"])
+			#data["train"]["ims"]=self.data_shuffle(data["train"]["ims"])
+			#data["train"]["labels"]=self.data_shuffle(data["train"]["labels"])
 			
 			for idx in range(0, batch["idxs"]):
 				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx,memory_mode=self.conf["memory_mode"])
@@ -515,6 +523,7 @@ class NeuralNet(object):
 		if memory_mode=="hdd":
 			data=self.hdd_data_load(conf)
 		elif memory_mode=="ram":
+			deb.prints(self.ram_data['test']['ims'].shape)
 			data=self.ram_data
 			data["train"]["n"]=data["train"]["ims"].shape[0]
 			data["test"]["n"]=data["test"]["ims"].shape[0]

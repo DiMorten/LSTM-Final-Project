@@ -26,6 +26,7 @@ import pickle
 import deb
 import argparse
 
+from skimage.util import view_as_windows
 
 def mask_train_test_switch_from_path(path):
 	mask=cv2.imread(path)
@@ -265,24 +266,30 @@ class DataForNet(object):
 		
 
 		#========================== BEGIN PATCH EXTRACTION ============================#
+		view_as_windows_flag=True
+		if view_as_windows_flag==True:
+			self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get2(patch["full_ims"],patch["full_label_ims"], \
+				self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
+				path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
+		else:			
+			self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
+				self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
+				path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
+			deb.prints(self.conf["test"]["overlap_full"])
+			#print(self.conf["test"]["overlap_full"]==True)
+			#print(self.conf["test"]["overlap_full"]=="True")
+			if self.conf["test"]["overlap_full"]=="True" or self.conf["test"]["overlap_full"]==True:
+				# Make test with overlap full
+				_,self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
+					self.conf["patch"]["size"],self.conf["patch"]["size"]-1,mask=patch["train_mask"],path_train=self.conf["train"], \
+					path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"],test_only=True)
 
-		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get2(patch["full_ims"],patch["full_label_ims"], \
-			self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
-			path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
+		deb.prints(self.ram_data['test']['ims'].shape)
+		deb.prints(self.ram_data['test']['labels_int'].shape)
+		deb.prints(self.ram_data['test']['ims'].dtype)
+		deb.prints(self.ram_data['test']['labels_int'].dtype)
 		
-
-		self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
-			self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
-			path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
-		deb.prints(self.conf["test"]["overlap_full"])
-		#print(self.conf["test"]["overlap_full"]==True)
-		#print(self.conf["test"]["overlap_full"]=="True")
-		if self.conf["test"]["overlap_full"]=="True" or self.conf["test"]["overlap_full"]==True:
-			# Make test with overlap full
-			_,self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
-				self.conf["patch"]["size"],self.conf["patch"]["size"]-1,mask=patch["train_mask"],path_train=self.conf["train"], \
-				path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"],test_only=True)
-
+		
 		deb.prints(self.conf["test"]["n"])
 		if self.conf["utils_flag_store"]:
 			np.save(self.conf["path"]+"train_n.npy",self.conf["train"]["n"])
@@ -329,14 +336,128 @@ class DataForNet(object):
 	def patches_multitemporal_get2(self,img,label,window,overlap,mask,path_train,path_test,patches_save=True, \
 		label_type="one_hot",memory_mode="hdd",test_only=False, ram_store=True):
 		fname=sys._getframe().f_code.co_name
+		patches={}
+		masks={}
 		deb.prints(img.shape,fname)
-		for t_step in self.t_len:
-			out = np.squeeze(view_as_windows(img, (window,window,self.conf["band_n"]), step=step))
-			deb.prints(out.shape,fname)
-
-
-		return patches_get["train_n"],test_real_count
+		step=window-overlap
+		deb.prints(step,fname)
 		
+
+		# ============== GET TRAIN / TEST MASK ==============#
+
+		masks['train']=mask.copy()
+		masks['train'][masks['train']==2]=0
+		masks['test']=mask.copy()
+		masks['test'][masks['test']==1]=0
+		masks['test'][masks['test']==2]=1
+
+		print(label[self.conf['t_len']-1].dtype,label[self.conf['t_len']-1].shape)
+		print(masks['train'].dtype,masks['train'].shape)
+		masks['label_train']=cv2.bitwise_and(label[self.conf['t_len']-1],label[self.conf['t_len']-1],mask=masks['train'])
+		masks['label_test']=cv2.bitwise_and(label[self.conf['t_len']-1],label[self.conf['t_len']-1],mask=masks['test'])
+		
+
+		patches=self.im_label_view_as_windows(img,label[self.conf['t_len']-1],mask,window,overlap,step,patches)
+
+		patches,count=self.im_label_train_test_split(patches,path_train,path_test)
+
+		self.ram_data['train']['ims']=patches['train'][0:count['train']]
+		self.ram_data['train']['labels_int']=patches['label_train'][0:count['train']]
+
+		self.ram_data['test']['ims']=patches['test'][0:count['test']]
+		self.ram_data['test']['labels_int']=patches['label_test'][0:count['test']]
+
+		return count['train'],count['test']
+
+	def im_label_view_as_windows(self,img,label,mask,window,overlap,step,patches):
+		for t_step in range(0,self.conf["t_len"]):
+			out = np.squeeze(view_as_windows(img[t_step,:,:,:], (window,window,self.conf["band_n"]), step=step))
+			patches['all_n']=out.shape[0]*out.shape[1]
+		patches['all']=np.zeros((patches['all_n'],self.conf['t_len'],window,window,self.conf['band_n']))	
+		patches['label_all']=np.zeros((patches['all_n'],window,window))	
+		
+		for t_step in range(0,self.conf["t_len"]):
+			out = np.squeeze(view_as_windows(img[t_step,:,:,:], (window,window,self.conf["band_n"]), step=step))
+			patches['all'][:,t_step,:,:,:] = np.reshape(out,(out.shape[0]*out.shape[1],out.shape[2],out.shape[3],out.shape[4]))
+		out = np.squeeze(view_as_windows(label, (window,window), step=step))	
+		patches['label_all']=np.reshape(out,(out.shape[0]*out.shape[1],out.shape[2],out.shape[3]))
+
+		out = np.squeeze(view_as_windows(mask, (window,window), step=step))	
+		patches['mask']=np.reshape(out,(out.shape[0]*out.shape[1],out.shape[2],out.shape[3]))
+
+		
+		##out = np.squeeze(view_as_windows(masks['train'], (window,window), step=step))	
+		##patches['mask_train']=np.reshape(out,(out.shape[0]*out.shape[1],out.shape[2],out.shape[3]))
+		
+		##out = np.squeeze(view_as_windows(masks['test'], (window,window), step=step))	
+		##patches['mask_test']=np.reshape(out,(out.shape[0]*out.shape[1],out.shape[2],out.shape[3]))
+		
+		#out = np.squeeze(view_as_windows(masks['label_train'], (window,window), step=step))	
+		#patches['label_train']=np.reshape(out,(out.shape[0]*out.shape[1],out.shape[2],out.shape[3]))
+		
+		#out = np.squeeze(view_as_windows(masks['label_test'], (window,window), step=step))	
+		#patches['label_test']=np.reshape(out,(out.shape[0]*out.shape[1],out.shape[2],out.shape[3]))
+		
+
+		return patches	
+
+	def im_label_train_test_split(self,patches,path_train,path_test):
+		count={'train':0, 'test':0}
+
+		patches['train']=np.zeros_like(patches['all'])
+		patches['test']=np.zeros_like(patches['all'])
+		
+		patches['label_train']=np.zeros_like(patches['label_all'])
+		patches['label_test']=np.zeros_like(patches['label_all'])
+		
+		for i in range(0,patches['all'].shape[0]):
+
+			no_zero=True
+			if np.all(patches['label_all'][i]==0) and no_zero==True:
+				continue
+			is_mask_from_train=self.is_mask_from_train(patches['mask'][i])
+			if is_mask_from_train:
+				mask_train=patches['mask'][i].copy()
+				mask_train[mask_train==2]=0
+				patches['train'][count['train']]=patches['all'][i]
+				patches['label_train'][count['train']]=cv2.bitwise_and(patches['label_all'][i],patches['label_all'][i],mask=mask_train)
+				
+
+
+				if self.patches_save==True or self.patches_save=="True":
+					#if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
+					#	label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
+					#else:
+					#	label_patch_parsed=label_patch[self.conf["t_len"]-1].copy()
+					#print("HEERERER")
+					np.save(path_train["ims_path"]+"patch_"+str(count['train'])+".npy",patches['train'][count['train']])
+					np.save(path_train["labels_path"]+"patch_"+str(count['train'])+".npy",patches['label_train'][count['train']])
+
+
+				count['train']+=1
+			is_mask_from_test=self.is_mask_from_test(patches['mask'][i])
+			if is_mask_from_test:
+				mask_test=patches['mask'][i].copy()
+				mask_test[mask_test==1]=0
+				mask_test[mask_test==2]=1
+				patches['test'][count['test']]=patches['all'][i]
+				patches['label_test'][count['test']]=cv2.bitwise_and(patches['label_all'][i],patches['label_all'][i],mask=mask_test)
+				
+				if self.patches_save==True or self.patches_save=="True":
+					##if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
+					##	label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
+					##else:
+					##	label_patch_parsed=label_patch[self.conf["t_len"]-1].copy()
+					np.save(path_test["ims_path"]+"patch_"+str(count['test'])+".npy",patches['test'][count['test']])
+					np.save(path_test["labels_path"]+"patch_"+str(count['test'])+".npy",patches['label_test'][count['test']])
+
+				count['test']+=1
+
+		deb.prints(count)
+
+
+
+		return patches,count
 	def patches_multitemporal_get(self,img,label,window,overlap,mask,path_train,path_test,patches_save=True, \
 		label_type="one_hot",memory_mode="hdd",test_only=False, ram_store=True):
 
@@ -629,12 +750,12 @@ class DataSemantic(DataForNet):
 		
 			label_patch[t_step]=cv2.bitwise_and(label_patch[t_step],label_patch[t_step],mask=mask_test_areas.astype(np.uint8))
 		return mask_test,label_patch
-	def is_mask_from_train(self,mask_patch,label_patch):
+	def is_mask_from_train(self,mask_patch,label_patch=None):
 		return np.any(mask_patch==1)
 		#return np.count_nonzero(mask_patch[mask_patch==1])>64
 
 
-	def is_mask_from_test(self,mask_patch,label_patch):
+	def is_mask_from_test(self,mask_patch,label_patch=None):
 		return np.any(mask_patch==2)
 		
 	# def labels_unused_classes_eliminate(self,data):
