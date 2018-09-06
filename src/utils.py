@@ -537,6 +537,7 @@ class DataForNet(object):
 					
 					for t_step in range(0,self.conf["t_len"]):
 						label_patch[t_step]=cv2.bitwise_and(label_patch[t_step],label_patch[t_step],mask=mask_train_areas.astype(np.uint8))
+					label_patch[self.conf['t_len']-1]=self.full_label_train[yy: yy + window, xx: xx + window]
 					if self.conf["memory_mode"]=="ram" and self.ram_store==True:
 						if not test_only:
 							self.ram_data["train"]=self.in_label_ram_store(self.ram_data["train"],patch,label_patch,data_idx=patches_get["train_n"],label_type=label_type,name="train")
@@ -698,7 +699,7 @@ class DataForNet(object):
 				im_test[t_step,:,:,band][mask!=2]=-1
 		deb.prints(im_train.shape)
 		return im_train,im_test
-	  def label_seq_mask(self,im,mask): 
+	def label_seq_mask(self,im,mask): 
 		im=im.astype(np.uint8) 
 		im_train=im.copy() 
 		im_test=im.copy() 
@@ -784,6 +785,7 @@ class DataSemantic(DataForNet):
 			#deb.prints(label_patch[t_step].dtype)
 		
 			label_patch[t_step]=cv2.bitwise_and(label_patch[t_step],label_patch[t_step],mask=mask_test_areas.astype(np.uint8))
+		label_patch[self.conf['t_len']-1]=self.full_label_test[yy: yy + window, xx: xx + window]
 		return mask_test,label_patch
 	def is_mask_from_train(self,mask_patch,label_patch=None):
 		return np.any(mask_patch==1)
