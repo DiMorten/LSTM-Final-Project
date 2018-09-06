@@ -255,6 +255,14 @@ class DataForNet(object):
 
 		self.full_ims_train,self.full_ims_test=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
 
+		self.full_label_train,self.full_label_test=self.label_seq_mask(patch["full_label_ims"][self.conf['t_len']-1],patch["train_mask"]) 
+	 
+		#self.label_id=self.conf["seq"]["id_first"]+self.conf['t_len']-2 # Less 1 for python idx, less 1 for id_first starts at 1 
+	 
+		unique,count=np.unique(self.full_label_train,return_counts=True) 
+		print("Train masked unique/count",unique,count) 
+		unique,count=np.unique(self.full_label_test,return_counts=True) 
+		print("Test masked unique/count",unique,count) 
 		# Load train mask
 		#self.conf["patch"]["overlap"]=26
 
@@ -269,7 +277,7 @@ class DataForNet(object):
 		
 
 		#========================== BEGIN PATCH EXTRACTION ============================#
-		view_as_windows_flag=True
+		view_as_windows_flag=False
 		if view_as_windows_flag==True:
 			self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get2(patch["full_ims"],patch["full_label_ims"], \
 				self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
@@ -690,7 +698,31 @@ class DataForNet(object):
 				im_test[t_step,:,:,band][mask!=2]=-1
 		deb.prints(im_train.shape)
 		return im_train,im_test
-
+	  def label_seq_mask(self,im,mask): 
+		im=im.astype(np.uint8) 
+		im_train=im.copy() 
+		im_test=im.copy() 
+		 
+		mask_train=mask.copy() 
+		mask_train[mask==2]=0 
+		mask_test=mask.copy() 
+		mask_test[mask==1]=0 
+		mask_test[mask==2]=1 
+	 
+		deb.prints(im.shape) 
+		deb.prints(mask_train.shape) 
+	 
+		deb.prints(im.dtype) 
+		deb.prints(mask_train.dtype) 
+		 
+		im_train=cv2.bitwise_and(im,im,mask=mask_train) 
+		im_test=cv2.bitwise_and(im,im,mask=mask_test) 
+	 
+	 
+		#im_train[t_step,:,:,band][mask!=1]=-1 
+		#im_test[t_step,:,:,band][mask!=2]=-1 
+		deb.prints(im_train.shape) 
+		return im_train,im_test 
 	def data_normalize_per_band(self,data):
 		whole_data={}
 		whole_data["value"]=np.concatenate((data["train"]["ims"],data["test"]["ims"]),axis=0)
