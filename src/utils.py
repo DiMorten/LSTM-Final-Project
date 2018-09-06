@@ -327,14 +327,14 @@ class DataForNet(object):
 		fname=sys._getframe().f_code.co_name
 		for t_step in range(0,self.conf["t_len"]):	
 			print(t_step,add_id)
-			deb.prints(self.conf["in_npy_path"]+names[t_step+add_id]+".npy")
-			patch["full_ims"][t_step] = np.load(self.conf["in_npy_path"]+names[t_step+add_id]+".npy")
+			deb.prints(self.conf["in_npy_path"]+names[t_step]+".npy")
+			patch["full_ims"][t_step] = np.load(self.conf["in_npy_path"]+names[t_step]+".npy")
 			deb.prints(np.average(patch["full_ims"][t_step]))
 			deb.prints(np.max(patch["full_ims"][t_step]))
 			deb.prints(np.min(patch["full_ims"][t_step]))
 			
 			#deb.prints(patch["full_ims"][t_step].dtype)
-			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step+add_id][2]+".tif",0)
+			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step][2]+".tif",0)
 
 			#for band in range(0,self.conf["band_n"]):
 			#	patch["full_ims_train"][t_step,:,:,band][patch["train_mask"]!=1]=-1
@@ -694,7 +694,7 @@ class DataForNet(object):
 		im_test=im.copy()
 		
 		for band in range(0,self.conf["band_n"]):
-			for t_step in range(0,self.conf["t_len"]-self.conf["seq"]["id_first"]+1):
+			for t_step in range(0,self.conf["t_len"]):
 				im_train[t_step,:,:,band][mask!=1]=-1
 				im_test[t_step,:,:,band][mask!=2]=-1
 		deb.prints(im_train.shape)
