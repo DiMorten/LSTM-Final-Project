@@ -217,96 +217,122 @@ class DataForNet(object):
 		print('[@im_patches_npy_multitemporal_from_npy_store2]')
 		#add_id=self.conf['seq']['id_max']-self.conf["t_len"] # Future: deduce this 9 from data
 		##add_id=self.conf['seq']['id_first']-1 # Future: deduce this 9 from data
-		add_id=0
-		if self.debug>=1: 
-			deb.prints(add_id)
-			deb.prints(self.conf['seq']['id_max'])
-			deb.prints(self.conf["t_len"])
-		pathlib.Path(self.conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
-		pathlib.Path(self.conf["patch"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
-		patches_all=np.zeros((58,65,self.conf["t_len"])+self.patch_shape)
-		label_patches_all=np.zeros((58,65,self.conf["t_len"])+self.label_shape)
+		foldername='patch_npy/'
+		self.patches_create=True
+		if self.patches_create==True:
+		
+			add_id=0
+			if self.debug>=1: 
+				deb.prints(add_id)
+				deb.prints(self.conf['seq']['id_max'])
+				deb.prints(self.conf["t_len"])
+			pathlib.Path(self.conf["patch"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
+			pathlib.Path(self.conf["patch"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
+			patches_all=np.zeros((58,65,self.conf["t_len"])+self.patch_shape)
+			label_patches_all=np.zeros((58,65,self.conf["t_len"])+self.label_shape)
 		
 
-		#========================== GET IMAGE FILENAMES =================================#
-		im_filenames=self.im_filenames_get()
+			#========================== GET IMAGE FILENAMES =================================#
+			im_filenames=self.im_filenames_get()
 
 
 
-		patch={}
-		patch["train_mask"]=cv2.imread(self.conf["train"]["mask"]["dir"],-1).astype(np.uint8)
+			patch={}
+			deb.prints(self.conf["train"]["mask"]["dir"])
+			patch["train_mask"]=cv2.imread(self.conf["train"]["mask"]["dir"],-1).astype(np.uint8)
 
-		deb.prints((self.conf["t_len"],)+self.patch_shape)
+			deb.prints((self.conf["t_len"],)+self.patch_shape)
 
-		#patch["values"]=np.zeros((self.conf["t_len"],)+patch_shape)
-		patch["full_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"])
-		patch["full_label_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"][0:2])
+			#patch["values"]=np.zeros((self.conf["t_len"],)+patch_shape)
+			# Init full ims and labels arrays
+			patch["full_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"])
+			patch["full_label_ims"]=np.zeros((self.conf["t_len"],)+self.conf["im_3d_size"][0:2])
 
-		#for t_step in range(0,self.conf["t_len"]):
-		deb.prints(im_filenames)
-
-
-		#=======================LOAD, NORMALIZE AND MASK FULL IMAGES ================#
-		patch=self.im_load(patch,im_filenames,add_id)
+			#for t_step in range(0,self.conf["t_len"]):
+			
 
 
-		patch["full_ims"][patch["full_ims"]>1]=1
-		patch["full_ims"]=self.im_seq_normalize(patch["full_ims"])
-		deb.prints(np.min(patch["full_ims"]))
-		deb.prints(np.max(patch["full_ims"]))
+			#=======================LOAD, NORMALIZE AND MASK FULL IMAGES ================#
+			patch=self.im_load(patch,im_filenames,add_id)
+
+
+			deb.prints(im_filenames)
+
+			patch["full_ims"][patch["full_ims"]>1]=1
+			patch["full_ims"]=self.im_seq_normalize(patch["full_ims"])
+			deb.prints(np.min(patch["full_ims"]))
+			deb.prints(np.max(patch["full_ims"]))
 		
-		self.full_ims_train,self.full_ims_test=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
+			self.full_ims_train,self.full_ims_test=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
 
-		self.full_label_train,self.full_label_test=self.label_seq_mask(patch["full_label_ims"][self.conf['t_len']-1],patch["train_mask"]) 
-	 
-		#self.label_id=self.conf["seq"]["id_first"]+self.conf['t_len']-2 # Less 1 for python idx, less 1 for id_first starts at 1 
-	 
-		unique,count=np.unique(self.full_label_train,return_counts=True) 
-		print("Train masked unique/count",unique,count) 
-		unique,count=np.unique(self.full_label_test,return_counts=True) 
-		print("Test masked unique/count",unique,count) 
-		# Load train mask
-		#self.conf["patch"]["overlap"]=26
+			self.full_label_train,self.full_label_test=self.label_seq_mask(patch["full_label_ims"][self.conf['t_len']-1],patch["train_mask"]) 
+		 
+			#self.label_id=self.conf["seq"]["id_first"]+self.conf['t_len']-2 # Less 1 for python idx, less 1 for id_first starts at 1 
+		 
+			unique,count=np.unique(self.full_label_train,return_counts=True) 
+			print("Train masked unique/count",unique,count) 
+			unique,count=np.unique(self.full_label_test,return_counts=True) 
+			print("Test masked unique/count",unique,count) 
+			# Load train mask
+			#self.conf["patch"]["overlap"]=26
 
-		pathlib.Path(self.conf["train"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
-		pathlib.Path(self.conf["train"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
-		pathlib.Path(self.conf["test"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
-		pathlib.Path(self.conf["test"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
+			pathlib.Path(self.conf["train"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
+			pathlib.Path(self.conf["train"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
+			pathlib.Path(self.conf["test"]["ims_path"]).mkdir(parents=True, exist_ok=True) 
+			pathlib.Path(self.conf["test"]["labels_path"]).mkdir(parents=True, exist_ok=True) 
 
 
-		deb.prints(patch["train_mask"])
-		deb.prints(self.conf["train"]["mask"]["dir"])
+			deb.prints(patch["train_mask"])
+			deb.prints(self.conf["train"]["mask"]["dir"])
 		
 
-		#========================== BEGIN PATCH EXTRACTION ============================#
-		view_as_windows_flag=False
-		if view_as_windows_flag==True:
-			self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get2(patch["full_ims"],patch["full_label_ims"], \
-				self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
-				path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
-		else:			
-			self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
-				self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
-				path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
-			deb.prints(self.conf["test"]["overlap_full"])
-			#print(self.conf["test"]["overlap_full"]==True)
-			#print(self.conf["test"]["overlap_full"]=="True")
-			if self.conf["test"]["overlap_full"]=="True" or self.conf["test"]["overlap_full"]==True:
-				# Make test with overlap full
-				_,self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
-					self.conf["patch"]["size"],self.conf["patch"]["size"]-1,mask=patch["train_mask"],path_train=self.conf["train"], \
-					path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"],test_only=True)
+			#========================== BEGIN PATCH EXTRACTION ============================#
+			view_as_windows_flag=False
+			if view_as_windows_flag==True:
+				self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get2(patch["full_ims"],patch["full_label_ims"], \
+					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
+					path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
+			else:			
+				self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
+					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
+					path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
+				deb.prints(self.conf["test"]["overlap_full"])
+				#print(self.conf["test"]["overlap_full"]==True)
+				#print(self.conf["test"]["overlap_full"]=="True")
+				if self.conf["test"]["overlap_full"]=="True" or self.conf["test"]["overlap_full"]==True:
+					# Make test with overlap full
+					_,self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
+						self.conf["patch"]["size"],self.conf["patch"]["size"]-1,mask=patch["train_mask"],path_train=self.conf["train"], \
+						path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"],test_only=True)
 
-		deb.prints(self.ram_data['test']['ims'].shape)
-		deb.prints(self.ram_data['test']['labels_int'].shape)
-		deb.prints(self.ram_data['test']['ims'].dtype)
-		deb.prints(self.ram_data['test']['labels_int'].dtype)
+			deb.prints(self.ram_data['test']['ims'].shape)
+			deb.prints(self.ram_data['test']['labels_int'].shape)
+			deb.prints(self.ram_data['test']['ims'].dtype)
+			deb.prints(self.ram_data['test']['labels_int'].dtype)
 		
 		
-		deb.prints(self.conf["test"]["n"])
-		if self.conf["utils_flag_store"]:
-			np.save(self.conf["path"]+"train_n.npy",self.conf["train"]["n"])
-			np.save(self.conf["path"]+"test_n.npy",self.conf["test"]["n"])
+			deb.prints(self.conf["test"]["n"])
+			self.ram_data_store=True
+			if self.ram_data_store:
+				
+				pathlib.Path(self.conf["path"]+foldername).mkdir(parents=True, exist_ok=True) 
+
+				#np.save(self.conf["path"]+foldername+"ram_data.npy",self.ram_data)
+				np.save(self.conf["path"]+foldername+"train_ims.npy",self.ram_data["train"]['ims'])
+				np.save(self.conf["path"]+foldername+"train_labels_int.npy",self.ram_data['train']['labels_int'])
+				np.save(self.conf["path"]+foldername+"test_ims.npy",self.ram_data["test"]['ims'])
+				np.save(self.conf["path"]+foldername+"test_labels_int.npy",self.ram_data['test']['labels_int'])
+				np.save(self.conf["path"]+foldername+"train_n.npy",self.ram_data['train']['n'])
+				np.save(self.conf["path"]+foldername+"test_n.npy",self.ram_data['test']['n'])
+				
+		else:
+			self.ram_data={'train':{},'test':{}}
+			self.ram_data['train']['ims']=np.load(self.conf["path"]+foldername+"train_ims.npy")
+			self.ram_data['train']['labels_int']=np.load(self.conf["path"]+foldername+"train_labels_int.npy")
+			self.ram_data['test']['ims']=np.load(self.conf["path"]+foldername+"test_ims.npy")
+			self.ram_data['test']['labels_int']=np.load(self.conf["path"]+foldername+"test_labels_int.npy")
+			self.ram_data['train']['n']=np.load(self.conf["path"]+foldername+"train_n.npy")
+			self.ram_data['test']['n']=np.load(self.conf["path"]+foldername+"test_n.npy")
 
 
 		# ================== PATCHES ARE STORED IN self.ram_data ========================#
@@ -376,10 +402,10 @@ class DataForNet(object):
 
 		self.ram_data['train']['ims']=patches['train'][0:count['train']]
 		self.ram_data['train']['labels_int']=patches['label_train'][0:count['train']]
-
+		self.ram_data['train']['n']=count['train']
 		self.ram_data['test']['ims']=patches['test'][0:count['test']]
 		self.ram_data['test']['labels_int']=patches['label_test'][0:count['test']]
-
+		self.ram_data['test']['n']=count['test']
 		return count['train'],count['test']
 
 	def im_label_view_as_windows(self,img,label,mask,window,overlap,step,patches):
@@ -392,6 +418,7 @@ class DataForNet(object):
 		for t_step in range(0,self.conf["t_len"]):
 			out = np.squeeze(view_as_windows(img[t_step,:,:,:], (window,window,self.conf["band_n"]), step=step))
 			patches['all'][:,t_step,:,:,:] = np.reshape(out,(out.shape[0]*out.shape[1],out.shape[2],out.shape[3],out.shape[4]))
+			print("Taking windows...")
 		out = np.squeeze(view_as_windows(label, (window,window), step=step))	
 		patches['label_all']=np.reshape(out,(out.shape[0]*out.shape[1],out.shape[2],out.shape[3]))
 
@@ -415,6 +442,7 @@ class DataForNet(object):
 		return patches	
 
 	def im_label_train_test_split(self,patches,path_train,path_test):
+		print("[@im_label_train_test_split]")
 		count={'train':0, 'test':0}
 
 		patches['train']=np.zeros_like(patches['all'])
@@ -504,6 +532,8 @@ class DataForNet(object):
 
 		deb.prints(self.patches_save)
 
+		# This value checks which patches were taken into accoutn
+		mask_covered_areas=np.zeros((h,w))
 		#======================== START IMG LOOP ==================================#
 		for i in range(len(gridx)):
 			for j in range(len(gridy)):

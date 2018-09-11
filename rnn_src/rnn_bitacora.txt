@@ -1,0 +1,11 @@
+ 
+ 
+ (This was just before)
+ python main.py -mm="ram" --debug=1 -pl 32 -po 0 -ts 0 -tnl 10000 -bs=5000 --batch_size=200 --filters=256 -m="smcnn_semantic" --phase="repeat" -sc=False --class_n=12 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=8 -tof=False -nap=10000 -psv=True
+ 
+ 
+ 
+=============== 
+python main.py -mm="ram" --debug=1 -pl 5 -po 3 -ts 0 -tnl 9000000 -bs=50000 --batch_size=200 --filters=256 -m="lstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=1 -psv=False -tof=True
+
+For campo verde seq1 , lstm. Patches create is in true. No need for psv. 10 classes for squeeze. 
