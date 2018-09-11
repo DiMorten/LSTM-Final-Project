@@ -312,6 +312,12 @@ class DataForNet(object):
 		
 		
 			deb.prints(self.conf["test"]["n"])
+
+			deb.prints(self.ram_data['train']['ims'].shape)
+			self.val_set_get(mode='stratified',validation_split=0.15)
+			deb.prints(self.ram_data['train']['ims'].shape)
+			deb.prints(self.ram_data['val']['ims'].shape)
+			
 			self.ram_data_store=True
 			if self.ram_data_store:
 				
@@ -946,6 +952,7 @@ class DataOneHot(DataForNet):
 				deb.prints(self.ram_data["train"]["labels_int"].shape)
 			deb.prints(np.unique(self.ram_data["train"]["labels_int"],return_counts=True)[1])
 			#self.ram_data=self.data_normalize_per_band(self.ram_data)
+			
 			data_balance=True
 			if data_balance:
 				self.ram_data["train"]["ims"],self.ram_data["train"]["labels_int"],self.ram_data["train"]["labels"]=self.data_balance(self.ram_data, \
@@ -956,6 +963,80 @@ class DataOneHot(DataForNet):
 		else:
 			self.im_patches_npy_multitemporal_from_npy_from_folder_store2_onehot()
 			self.data_onehot_load_balance_store()
+
+	def val_set_get(self,mode='stratified',validation_split=0.2):
+		self.ram_data['train']['idx']=range(self.ram_data['train']['n'])
+		clss_train_unique,clss_train_count=np.unique(self.ram_data['train']['labels_int'],return_counts=True)
+		deb.prints(clss_train_count)
+		self.ram_data['val']={'n':int(self.ram_data['train']['n']*validation_split)}
+		
+		#===== CHOOSE VAL IDX
+		#mode='stratified'
+		if mode=='random':
+			self.ram_data['val']['idx']=np.random.choice(self.ram_data['train']['idx'],self.ram_data['val']['n'],replace=False)
+			
+
+			self.ram_data['val']['ims']=self.ram_data['train']['ims'][self.ram_data['val']['idx']]
+			self.ram_data['val']['labels_int']=self.ram_data['train']['labels_int'][self.ram_data['val']['idx']]
+		
+		elif mode=='stratified':
+			while True:
+				self.ram_data['val']['idx']=np.random.choice(self.ram_data['train']['idx'],self.ram_data['val']['n'],replace=False)
+				self.ram_data['val']['ims']=self.ram_data['train']['ims'][self.ram_data['val']['idx']]
+				self.ram_data['val']['labels_int']=self.ram_data['train']['labels_int'][self.ram_data['val']['idx']]
+		
+				clss_val_unique,clss_val_count=np.unique(self.ram_data['val']['labels_int'],return_counts=True)
+				
+				if not np.array_equal(clss_train_unique,clss_val_unique):
+					deb.prints(clss_train_unique)
+					deb.prints(clss_val_unique)
+					
+					pass
+				else:
+					percentages=clss_val_count/clss_train_count
+					deb.prints(percentages)
+					#if np.any(percentages<0.1) or np.any(percentages>0.3):
+					if np.any(percentages>0.23):
+					
+						pass
+					else:
+						break
+		elif mode=='random_v2':
+			while True:
+
+				self.ram_data['val']['idx']=np.random.choice(self.ram_data['train']['idx'],self.ram_data['val']['n'],replace=False)
+				
+
+				self.ram_data['val']['ims']=self.ram_data['train']['ims'][self.ram_data['val']['idx']]
+				self.ram_data['val']['labels_int']=self.ram_data['train']['labels_int'][self.ram_data['val']['idx']]
+				clss_val_unique,clss_val_count=np.unique(self.ram_data['val']['labels_int'].argmax(axis=3),return_counts=True)
+						
+				deb.prints(clss_train_unique)
+				deb.prints(clss_val_unique)
+
+				deb.prints(clss_train_count)
+				deb.prints(clss_val_count)
+
+				clss_train_count_in_val=clss_train_count[np.isin(clss_train_unique,clss_val_unique)]
+				percentages=clss_val_count/clss_train_count_in_val
+				deb.prints(percentages)
+				#if np.any(percentages<0.1) or np.any(percentages>0.3):
+				if np.any(percentages>0.26):
+					pass
+				else:
+					break				
+
+		deb.prints(self.ram_data['val']['idx'].shape)
+
+		
+		deb.prints(self.ram_data['val']['ims'].shape)
+		#deb.prints(data.patches['val']['labels_int'].shape)
+		
+		self.ram_data['train']['ims']=np.delete(self.ram_data['train']['ims'],self.ram_data['val']['idx'],axis=0)
+		self.ram_data['train']['labels_int']=np.delete(self.ram_data['train']['labels_int'],self.ram_data['val']['idx'],axis=0)
+		self.ram_data['train']['n']=self.ram_data['train']['ims'].shape[0]
+		#deb.prints(data.patches['train']['ims'].shape)
+		#deb.prints(data.patches['train']['labels_int'].shape)
 
 	def mask_test_update(self,mask_test,yy,xx,window,label_patch,mask_patch):
 		mask_test[int(yy + window/2), int(xx + window/2)]=255
