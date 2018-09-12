@@ -284,7 +284,9 @@ class NeuralNet(object):
 						
 						break
 					
-				
+			if int(epoch)==int(self.epoch):
+				save_path = self.saver.save(self.sess, "./model_final.ckpt")
+
 			# =__________________________________ Test stats get and model save  _______________________________ = #
 			save_path = self.saver.save(self.sess, "./model.ckpt")
 			print("Model saved in path: %s" % save_path)

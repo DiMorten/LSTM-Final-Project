@@ -12,3 +12,38 @@ python main.py -mm="ram" --debug=1 -pl 5 -po 3 -ts 0 -tnl 9000000 -bs=50000 --ba
 Toy:
 python main.py -mm="ram" --debug=1 -pl 5 -po 0 -ts 0 -tnl 9000000 -bs=50000 --batch_size=200 --filters=256 -m="lstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=1 -psv=False -tof=False
 For campo verde seq1 , lstm. Patches create is in true. No need for psv. 10 classes for squeeze. 
+
+
+
+lstm 10 fixed epochs sequence 1
+
+[@debug] data["labels"].shape = (2858743, 10)
+[@debug] stats["correct_per_class"] = [ 793082.    5377.   18890.      64.    1020.  135689.   67617. 1061892.                                                      
+     176.   51827.]                                                               
+[@debug] stats["per_class_label_count"] = [1021430.    5656.   22362.     614.    3599.  224966.   81951. 1409862.                                                  
+     248.   88055.]                                                               
+[@debug] correct_per_class = [ 793082.    5377.   18890.      64.    1020.  135689.   67617. 1061892.                                                               
+     176.   51827.]                                                               
+[@debug] targets_label_count = [1021430.    5656.   22362.     614.    3599.  224966.   81951. 1409862.                                                             
+     248.   88055.]                                                               
+[@debug] stats["overall_accuracy"] = 0.7470535126802235
+[@debug] stats["average_accuracy"] = 0.6439183196249968
+
+
+convlstm
+
+[@debug] data["labels"].shape = (2858743, 10)
+[@debug] stats["correct_per_class"] = [ 745007.    5275.   17243.      71.     999.  134983.   72049. 1071089.
+     173.   46255.]
+[@debug] stats["per_class_label_count"] = [1021430.    5656.   22362.     614.    3599.  224966.   81951. 1409862.
+     248.   88055.]
+[@debug] correct_per_class = [ 745007.    5275.   17243.      71.     999.  134983.   72049. 1071089.
+     173.   46255.]
+[@debug] targets_label_count = [1021430.    5656.   22362.     614.    3599.  224966.   81951. 1409862.
+     248.   88055.]
+[@debug] stats["overall_accuracy"] = 0.7321903368018741
+[@debug] stats["average_accuracy"] = 0.6288087620817862
+
+=================== USING TRAIN OVERLAP 4 , masking, normalizing. Gave 75.5% oa on epoch 10.
+
+python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 0 -tnl 9000000 -bs=300000 --batch_size=1000 --filters=256 -m="lstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=1 -psv=False -tof=True --epoch=200

@@ -218,7 +218,7 @@ class DataForNet(object):
 		#add_id=self.conf['seq']['id_max']-self.conf["t_len"] # Future: deduce this 9 from data
 		##add_id=self.conf['seq']['id_first']-1 # Future: deduce this 9 from data
 		foldername='patch_npy/'
-		self.patches_create=True
+		self.patches_create=False
 		if self.patches_create==True:
 		
 			add_id=0
@@ -330,6 +330,9 @@ class DataForNet(object):
 				np.save(self.conf["path"]+foldername+"test_labels_int.npy",self.ram_data['test']['labels_int'])
 				np.save(self.conf["path"]+foldername+"train_n.npy",self.ram_data['train']['n'])
 				np.save(self.conf["path"]+foldername+"test_n.npy",self.ram_data['test']['n'])
+				np.save(self.conf["path"]+foldername+"val_ims.npy",self.ram_data["val"]['ims'])
+				np.save(self.conf["path"]+foldername+"val_labels_int.npy",self.ram_data['val']['labels_int'])
+				np.save(self.conf["path"]+foldername+"val_n.npy",self.ram_data['val']['n'])
 				
 		else:
 			self.ram_data={'train':{},'test':{}}
@@ -339,7 +342,9 @@ class DataForNet(object):
 			self.ram_data['test']['labels_int']=np.load(self.conf["path"]+foldername+"test_labels_int.npy")
 			self.ram_data['train']['n']=np.load(self.conf["path"]+foldername+"train_n.npy")
 			self.ram_data['test']['n']=np.load(self.conf["path"]+foldername+"test_n.npy")
-
+			#self.ram_data['val']['ims']=np.load(self.conf["path"]+foldername+"val_ims.npy")
+			#self.ram_data['val']['labels_int']=np.load(self.conf["path"]+foldername+"val_labels_int.npy")
+			#self.ram_data['val']['n']=np.load(self.conf["path"]+foldername+"val_n.npy")
 
 		# ================== PATCHES ARE STORED IN self.ram_data ========================#
 
@@ -368,7 +373,7 @@ class DataForNet(object):
 			deb.prints(np.min(patch["full_ims"][t_step]))
 			
 			#deb.prints(patch["full_ims"][t_step].dtype)
-			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step][2]+".tif",0)
+			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step][2:]+".tif",0)
 
 			#for band in range(0,self.conf["band_n"]):
 			#	patch["full_ims_train"][t_step,:,:,band][patch["train_mask"]!=1]=-1
@@ -1035,6 +1040,8 @@ class DataOneHot(DataForNet):
 		self.ram_data['train']['ims']=np.delete(self.ram_data['train']['ims'],self.ram_data['val']['idx'],axis=0)
 		self.ram_data['train']['labels_int']=np.delete(self.ram_data['train']['labels_int'],self.ram_data['val']['idx'],axis=0)
 		self.ram_data['train']['n']=self.ram_data['train']['ims'].shape[0]
+		self.ram_data['val']['n']=self.ram_data['val']['ims'].shape[0]
+		
 		#deb.prints(data.patches['train']['ims'].shape)
 		#deb.prints(data.patches['train']['labels_int'].shape)
 
@@ -1239,7 +1246,7 @@ if __name__ == "__main__":
 	parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="ram", help="Class number. 'local' or 'remote'")
 	parser.add_argument('-bs','--balance_samples_per_class', dest='balance_samples_per_class',type=int,default=None, help="Class number. 'local' or 'remote'")
 	parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,default=8, help="Class number. 'local' or 'remote'")
-	parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=1000000, help="Class number. 'local' or 'remote'")
+	parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=5000000, help="Class number. 'local' or 'remote'")
 	parser.add_argument('-sc','--squeeze_classes', dest='squeeze_classes',default=True, help="Class number. 'local' or 'remote'")
 
 	args = parser.parse_args()

@@ -52,7 +52,7 @@ parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, defau
 parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="ram", help="Class number. 'local' or 'remote'")
 parser.add_argument('-bs','--balance_samples_per_class', dest='balance_samples_per_class',type=int,default=None, help="Class number. 'local' or 'remote'")
 parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,default=8, help="Class number. 'local' or 'remote'")
-parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=4000000, help="Class number. 'local' or 'remote'")
+parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=6000000, help="Class number. 'local' or 'remote'")
 parser.add_argument('-sc','--squeeze_classes', dest='squeeze_classes',default=True, help="Class number. 'local' or 'remote'")
 
 

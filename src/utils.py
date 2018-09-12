@@ -336,8 +336,8 @@ class DataForNet(object):
 			deb.prints(np.min(patch["full_ims"][t_step]))
 			
 			#deb.prints(patch["full_ims"][t_step].dtype)
-			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step][2]+".tif",0)
-
+			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step][2:]+".tif",0)
+			print("labels/"+names[t_step][2:]+".tif")
 			#for band in range(0,self.conf["band_n"]):
 			#	patch["full_ims_train"][t_step,:,:,band][patch["train_mask"]!=1]=-1
 			# Do the masking here. Do we have the train labels?
