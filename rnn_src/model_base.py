@@ -34,7 +34,7 @@ class NeuralNet(object):
 						timesteps=7, patch_len=32,
 						kernel=[3,3], channels=7, filters=32, n_classes=6,
 						checkpoint_dir='./checkpoint',log_dir="../data/summaries/",data=None, conf=None, debug=1, \
-						patience=10,squeeze_classes=True,n_repetitions=10,fine_early_stop=False,fine_early_stop_steps=400):
+						patience=100,squeeze_classes=True,n_repetitions=10,fine_early_stop=False,fine_early_stop_steps=400):
 		self.squeeze_classes=squeeze_classes		
 		self.ram_data=data
 		self.sess = sess
@@ -282,7 +282,7 @@ class NeuralNet(object):
 						deb.prints(early_stop["best"]["metric2"])
 						deb.prints(early_stop["best"]["metric3"])
 						
-						break
+						#break
 					
 			if int(epoch)==int(self.epoch):
 				save_path = self.saver.save(self.sess, "./model_final.ckpt")
@@ -300,6 +300,7 @@ class NeuralNet(object):
 				break
 			
 			print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
+			print("Per class accuracy:{}".format(stats["per_class_accuracy"]))
 			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
 
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
