@@ -252,6 +252,26 @@ class NeuralNet(object):
 		idxs=np.random.shuffle(idxs)
 		return np.squeeze(data)
 
+	def int_to_onehot(targets,class_n):
+
+		one_hot_targets = np.eye(class_n)[targets]
+
+		return one_hot_targets
+
+	def metrics_get(y_pred,y_true):
+		deb.prints(y_true.shape)
+		deb.prints(y_pred.shape)
+		deb.prints(np.max(y_pred))
+		#y_pred=self.probabilities_to_one_hot(y_pred)
+		metrics={}
+		metrics['f1_score']=f1_score(y_pred,y_true,average='macro')
+		metrics['f1_score_weighted']=f1_score(y_pred,y_true,average='weighted')
+		metrics['overall_acc']=accuracy_score(y_pred,y_true)
+		metrics['confusion_matrix']=confusion_matrix(data['label_h'].argmax(axis=1),data['prediction_h'].argmax(axis=1))
+		metrics['per_class_acc']=(metrics['confusion_matrix'].astype('float') / metrics['confusion_matrix'].sum(axis=1)[:, np.newaxis]).diagonal()
+		
+		metrics['average_acc']=np.average(metrics['per_class_acc'][~np.isnan(metrics['per_class_acc'])])
+		return metrics
 	def train_batch_loop(self,args,batch,data):
 		start_time = time.time()
 		early_stop={"best":{}, "patience":self.early_stop["patience"]}
@@ -286,7 +306,14 @@ class NeuralNet(object):
 					
 			if int(epoch)==int(self.epoch):
 				save_path = self.saver.save(self.sess, "./model_final.ckpt")
+				print("Model saved in path: %s" % save_path)
 
+			# ================= VALIDATION ASSESS
+			#y_pred_val=np.around(self.sess.run(self.prediction,{self.data: self.ram_data['val']['ims'], self.keep_prob: 1.0, self.training: False}),decimals=2)
+			#self.ram_data['val']['labels']=self.int_to_onehot(self.ram_data['val']['labels_int'])
+		
+			#metrics_val=self.metrics_get(y_pred_val,self.ram_data['val']['labels'])
+			#print("Val f1:{}, f1_weighted:{}, ")
 			# =__________________________________ Test stats get and model save  _______________________________ = #
 			save_path = self.saver.save(self.sess, "./model.ckpt")
 			print("Model saved in path: %s" % save_path)

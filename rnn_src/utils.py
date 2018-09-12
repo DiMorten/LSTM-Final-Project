@@ -342,9 +342,10 @@ class DataForNet(object):
 			self.ram_data['test']['labels_int']=np.load(self.conf["path"]+foldername+"test_labels_int.npy")
 			self.ram_data['train']['n']=np.load(self.conf["path"]+foldername+"train_n.npy")
 			self.ram_data['test']['n']=np.load(self.conf["path"]+foldername+"test_n.npy")
-			#self.ram_data['val']['ims']=np.load(self.conf["path"]+foldername+"val_ims.npy")
-			#self.ram_data['val']['labels_int']=np.load(self.conf["path"]+foldername+"val_labels_int.npy")
-			#self.ram_data['val']['n']=np.load(self.conf["path"]+foldername+"val_n.npy")
+			self.ram_data['val']={}
+			self.ram_data['val']['ims']=np.load(self.conf["path"]+foldername+"val_ims.npy")
+			self.ram_data['val']['labels_int']=np.load(self.conf["path"]+foldername+"val_labels_int.npy")
+			self.ram_data['val']['n']=np.load(self.conf["path"]+foldername+"val_n.npy")
 
 		# ================== PATCHES ARE STORED IN self.ram_data ========================#
 
