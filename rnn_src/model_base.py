@@ -278,6 +278,7 @@ class NeuralNet(object):
 		early_stop["count"]=0
 		early_stop["best"]["metric1"]=0
 		counter=1
+		self.ram_data['val']['labels']=self.int_to_onehot(self.ram_data['val']['labels_int'])
 		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
 		for epoch in range(args.epoch):
 			#data["train"]["ims"]=self.data_shuffle(data["train"]["ims"])
@@ -288,11 +289,16 @@ class NeuralNet(object):
 				if self.debug>=3:
 					deb.prints(batch["ims"].shape)
 					deb.prints(batch["labels"].shape)
-				summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels"], self.keep_prob: 1.0, self.global_step: idx, self.training: True})
+				try:
+					summary,_ = self.sess.run([self.merged,self.minimize],{self.data: batch["ims"], self.target: batch["labels"], self.keep_prob: 1.0, self.global_step: idx, self.training: True})
+				except:
+					print("Error while attempting to train a batch")
+					deb.prints(batch["ims"].shape)
+					deb.prints(batch["labels"].shape)
 				self.writer.add_summary(summary, counter)
 				counter += 1
-				self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1.0, self.training: True})
-				if self.debug>=1 and (idx % 30 == 0):
+				if self.debug>=1 and (idx % 500 == 0):
+					self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1.0, self.training: True})
 					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
 				if self.fine_early_stop and (idx % self.fine_early_stop_steps == 0):
 					stats = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
@@ -310,10 +316,11 @@ class NeuralNet(object):
 
 			# ================= VALIDATION ASSESS
 			#y_pred_val=np.around(self.sess.run(self.prediction,{self.data: self.ram_data['val']['ims'], self.keep_prob: 1.0, self.training: False}),decimals=2)
-			#self.ram_data['val']['labels']=self.int_to_onehot(self.ram_data['val']['labels_int'])
-		
+			
+			stats = self.data_stats_get(self.ram_data["val"],self.test_batch_size) # For each epoch, get metrics on the entire test set
+			print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
+			print("Per class accuracy:{}".format(stats["per_class_accuracy"]))
 			#metrics_val=self.metrics_get(y_pred_val,self.ram_data['val']['labels'])
-			#print("Val f1:{}, f1_weighted:{}, ")
 			# =__________________________________ Test stats get and model save  _______________________________ = #
 			save_path = self.saver.save(self.sess, "./model.ckpt")
 			print("Model saved in path: %s" % save_path)

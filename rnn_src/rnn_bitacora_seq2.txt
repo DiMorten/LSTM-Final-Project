@@ -66,64 +66,52 @@ Average accuracy:0.6196213922980034, Overall accuracy:0.7467094224636246
 Per class accuracy:[0.78948753 0.9316361  0.79998196 0.04915254 0.19405099 0.64915703
 
 
-============ lstm 5 epochs seq1
+============ lstm seq2  ¿create patches
+
+python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 0 -tnl 9000000 -bs=300000 --batch_size=1000 --filters=256 -m="lstm" --phase="train" -sc=True --class_n=9 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=8 -psv=False -tof=False --epoch=20
+
+
 
 Model saved in path: ./model.ckpt
-[@debug] data["labels"].shape = (2851855, 10)
-[@debug] stats["correct_per_class"] = [ 775618.    5511.   17440.      96.    1381.  142725.   66197. 1106222.
-     174.   47423.]
-[@debug] stats["per_class_label_count"] = [1018714.    5617.   22178.     590.    3530.  224505.   81748. 1406900.
-     245.   87828.]
-[@debug] correct_per_class = [ 775618.    5511.   17440.      96.    1381.  142725.   66197. 1106222.
-     174.   47423.]
-[@debug] targets_label_count = [1018714.    5617.   22178.     590.    3530.  224505.   81748. 1406900.
-     245.   87828.]
-[@debug] stats["overall_accuracy"] = 0.7583790199712117
-[@debug] stats["average_accuracy"] = 0.6564734783771987
-Average accuracy:0.6564734783771987, Overall accuracy:0
-
-
-
-================= lstm epoch 10
-
-poch 10, step 500. Overall accuracy 73.5%
-Epoch 10, step 1000. Overall accuracy 73.2%
-Epoch 10, step 1500. Overall accuracy 72.9%
-Epoch 10, step 2000. Overall accuracy 75.3%
-Epoch 10, step 2500. Overall accuracy 75.5%
-Model saved in path: ./model.ckpt
-[@debug] data["labels"].shape = (2851855, 10)
-[@debug] stats["correct_per_class"] = [ 766556.    5405.   17859.      39.     917.  149333.   69672. 1122884.                                                      
-     172.   44373.]                                                               
-[@debug] stats["per_class_label_count"] = [1018714.    5617.   22178.     590.    3530.  224505.   81748. 1406900.                                                  
-     245.   87828.]                                                               
-[@debug] correct_per_class = [ 766556.    5405.   17859.      39.     917.  149333.   69672. 1122884.                                                               
-     172.   44373.]                                                               
-[@debug] targets_label_count = [1018714.    5617.   22178.     590.    3530.  224505.   81748. 1406900.                                                             
-     245.   87828.]                                                               
-[@debug] stats["overall_accuracy"] = 0.7634364299727721
-[@debug] stats["average_accuracy"] = 0.6368700794357692
-Average accuracy:0.6368700794357692, Overall accuracy:0.7634364299727721
-Per class accuracy:[0.7524742  0.96225743 0.80525746 0.06610169 0.25977337 0.66516559
- 0.85227773 0.79812638 0.70204082 0.50522612]
- 
- 
- 
- ================ CONVLSTM 16 FILTERS EPOCH 10
- 
- 
- [@debug] data["labels"].shape = (2865982, 9)
-[@debug] stats["correct_per_class"] = [196489. 932415.  12846.  29123. 169806.  75318. 492450.    183.  55866.]
+[@debug] data["labels"].shape = (2865982, 9)
+[@debug] stats["correct_per_class"] = [181453. 908083.  13595.  27871. 168872.  76414. 513046.    183.  40087.]
 [@debug] stats["per_class_label_count"] = [ 383518. 1086067.   25074.   57243.  310511.   82290.  832784.     253.
    88242.]
-[@debug] correct_per_class = [196489. 932415.  12846.  29123. 169806.  75318. 492450.    183.  55866.]
+[@debug] correct_per_class = [181453. 908083.  13595.  27871. 168872.  76414. 513046.    183.  40087.]
 [@debug] targets_label_count = [ 383518. 1086067.   25074.   57243.  310511.   82290.  832784.     253.
    88242.]
-[@debug] stats["overall_accuracy"] = 0.6854530140105556
-[@debug] stats["average_accuracy"] = 0.644647437418526
-Average accuracy:0.644647437418526, Overall accuracy:0.6854530140105556
-Per class accuracy:[0.51233319 0.85852438 0.51232352 0.5087609  0.54685985 0.91527525
- 0.5913298  0.72332016 0.63309988]
-Epoch: [ 9] [2699/2700] time: 3824.8867
-Epoch - 9. Steps per epoch - 2699
+[@debug] stats["overall_accuracy"] = 0.6732784783714622
+[@debug] stats["average_accuracy"] = 0.6227160937438027
+Average accuracy:0.6227160937438027, Overall accuracy:0.6732784783714622
+Per class accuracy:[0.47312773 0.83612061 0.5421951  0.48688923 0.54385191 0.928594
+ 0.61606131 0.72332016 0.45428481]
+Epoch: [19] [2699/2700] time: 1011.2639
+Epoch - 19. Steps per epoch - 2699
+(epyt) lvc@SLVC03:~/Documents/Jorg/deep_learning/LST
+
+
+
+epoch 15 
+
+poch - 13. Steps per epoch - 2699
+Epoch 15, step  0. Overall accuracy 65.5%
+Epoch 15, step 500. Overall accuracy 67.5%
+Epoch 15, step 1000. Overall accuracy 66.7%
+Epoch 15, step 1500. Overall accuracy 66.5%
+Epoch 15, step 2000. Overall accuracy 67.8%
+Epoch 15, step 2500. Overall accuracy 66.6%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (2865982, 9)
+[@debug] stats["correct_per_class"] = [182408. 902783.  14568.  29684. 161646.  77043. 505803.    180.  45850.]                                                     
+[@debug] stats["per_class_label_count"] = [ 383518. 1086067.   25074.   57243.  310511.   82290.  832784.     253.                                                  
+   88242.]                                                                        
+[@debug] correct_per_class = [182408. 902783.  14568.  29684. 161646.  77043. 505803.    180.  45850.]                                                              
+[@debug] targets_label_count = [ 383518. 1086067.   25074.   57243.  310511.   82290.  832784.     253.                                                             
+   88242.]                                                                        
+[@debug] stats["overall_accuracy"] = 0.6699152332429164
+[@debug] stats["average_accuracy"] = 0.6335176071164056
+Average accuracy:0.6335176071164056, Overall accuracy:0.6699152332429164
+Per class accuracy:[0.47561783 0.83124061 0.58100024 0.51856122 0.52058059 0.9362377
+ 0.60736397 0.71146245 0.51959384]
+
 

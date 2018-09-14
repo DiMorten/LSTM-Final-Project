@@ -217,7 +217,17 @@ class DataForNet(object):
 		print('[@im_patches_npy_multitemporal_from_npy_store2]')
 		#add_id=self.conf['seq']['id_max']-self.conf["t_len"] # Future: deduce this 9 from data
 		##add_id=self.conf['seq']['id_first']-1 # Future: deduce this 9 from data
-		foldername='patch_npy/'
+		
+		# This is seq2
+		##foldername=self.conf["path"]+'mnt/Data/Jorge/tf_patches/seq1_overlap4_masked_norm/patch_npy/'
+		
+		# This is where I want seq2 to be
+		#foldername='/mnt/Data/Jorge/tf_patches/seq2_overlap4_masked_norm/patch_npy/'
+		
+		# This is seq1
+		foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap4_masked_norm/patch_npy/'
+		
+		#foldername=self.conf["path"]+'patch_npy/'
 		self.patches_create=False
 		if self.patches_create==True:
 		
@@ -335,17 +345,27 @@ class DataForNet(object):
 				np.save(self.conf["path"]+foldername+"val_n.npy",self.ram_data['val']['n'])
 				
 		else:
+			print("Loading dataset...")
 			self.ram_data={'train':{},'test':{}}
-			self.ram_data['train']['ims']=np.load(self.conf["path"]+foldername+"train_ims.npy")
-			self.ram_data['train']['labels_int']=np.load(self.conf["path"]+foldername+"train_labels_int.npy")
-			self.ram_data['test']['ims']=np.load(self.conf["path"]+foldername+"test_ims.npy")
-			self.ram_data['test']['labels_int']=np.load(self.conf["path"]+foldername+"test_labels_int.npy")
-			self.ram_data['train']['n']=np.load(self.conf["path"]+foldername+"train_n.npy")
-			self.ram_data['test']['n']=np.load(self.conf["path"]+foldername+"test_n.npy")
+			self.ram_data['train']['ims']=np.load(foldername+"train_ims.npy")
+			deb.prints(self.ram_data['train']['ims'].shape)
+			self.ram_data['train']['labels_int']=np.load(foldername+"train_labels_int.npy")
+			deb.prints(np.unique(self.ram_data['train']['labels_int']))
+			
+			deb.prints(self.ram_data['train']['labels_int'].shape)
+			
+			self.ram_data['test']['ims']=np.load(foldername+"test_ims.npy")
+			deb.prints(self.ram_data['test']['ims'].shape)
+			
+			self.ram_data['test']['labels_int']=np.load(foldername+"test_labels_int.npy")
+			self.ram_data['train']['n']=np.load(foldername+"train_n.npy")
+			self.ram_data['test']['n']=np.load(foldername+"test_n.npy")
 			self.ram_data['val']={}
-			self.ram_data['val']['ims']=np.load(self.conf["path"]+foldername+"val_ims.npy")
-			self.ram_data['val']['labels_int']=np.load(self.conf["path"]+foldername+"val_labels_int.npy")
-			self.ram_data['val']['n']=np.load(self.conf["path"]+foldername+"val_n.npy")
+			self.ram_data['val']['ims']=np.load(foldername+"val_ims.npy")
+			deb.prints(self.ram_data['val']['ims'].shape)
+			
+			self.ram_data['val']['labels_int']=np.load(foldername+"val_labels_int.npy")
+			self.ram_data['val']['n']=np.load(foldername+"val_n.npy")
 
 		# ================== PATCHES ARE STORED IN self.ram_data ========================#
 
@@ -375,7 +395,7 @@ class DataForNet(object):
 			
 			#deb.prints(patch["full_ims"][t_step].dtype)
 			patch["full_label_ims"][t_step] = cv2.imread(self.conf["path"]+"labels/"+names[t_step][2:]+".tif",0)
-
+			print("Label path", self.conf["path"]+"labels/"+names[t_step][2:]+".tif")
 			#for band in range(0,self.conf["band_n"]):
 			#	patch["full_ims_train"][t_step,:,:,band][patch["train_mask"]!=1]=-1
 			# Do the masking here. Do we have the train labels?
@@ -946,6 +966,8 @@ class DataOneHot(DataForNet):
 			self.ram_data["train"]["n"],self.conf["class_n"])
 		self.ram_data["test"]["labels"]=self.labels_onehot_get(self.ram_data["test"]["labels_int"], \
 			self.ram_data["test"]["n"],self.conf["class_n"])
+		self.ram_data["val"]["labels"]=self.labels_onehot_get(self.ram_data["val"]["labels_int"], \
+			self.ram_data["val"]["n"],self.conf["class_n"])
 	def create(self):
 		os.system("rm -rf "+self.conf["path"]+"train_test")
 

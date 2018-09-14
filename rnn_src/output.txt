@@ -1,0 +1,26 @@
+Script started on Wed 12 Sep 2018 05:02:56 PM -03
+]0;lvc@SLVC03: ~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[01;32mlvc@SLVC03[00m:[01;34m~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[00m$ self.ram_data ['val']^C
+]0;lvc@SLVC03: ~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[01;32mlvc@SLVC03[00m:[01;34m~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[00m$ ^C
+]0;lvc@SLVC03: ~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[01;32mlvc@SLVC03[00m:[01;34m~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[00m$ python main.pyy -mm="ram" --debug=1 -pl 5 -po 4 -ts 0 -tnl 9000000 -bs=300000 --batch_size=1000 ---filters=256 -m="lstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/summmaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_firsst=1 -psv=False -tof=True --epoch=30[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Cclstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_fir[1@s[A[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Colstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/su[Cmaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_fi[1@r[A[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Cnlstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_f[1@i[A[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Cvlstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_[1@f[A[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C
+
+
+Traceback (most recent call last):
+  File "main.py", line 10, in <module>
+    import tensorflow as tf
+ModuleNotFoundError: No module named 'tensorflow'
+]0;lvc@SLVC03: ~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[01;32mlvc@SLVC03[00m:[01;34m~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[00m$ ^C
+]0;lvc@SLVC03: ~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[01;32mlvc@SLVC03[00m:[01;34m~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[00m$ ^C
+]0;lvc@SLVC03: ~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[01;32mlvc@SLVC03[00m:[01;34m~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[00m$ ^C
+]0;lvc@SLVC03: ~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[01;32mlvc@SLVC03[00m:[01;34m~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[00m$ ^C
+]0;lvc@SLVC03: ~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[01;32mlvc@SLVC03[00m:[01;34m~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[00m$ source activa te epyt
+(epyt) ]0;lvc@SLVC03: ~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[01;32mlvc@SLVC03[00m:[01;34m~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[00m$ 
+(epyt) ]0;lvc@SLVC03: ~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[01;32mlvc@SLVC03[00m:[01;34m~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[00m$ source  activate epyt[A(epyt) ]0;lvc@SLVC03: ~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[01;32mlvc@SLVC03[00m:[01;34m~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[00m$ python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 0 -tnl 9000000 -bs=300000 --batch_size==1000 --filters=256 -m="convlstm" --phase="train" -sc=True --class_n=10 --log_dir=".../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len==7 --id_first=1 -psv=False -tof=True --epoch=30
+Traceback (most recent call last):
+  File "main.py", line 10, in <module>
+    import tensorflow as tf
+ModuleNotFoundError: No module named 'tensorflow'
+(epyt) ]0;lvc@SLVC03: ~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[01;32mlvc@SLVC03[00m:[01;34m~/Documents/Jorg/deep_learning/LSTM-Final-Project/rnn_src[00m$ script  [K[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[K
+[K[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[K[K[K[K[Kexit
+exit
+
+Script done on Wed 12 Sep 2018 05:03:53 PM -03
