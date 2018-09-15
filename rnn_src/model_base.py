@@ -252,7 +252,7 @@ class NeuralNet(object):
 		idxs=np.random.shuffle(idxs)
 		return np.squeeze(data)
 
-	def int_to_onehot(targets,class_n):
+	def int_to_onehot(self,targets,class_n):
 
 		one_hot_targets = np.eye(class_n)[targets]
 
@@ -273,12 +273,24 @@ class NeuralNet(object):
 		metrics['average_acc']=np.average(metrics['per_class_acc'][~np.isnan(metrics['per_class_acc'])])
 		return metrics
 	def train_batch_loop(self,args,batch,data):
+
+		with open('results.txt', "w") as text_file:
+			text_file.write("epoch,oa,aa,f1,class_acc\n")
+
+		with open('results_val.txt', "w") as text_file:
+			text_file.write("epoch,oa,aa,f1,class_acc\n")
+
 		start_time = time.time()
 		early_stop={"best":{}, "patience":self.early_stop["patience"]}
 		early_stop["count"]=0
 		early_stop["best"]["metric1"]=0
+
+		txt={'count':0,'val':{},'test':{}}
+		txt['val']={'stats':[],'epoch':[],'loss':[]}
+		txt['test']={'stats':[],'epoch':[],'loss':[]}
+
 		counter=1
-		self.ram_data['val']['labels']=self.int_to_onehot(self.ram_data['val']['labels_int'])
+		self.ram_data['val']['labels']=self.int_to_onehot(self.ram_data['val']['labels_int'].astype(np.uint8),self.n_classes)
 		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
 		for epoch in range(args.epoch):
 			#data["train"]["ims"]=self.data_shuffle(data["train"]["ims"])
@@ -318,8 +330,28 @@ class NeuralNet(object):
 			#y_pred_val=np.around(self.sess.run(self.prediction,{self.data: self.ram_data['val']['ims'], self.keep_prob: 1.0, self.training: False}),decimals=2)
 			
 			stats = self.data_stats_get(self.ram_data["val"],self.test_batch_size) # For each epoch, get metrics on the entire test set
-			print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
-			print("Per class accuracy:{}".format(stats["per_class_accuracy"]))
+			print("VAL Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
+			print("VAL Per class accuracy:{}".format(stats["per_class_accuracy"]))
+			
+
+			# Check early stop and store results if they are the best
+			if epoch % 50 == 0:
+				print("Writing to file...")
+				for i in range(len(txt['val']['stats'])):
+
+					self.metrics_write_to_txt(txt['val']['stats'][i],txt['val']['epoch'][i],path='results_val.txt')
+				txt['val']['stats']=[]
+				#txt['val']['loss']=[]
+				txt['val']['epoch']=[]
+				#self.graph.save('my_model.h5')
+
+			else:
+
+				txt['val']['stats'].append(stats)
+				#txt['val']['loss'].append(self.metrics['val']['loss'])
+				txt['val']['epoch'].append(epoch)
+
+
 			#metrics_val=self.metrics_get(y_pred_val,self.ram_data['val']['labels'])
 			# =__________________________________ Test stats get and model save  _______________________________ = #
 			save_path = self.saver.save(self.sess, "./model.ckpt")
@@ -338,7 +370,38 @@ class NeuralNet(object):
 			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
 
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
+		
+			# ================= save txt
+
+			# Check early stop and store results if they are the best
+			if epoch % 50 == 0:
+				print("Writing to file...")
+				for i in range(len(txt['test']['stats'])):
+
+					self.metrics_write_to_txt(txt['test']['stats'][i],txt['test']['epoch'][i],path='results.txt')
+				txt['test']['stats']=[]
+				#txt['val']['loss']=[]
+				txt['test']['epoch']=[]
+				#self.graph.save('my_model.h5')
+
+			else:
+
+				txt['test']['stats'].append(stats)
+				#txt['val']['loss'].append(self.metrics['val']['loss'])
+				txt['test']['epoch'].append(epoch)
+
+
 		return early_stop
+	def metrics_write_to_txt(self,stats,epoch=0,path=None):
+
+		with open(path, "a") as text_file:
+			text_file.write("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}".format(str(epoch),
+				str(stats['overall_accuracy']),str(stats['average_accuracy']),
+				str(stats["per_class_accuracy"][0]),str(stats["per_class_accuracy"][1]),
+				str(stats["per_class_accuracy"][2]),str(stats["per_class_accuracy"][3]),
+				str(stats["per_class_accuracy"][4]),str(stats["per_class_accuracy"][5]),
+				str(stats["per_class_accuracy"][6]),str(stats["per_class_accuracy"][7])))
+
 	def train(self, args):
 		batch,data=self.train_init(args)
 		
