@@ -3,4 +3,491 @@ python main.py -mm="ram" --debug=1 -pl 32 -po 0 -ts 0 -tnl 5000 -bs=5000 --batch
 
 ==== train overlalp 4
 
-python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 0 -tnl 9000000 -bs=300000 --batch_size=1000 --filters=256 -m="lstm" --phase="train" -sc=True --class_n=8 --log_dir="../data/summaries/" --path="../hn_data/" --im_h=6231 --im_w=4548 --band_n=2 --t_len=24 --id_first=1 -psv=False -tof=False --epoch=200
+python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 0 -tnl 9000000 -bs=11000 --batch_size=1000 --filters=256 -m="lstm" --phase="train" -sc=True --class_n=8 --log_dir="../data/summaries/" --path="../hn_data/" --im_h=6231 --im_w=4548 --band_n=2 --t_len=24 --id_first=1 -psv=False -tof=False --epoch=200
+
+
+Results lstm
+
+253
+ 0.74706376 0.92352853]
+Epoch: [10] [2399/2400] time: 800.8923
+Epoch - 10. Steps per epoch - 2399
+Epoch 12, step  0. Overall accuracy 88.8%
+Epoch 12, step 500. Overall accuracy 89.5%
+Epoch 12, step 1000. Overall accuracy 89.4%
+Epoch 12, step 1500. Overall accuracy 89.5%
+Epoch 12, step 2000. Overall accuracy 89.2%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5618.  3409. 10579.  2143. 12202.   904.  5589. 12393.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5618.  3409. 10579.  2143. 12202.   904.  5589. 12393.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.8909967791436907
+[@debug] stats["average_accuracy"] = 0.8685325442767642
+Average accuracy:0.8685325442767642, Overall accuracy:0.8909967791436907
+Per class accuracy:[0.97687359 0.73248818 0.88430996 0.99212963 0.93358837 0.71462451
+ 0.78145973 0.93278639]
+Epoch: [11] [2399/2400] time: 874.7541
+Epoch - 11. Steps per epoch - 2399
+Epoch 13, step  0. Overall accuracy 89.5%
+Epoch 13, step 500. Overall accuracy 89.9%
+Epoch 13, step 1000. Overall accuracy 89.9%
+Epoch 13, step 1500. Overall accuracy 89.5%
+Epoch 13, step 2000. Overall accuracy 89.7%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5617.  3392. 10571.  2144. 12172.   893.  5592. 12425.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5617.  3392. 10571.  2144. 12172.   893.  5592. 12425.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.8904740223604998
+[@debug] stats["average_accuracy"] = 0.8670081203036167
+Average accuracy:0.8670081203036167, Overall accuracy:0.8904740223604998
+Per class accuracy:[0.9766997  0.72883541 0.88364123 0.99259259 0.93129304 0.70592885
+ 0.78187919 0.93519494]
+Epoch: [12] [2399/2400] time: 948.7043
+Epoch - 12. Steps per epoch - 2399
+Epoch 14, step  0. Overall accuracy 89.8%
+Epoch 14, step 500. Overall accuracy 89.9%
+Epoch 14, step 1000. Overall accuracy 89.7%
+Epoch 14, step 1500. Overall accuracy 89.6%
+Epoch 14, step 2000. Overall accuracy 89.8%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5613.  3392. 10555.  2146. 12138.   898.  5607. 12440.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5613.  3392. 10555.  2146. 12138.   898.  5607. 12440.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.8901873492858468
+[@debug] stats["average_accuracy"] = 0.8674419269210191
+Average accuracy:0.8674419269210191, Overall accuracy:0.8901873492858468
+Per class accuracy:[0.97600417 0.72883541 0.88230377 0.99351852 0.92869166 0.70988142
+ 0.78397651 0.93632395]
+Epoch: [13] [2399/2400] time: 1022.8141
+Epoch - 13. Steps per epoch - 2399
+Epoch 15, step  0. Overall accuracy 89.8%
+Epoch 15, step 500. Overall accuracy 90.0%
+Epoch 15, step 1000. Overall accuracy 89.7%
+Epoch 15, step 1500. Overall accuracy 90.0%
+Epoch 15, step 2000. Overall accuracy 89.8%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5611.  3400. 10534.  2146. 12116.   900.  5636. 12435.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5611.  3400. 10534.  2146. 12116.   900.  5636. 12435.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.8900018549434242
+[@debug] stats["average_accuracy"] = 0.8678409307660088
+Average accuracy:0.8678409307660088, Overall accuracy:0.8900018549434242
+Per class accuracy:[0.97565641 0.73055436 0.88054836 0.99351852 0.92700842 0.71146245
+ 0.78803132 0.93594761]
+Epoch: [14] [2399/2400] time: 1096.7613
+Epoch - 14. Steps per epoch - 2399
+Epoch 16, step  0. Overall accuracy 89.8%
+Epoch 16, step 500. Overall accuracy 89.9%
+Epoch 16, step 1000. Overall accuracy 89.8%
+Epoch 16, step 1500. Overall accuracy 89.9%
+Epoch 16, step 2000. Overall accuracy 89.8%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5555.  3550.  9814.  2146. 12152.   963.  5710. 12319.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5555.  3550.  9814.  2146. 12152.   963.  5710. 12319.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.8804067385035665
+[@debug] stats["average_accuracy"] = 0.8699009135652223
+Average accuracy:0.8699009135652223, Overall accuracy:0.8804067385035665
+Per class accuracy:[0.96591897 0.7627847  0.82036279 0.99351852 0.92976282 0.76126482
+ 0.79837808 0.92721662]
+Epoch: [15] [2399/2400] time: 1171.3520
+Epoch - 15. Steps per epoch - 2399
+Epoch 17, step  0. Overall accuracy 89.2%
+Epoch 17, step 500. Overall accuracy 89.9%
+Epoch 17, step 1000. Overall accuracy 90.0%
+Epoch 17, step 1500. Overall accuracy 90.0%
+Epoch 17, step 2000. Overall accuracy 89.9%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5640.  3432. 10669.  2151. 12288.   957.  5733. 12437.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5640.  3432. 10669.  2151. 12288.   957.  5733. 12437.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.8989224465017454
+[@debug] stats["average_accuracy"] = 0.8800222292142996
+Average accuracy:0.8800222292142996, Overall accuracy:0.8989224465017454
+Per class accuracy:[0.98069901 0.73743017 0.89183315 0.99583333 0.94016832 0.75652174
+ 0.80159396 0.93609815]
+Epoch: [16] [2399/2400] time: 1245.5635
+Epoch - 16. Steps per epoch - 2399
+Epoch 18, step  0. Overall accuracy 90.0%
+Epoch 18, step 500. Overall accuracy 90.1%
+Epoch 18, step 1000. Overall accuracy 90.0%
+Epoch 18, step 1500. Overall accuracy 89.9%
+Epoch 18, step 2000. Overall accuracy 89.8%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5637.  3431. 10641.  2152. 12255.   981.  5753. 12435.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5637.  3431. 10641.  2152. 12255.   981.  5753. 12435.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.8985514578169003
+[@debug] stats["average_accuracy"] = 0.8820821351754937
+Average accuracy:0.8820821351754937, Overall accuracy:0.8985514578169003
+Per class accuracy:[0.98017736 0.7372153  0.8894926  0.9962963  0.93764346 0.77549407
+ 0.80439038 0.93594761]
+Epoch: [17] [2399/2400] time: 1319.7800
+Epoch - 17. Steps per epoch - 2399
+Epoch 19, step  0. Overall accuracy 90.0%
+Epoch 19, step 500. Overall accuracy 89.8%
+Epoch 19, step 1000. Overall accuracy 89.7%
+Epoch 19, step 1500. Overall accuracy 89.6%
+Epoch 19, step 2000. Overall accuracy 89.5%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5632.  3430. 10602.  2153. 12231.   984.  5770. 12435.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5632.  3430. 10602.  2153. 12231.   984.  5770. 12435.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.8977420279590563
+[@debug] stats["average_accuracy"] = 0.8819609927916645
+Average accuracy:0.8819609927916645, Overall accuracy:0.8977420279590563
+Per class accuracy:[0.97930795 0.73700043 0.88623255 0.99675926 0.93580719 0.77786561
+ 0.80676734 0.93594761]
+Epoch: [18] [2399/2400] time: 1394.2800
+Epoch - 18. Steps per epoch - 2399
+Epoch 20, step  0. Overall accuracy 89.5%
+Epoch 20, step 500. Overall accuracy 89.4%
+Epoch 20, step 1000. Overall accuracy 89.2%
+Epoch 20, step 1500. Overall accuracy 89.2%
+Epoch 20, step 2000. Overall accuracy 89.1%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5634.  3427. 10564.  2153. 12226.   983.  5777. 12447.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5634.  3427. 10564.  2153. 12226.   983.  5777. 12447.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.8973035867860576
+[@debug] stats["average_accuracy"] = 0.8816154405846439
+Average accuracy:0.8816154405846439, Overall accuracy:0.8973035867860576
+Per class accuracy:[0.97965571 0.73635582 0.88305609 0.99675926 0.93542464 0.7770751
+ 0.80774609 0.93685082]
+Epoch: [19] [2399/2400] time: 1468.6133
+Epoch - 19. Steps per epoch - 2399
+Epoch 21, step  0. Overall accuracy 89.3%
+Epoch 21, step 500. Overall accuracy 89.4%
+Epoch 21, step 1000. Overall accuracy 89.1%
+Epoch 21, step 1500. Overall accuracy 89.2%
+Epoch 21, step 2000. Overall accuracy 89.2%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5633.  3425. 10538.  2154. 12206.   985.  5777. 12445.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5633.  3425. 10538.  2154. 12206.   985.  5777. 12445.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.8964941569282137
+[@debug] stats["average_accuracy"] = 0.8813137213102011
+Average accuracy:0.8813137213102011, Overall accuracy:0.8964941569282137
+Per class accuracy:[0.97948183 0.73592609 0.88088272 0.99722222 0.93389441 0.77865613
+ 0.80774609 0.93670029]
+Epoch: [20] [2399/2400] time: 1542.6056
+Epoch - 20. Steps per epoch - 2399
+Epoch 22, step  0. Overall accuracy 89.5%
+Epoch 22, step 500. Overall accuracy 89.2%
+Epoch 22, step 1000. Overall accuracy 89.1%
+Epoch 22, step 1500. Overall accuracy 89.2%
+Epoch 22, step 2000. Overall accuracy 89.1%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5629.  3418. 10506.  2156. 12191.   989.  5784. 12462.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5629.  3418. 10506.  2156. 12191.   989.  5784. 12462.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.8960219895111381
+[@debug] stats["average_accuracy"] = 0.8813542308587629
+Average accuracy:0.8813542308587629, Overall accuracy:0.8960219895111381
+Per class accuracy:[0.9787863  0.734422   0.87820781 0.99814815 0.93274675 0.78181818
+ 0.80872483 0.93797983]
+Epoch: [21] [2399/2400] time: 1617.1530
+Epoch - 21. Steps per epoch - 2399
+Epoch 23, step  0. Overall accuracy 89.1%
+Epoch 23, step 500. Overall accuracy 89.2%
+Epoch 23, step 1000. Overall accuracy 88.9%
+Epoch 23, step 1500. Overall accuracy 89.1%
+Epoch 23, step 2000. Overall accuracy 89.0%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5628.  3409. 10485.  2156. 12172.   986.  5784. 12479.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5628.  3409. 10485.  2156. 12172.   986.  5784. 12479.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.8954149171177552
+[@debug] stats["average_accuracy"] = 0.8805531276576234
+Average accuracy:0.8805531276576234, Overall accuracy:0.8954149171177552
+Per class accuracy:[0.97861242 0.73248818 0.87645239 0.99814815 0.93129304 0.77944664
+ 0.80872483 0.93925937]
+Epoch: [22] [2399/2400] time: 1691.6696
+Epoch - 22. Steps per epoch - 2399
+Epoch 24, step  0. Overall accuracy 89.1%
+Epoch 24, step 500. Overall accuracy 89.1%
+Epoch 24, step 1000. Overall accuracy 89.0%
+Epoch 24, step 1500. Overall accuracy 89.0%
+Epoch 24, step 2000. Overall accuracy 90.9%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5623.  3478. 10857.  2140. 12425.   947.  5754. 12406.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5623.  3478. 10857.  2140. 12425.   947.  5754. 12406.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.9043692349201531
+[@debug] stats["average_accuracy"] = 0.8826135207352873
+Average accuracy:0.8826135207352873, Overall accuracy:0.9043692349201531
+Per class accuracy:[0.977743   0.74731414 0.90754827 0.99074074 0.95065034 0.7486166
+ 0.8045302  0.93376487]
+Epoch: [23] [2399/2400] time: 1766.1969
+Epoch - 23. Steps per epoch - 2399
+Epoch 25, step  0. Overall accuracy 90.7%
+Epoch 25, step 500. Overall accuracy 90.7%
+Epoch 25, step 1000. Overall accuracy 90.9%
+Epoch 25, step 1500. Overall accuracy 90.8%
+Epoch 25, step 2000. Overall accuracy 90.7%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5601.  3535. 10851.  2141. 12433.   949.  5652. 12536.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5601.  3535. 10851.  2141. 12433.   949.  5652. 12536.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.9055159272187653
+[@debug] stats["average_accuracy"] = 0.8833759746273091
+Average accuracy:0.8833759746273091, Overall accuracy:0.9055159272187653
+Per class accuracy:[0.97391758 0.75956167 0.90704673 0.9912037  0.95126243 0.75019763
+ 0.79026846 0.9435496 ]
+Epoch: [24] [2399/2400] time: 1840.7109
+Epoch - 24. Steps per epoch - 2399
+Epoch 26, step  0. Overall accuracy 90.8%
+Epoch 26, step 500. Overall accuracy 90.7%
+Epoch 26, step 1000. Overall accuracy 90.7%
+Epoch 26, step 1500. Overall accuracy 90.7%
+Epoch 26, step 2000. Overall accuracy 90.7%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5598.  3541. 10816.  2142. 12421.   954.  5653. 12539.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5598.  3541. 10816.  2142. 12421.   954.  5653. 12539.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.9049425810694592
+[@debug] stats["average_accuracy"] = 0.8835890870351266
+Average accuracy:0.8835890870351266, Overall accuracy:0.9049425810694592
+Per class accuracy:[0.97339593 0.76085088 0.90412104 0.99166667 0.9503443  0.7541502
+ 0.79040828 0.9437754 ]
+Epoch: [25] [2399/2400] time: 1915.1625
+Epoch - 25. Steps per epoch - 2399
+Epoch 27, step  0. Overall accuracy 90.7%
+Epoch 27, step 500. Overall accuracy 90.5%
+Epoch 27, step 1000. Overall accuracy 90.8%
+Epoch 27, step 1500. Overall accuracy 90.7%
+Epoch 27, step 2000. Overall accuracy 90.7%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5603.  3543. 10780.  2145. 12411.   951.  5666. 12532.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5603.  3543. 10780.  2145. 12411.   951.  5666. 12532.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.9043860980421915
+[@debug] stats["average_accuracy"] = 0.8833182011226056
+Average accuracy:0.8833182011226056, Overall accuracy:0.9043860980421915
+Per class accuracy:[0.97426535 0.76128062 0.90111176 0.99305556 0.94957919 0.75177866
+ 0.79222595 0.94324853]
+Epoch: [26] [2399/2400] time: 1989.7302
+Epoch - 26. Steps per epoch - 2399
+Epoch 28, step  0. Overall accuracy 90.7%
+Epoch 28, step 500. Overall accuracy 90.5%
+Epoch 28, step 1000. Overall accuracy 90.6%
+Epoch 28, step 1500. Overall accuracy 90.6%
+Epoch 28, step 2000. Overall accuracy 90.5%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5605.  3550. 10768.  2146. 12406.   952.  5671. 12524.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5605.  3550. 10768.  2146. 12406.   952.  5671. 12524.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.9042343299438458
+[@debug] stats["average_accuracy"] = 0.8835452816387752
+Average accuracy:0.8835452816387752, Overall accuracy:0.9042343299438458
+Per class accuracy:[0.97461311 0.7627847  0.90010867 0.99351852 0.94919663 0.75256917
+ 0.79292506 0.94264639]
+Epoch: [27] [2399/2400] time: 2064.3627
+Epoch - 27. Steps per epoch - 2399
+Epoch 29, step  0. Overall accuracy 90.3%
+Epoch 29, step 500. Overall accuracy 90.3%
+Epoch 29, step 1000. Overall accuracy 90.4%
+Epoch 29, step 1500. Overall accuracy 90.4%
+Epoch 29, step 2000. Overall accuracy 90.4%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5601.  3559. 10749.  2146. 12387.   950.  5668. 12530.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5601.  3559. 10749.  2146. 12387.   950.  5668. 12530.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.9036947100386166
+[@debug] stats["average_accuracy"] = 0.8831262141923562
+Average accuracy:0.8831262141923562, Overall accuracy:0.9036947100386166
+Per class accuracy:[0.97391758 0.76471852 0.89852044 0.99351852 0.94774292 0.75098814
+ 0.79250559 0.943098  ]
+Epoch: [28] [2399/2400] time: 2138.7014
+Epoch - 28. Steps per epoch - 2399
+Epoch 30, step  0. Overall accuracy 90.4%
+Epoch 30, step 500. Overall accuracy 90.4%
+Epoch 30, step 1000. Overall accuracy 90.4%
+Epoch 30, step 1500. Overall accuracy 90.3%
+Epoch 30, step 2000. Overall accuracy 90.3%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5600.  3552. 10733.  2148. 12369.   957.  5673. 12527.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5600.  3552. 10733.  2148. 12369.   957.  5673. 12527.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.9031719532554258
+[@debug] stats["average_accuracy"] = 0.8834437397107848
+Average accuracy:0.8834437397107848, Overall accuracy:0.9031719532554258
+Per class accuracy:[0.9737437  0.76321444 0.89718298 0.99444444 0.94636572 0.75652174
+ 0.7932047  0.9428722 ]
+Epoch: [29] [2399/2400] time: 2213.1843
+Epoch - 29. Steps per epoch - 2399
+Epoch 31, step  0. Overall accuracy 90.4%
+Epoch 31, step 500. Overall accuracy 90.3%
+Epoch 31, step 1000. Overall accuracy 90.3%
+Epoch 31, step 1500. Overall accuracy 90.1%
+Epoch 31, step 2000. Overall accuracy 90.1%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5601.  3543. 10725.  2152. 12351.   965.  5676. 12538.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5601.  3543. 10725.  2152. 12351.   965.  5676. 12538.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.9030370482791183
+[@debug] stats["average_accuracy"] = 0.8841459270801365
+Average accuracy:0.8841459270801365, Overall accuracy:0.9030370482791183
+Per class accuracy:[0.97391758 0.76128062 0.89651425 0.9962963  0.94498852 0.76284585
+ 0.79362416 0.94370014]
+Epoch: [30] [2399/2400] time: 2287.9265
+Epoch - 30. Steps per epoch - 2399
+Epoch 32, step  0. Overall accuracy 90.2%
+Epoch 32, step 500. Overall accuracy 90.0%
+Epoch 32, step 1000. Overall accuracy 90.0%
+Epoch 32, step 1500. Overall accuracy 90.0%
+Epoch 32, step 2000. Overall accuracy 90.0%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5600.  3536. 10727.  2152. 12340.   961.  5689. 12535.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5600.  3536. 10727.  2152. 12340.   961.  5689. 12535.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.9028515539366958
+[@debug] stats["average_accuracy"] = 0.8836556034855784
+Average accuracy:0.8836556034855784, Overall accuracy:0.9028515539366958
+Per class accuracy:[0.9737437  0.75977654 0.89668143 0.9962963  0.9441469  0.75968379
+ 0.79544183 0.94347433]
+Epoch: [31] [2399/2400] time: 2362.4991
+Epoch - 31. Steps per epoch - 2399
+Epoch 33, step  0. Overall accuracy 90.0%
+Epoch 33, step 500. Overall accuracy 90.0%
+Epoch 33, step 1000. Overall accuracy 90.2%
+Epoch 33, step 1500. Overall accuracy 90.2%
+Epoch 33, step 2000. Overall accuracy 90.2%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5594.  3524. 10757.  2153. 12339.   958.  5688. 12538.]                                                                     
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                 
+[@debug] correct_per_class = [ 5594.  3524. 10757.  2153. 12339.   958.  5688. 12538.]                                                                              
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]                                                                            
+[@debug] stats["overall_accuracy"] = 0.9030370482791183
+[@debug] stats["average_accuracy"] = 0.883278965876864
+Average accuracy:0.883278965876864, Overall accuracy:0.9030370482791183
+Per class accuracy:[0.9727004  0.75719811 0.89918917 0.99675926 0.94407039 0.75731225
+ 0.79530201 0.94370014]
+Epoch: [32] [2399/2400] time: 2437.0473
+Epoch - 32. Steps per epoch - 2399
+Epoch 34, step  0. Overall accuracy 90.3%
+Epoch 34, step 500. Overall accuracy 89.0%
+Epoch 34, step 1000. Overall accuracy 88.9%
+Epoch 34, step 1500. Overall accuracy 88.8%
+Epoch 34, step 2000. Overall accuracy 88.8%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5638.  3466. 10913.  2147. 12444.   895.  5484. 12457.]
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]
+[@debug] correct_per_class = [ 5638.  3466. 10913.  2147. 12444.   895.  5484. 12457.]
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]
+[@debug] stats["overall_accuracy"] = 0.901232694221008
+[@debug] stats["average_accuracy"] = 0.8744117202826758
+Average accuracy:0.8744117202826758, Overall accuracy:0.901232694221008
+Per class accuracy:[0.98035124 0.74473571 0.91222937 0.99398148 0.95210406 0.70750988
+ 0.76677852 0.93760349]
+Epoch: [33] [2399/2400] time: 2511.6534
+Epoch - 33. Steps per epoch - 2399
+Epoch 35, step  0. Overall accuracy 88.8%
+Epoch 35, step 500. Overall accuracy 88.9%
+Epoch 35, step 1000. Overall accuracy 88.6%
+Epoch 35, step 1500. Overall accuracy 88.7%
+Epoch 35, step 2000. Overall accuracy 88.7%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5641.  3466. 10902.  2147. 12431.   903.  5493. 12472.]
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]
+[@debug] correct_per_class = [ 5641.  3466. 10902.  2147. 12431.   903.  5493. 12472.]
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]
+[@debug] stats["overall_accuracy"] = 0.9014181885634306
+[@debug] stats["average_accuracy"] = 0.8753265965702204
+Average accuracy:0.8753265965702204, Overall accuracy:0.9014181885634306
+Per class accuracy:[0.98087289 0.74473571 0.91130987 0.99398148 0.95110941 0.71383399
+ 0.76803691 0.9387325 ]
+Epoch: [34] [2399/2400] time: 2586.6182
+Epoch - 34. Steps per epoch - 2399
+
+
+=============0 200 epochs
+
+
+VAL Average accuracy:0.9271115364811173, Overall accuracy:0.9255011006835825
+VAL Per class accuracy:[0.92377495 0.93019943 0.91717621 0.93361433 0.92757372 0.93506494
+ 0.92397661 0.9255121 ]
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5658.  3684. 11018.  2158. 12586.   762.  5721. 12800.]
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]
+[@debug] correct_per_class = [ 5658.  3684. 11018.  2158. 12586.   762.  5721. 12800.]
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]
+[@debug] stats["overall_accuracy"] = 0.9171346183032326
+[@debug] stats["average_accuracy"] = 0.8780203710865799
+Average accuracy:0.8780203710865799, Overall accuracy:0.9171346183032326
+Per class accuracy:[0.9838289  0.79157714 0.92100644 0.99907407 0.96296863 0.60237154
+ 0.79991611 0.96342014]
+Epoch: [199] [2399/2400] time: 15012.7383
+Epoch - 199. Steps per epoch - 2399
+
+
+=========================  CONVLSTMS EOPCPH 120
+
+[@debug] str(stats['per_class_acc'][7]) = 0.9338401324702694
+[@debug] data["labels"].shape = (59301, 8)
+[@debug] stats["correct_per_class"] = [ 5536.  3684.  9772.  2155. 12335.   950.  5896. 12407.]
+[@debug] stats["per_class_label_count"] = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]
+[@debug] correct_per_class = [ 5536.  3684.  9772.  2155. 12335.   950.  5896. 12407.]
+[@debug] targets_label_count = [ 5751.  4654. 11963.  2160. 13070.  1265.  7152. 13286.]
+[@debug] stats["overall_accuracy"] = 0.8892767406957724
+[@debug] stats["average_accuracy"] = 0.8777133610954513
+[@debug] early_stop["best"]["metric1"] = 0.891907387733765
+[@debug] early_stop["best"]["metric2"] = 0.8792839290021872
+[@debug] early_stop["best"]["metric3"] = [0.96991828 0.80468414 0.83156399 0.9962963  0.94261668 0.74387352
+ 0.81208054 0.93323799]
+ 
+ 
+ verage accuracy:0.8777361174769011, Overall accuracy:0.8892936038178109
+Per class accuracy:[0.96244131 0.79179201 0.81685196 0.99768519 0.94384086 0.75098814
+ 0.82452461 0.93376487]
+Epoch: [118] [  87/  88] time: 2893.3262
+Epoch - 118. Steps per epoch - 87
+Epoch 120, step  0. Overall accuracy 90.8%
+[@debug] predicted.shape = (8631,)
+

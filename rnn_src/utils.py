@@ -222,7 +222,7 @@ class DataForNet(object):
 		##foldername=self.conf["path"]+'mnt/Data/Jorge/tf_patches/seq1_overlap4_masked_norm/patch_npy/'
 		
 		# This is where I want seq2 to be
-		#foldername='/mnt/Data/Jorge/tf_patches/seq2_overlap4_masked_norm/patch_npy/'
+		foldername='/mnt/Data/Jorge/tf_patches/seq2_overlap4_masked_norm/patch_npy/'
 		
 		# This is seq1
 		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap4_masked_norm/patch_npy/'
@@ -230,7 +230,7 @@ class DataForNet(object):
 		#foldername=self.conf["path"]+'patch_npy/'
 
 		# This will be hannover
-		foldername='/mnt/Data/Jorge/tf_patches/hannover_overlap4_masked_norm/patch_npy/'
+		#foldername='/mnt/Data/Jorge/tf_patches/hannover_overlap4_masked_norm/patch_npy/'
 		self.patches_create=False
 		if self.patches_create==True:
 		

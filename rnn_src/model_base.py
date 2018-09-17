@@ -22,6 +22,7 @@ import utils
 import deb
 import cv2
 from cell import ConvLSTMCell, ConvGRUCell
+from sklearn.metrics import confusion_matrix,f1_score,accuracy_score,classification_report
 
 #from tensorflow.keras.layers
 np.set_printoptions(suppress=True)
@@ -335,21 +336,21 @@ class NeuralNet(object):
 			
 
 			# Check early stop and store results if they are the best
-			if epoch % 50 == 0:
+			if epoch % 5 == 0:
 				print("Writing to file...")
-				for i in range(len(txt['val']['stats'])):
-
+				for i in range(len(txt['val']['epoch'])):
+					print(i)
 					self.metrics_write_to_txt(txt['val']['stats'][i],txt['val']['epoch'][i],path='results_val.txt')
 				txt['val']['stats']=[]
 				#txt['val']['loss']=[]
 				txt['val']['epoch']=[]
 				#self.graph.save('my_model.h5')
 
-			else:
+			
 
-				txt['val']['stats'].append(stats)
-				#txt['val']['loss'].append(self.metrics['val']['loss'])
-				txt['val']['epoch'].append(epoch)
+			txt['val']['stats'].append(stats)
+			#txt['val']['loss'].append(self.metrics['val']['loss'])
+			txt['val']['epoch'].append(epoch)
 
 
 			#metrics_val=self.metrics_get(y_pred_val,self.ram_data['val']['labels'])
@@ -358,12 +359,12 @@ class NeuralNet(object):
 			print("Model saved in path: %s" % save_path)
 			stats = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
 			early_stop=self.early_stop_check(early_stop,stats["overall_accuracy"],stats["average_accuracy"],stats["per_class_accuracy"])
-			if early_stop["signal"]:
-				deb.prints(early_stop["best"]["metric1"])
-				deb.prints(early_stop["best"]["metric2"])
-				deb.prints(early_stop["best"]["metric3"])
+			#if early_stop["signal"]:
+				#deb.prints(early_stop["best"]["metric1"])
+				#deb.prints(early_stop["best"]["metric2"])
+				#deb.prints(early_stop["best"]["metric3"])
 				
-				break
+				#break
 			
 			print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
 			print("Per class accuracy:{}".format(stats["per_class_accuracy"]))
@@ -374,7 +375,7 @@ class NeuralNet(object):
 			# ================= save txt
 
 			# Check early stop and store results if they are the best
-			if epoch % 50 == 0:
+			if epoch % 5 == 0:
 				print("Writing to file...")
 				for i in range(len(txt['test']['stats'])):
 
@@ -384,19 +385,20 @@ class NeuralNet(object):
 				txt['test']['epoch']=[]
 				#self.graph.save('my_model.h5')
 
-			else:
+			
 
-				txt['test']['stats'].append(stats)
-				#txt['val']['loss'].append(self.metrics['val']['loss'])
-				txt['test']['epoch'].append(epoch)
+			txt['test']['stats'].append(stats)
+			#txt['val']['loss'].append(self.metrics['val']['loss'])
+			txt['test']['epoch'].append(epoch)
 
 
 		return early_stop
 	def metrics_write_to_txt(self,stats,epoch=0,path=None):
 
 		with open(path, "a") as text_file:
-			text_file.write("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}".format(str(epoch),
+			text_file.write("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}\n".format(str(epoch),
 				str(stats['overall_accuracy']),str(stats['average_accuracy']),
+				str(stats['f1_score']),str(stats['f1_score_weighted']),
 				str(stats["per_class_accuracy"][0]),str(stats["per_class_accuracy"][1]),
 				str(stats["per_class_accuracy"][2]),str(stats["per_class_accuracy"][3]),
 				str(stats["per_class_accuracy"][4]),str(stats["per_class_accuracy"][5]),
@@ -471,7 +473,7 @@ class NeuralNet(object):
 		batch["idxs"] = data["n"] // batch_size
 		if self.debug>=2:
 			deb.prints(batch["idxs"])
-
+		predicted=np.zeros((data["n"],self.n_classes))
 		stats={"correct_per_class":np.zeros(self.n_classes).astype(np.float32)}
 		stats["per_class_label_count"]=np.zeros(self.n_classes).astype(np.float32)
 		mask=cv2.imread(self.conf["train"]["mask"]["dir"],0)
@@ -485,6 +487,7 @@ class NeuralNet(object):
 		for idx in range(0, batch["idxs"]):
 			batch=self.batch_ims_labels_get(batch,data,batch_size,idx,memory_mode=self.conf["memory_mode"])
 			batch["prediction"] = self.batch_prediction_from_sess_get(batch["ims"])
+			predicted[idx*batch_size:(idx+1)*batch_size,:]=batch["prediction"]
 			if self.debug>=4:
 				deb.prints(batch["prediction"].shape)
 				deb.prints(batch["labels"].shape)
@@ -500,7 +503,28 @@ class NeuralNet(object):
 			if self.debug>=3:
 				deb.prints(batch["correct_per_class"])
 				deb.prints(stats["correct_per_class"])
-			
+		
+		predicted=predicted.argmax(axis=1)
+		labels_=data["labels"].argmax(axis=1)
+		deb.prints(predicted.shape)
+		deb.prints(data["labels"].shape)
+
+		# Get metrics here
+
+		stats['f1_score']=f1_score(labels_,predicted,average='macro')
+		stats['f1_score_weighted']=f1_score(labels_,predicted,average='weighted')
+		stats['overall_acc']=accuracy_score(labels_,predicted)
+		stats['confusion_matrix']=confusion_matrix(labels_,predicted)
+		stats['per_class_acc']=(stats['confusion_matrix'].astype('float') / stats['confusion_matrix'].sum(axis=1)[:, np.newaxis]).diagonal()
+		deb.prints(stats['confusion_matrix'])
+		deb.prints(str(stats['f1_score']))
+		deb.prints(str(stats['f1_score_weighted']))
+		deb.prints(str(stats['overall_acc']))
+		deb.prints(str(stats['per_class_acc'][0]))
+		deb.prints(str(stats['per_class_acc'][7]))
+				
+		stats['average_acc']=np.average(stats['per_class_acc'][~np.isnan(stats['per_class_acc'])])
+
 		stats["per_class_label_count"]=self.per_class_label_count_get(data["labels"])
 
 		if im_reconstruct:
