@@ -251,7 +251,7 @@ class DataForNet(object):
 
 
 		patch["full_ims"][patch["full_ims"]>1]=1
-		patch["full_ims"]=self.im_seq_normalize(patch["full_ims"])
+		#patch["full_ims"]=self.im_seq_normalize(patch["full_ims"])
 		deb.prints(np.min(patch["full_ims"]))
 		deb.prints(np.max(patch["full_ims"]))
 		
