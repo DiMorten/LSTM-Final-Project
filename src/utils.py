@@ -42,11 +42,13 @@ class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=7,t_len=6,path="../data/",class_n=9,pc_mode="local", \
 		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None, \
 		n_apriori=16000, squeeze_classes=False, data_dir='data',im_h=948,im_w=1068,id_first=1, \
-		train_test_mask_name="TrainTestMask.tif",test_overlap_full=True,ram_store=True,patches_save=False):
+		train_test_mask_name="TrainTestMask.tif",test_overlap_full=True,ram_store=True,patches_save=False,
+		patch_test_overlap=0):
 		deb.prints(patches_save)
 		self.patches_save=patches_save
 		self.ram_store=ram_store
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n, 'label':{}, 'seq':{}}
+		
 		self.conf["squeeze_classes"]=squeeze_classes
 		self.conf["memory_mode"]=memory_mode #"ram" or "hdd"
 		self.debug=debug
@@ -73,6 +75,8 @@ class DataForNet(object):
 		self.conf["in_labels_path"]=self.conf["path"]+"labels/"
 		self.conf["patch"]={}
 		self.conf["patch"]={"size":patch_length, "stride":5, "out_npy_path":self.conf["path"]+"patches_npy/"}
+		self.conf["patch"]["test_overlap"]=patch_test_overlap
+		
 		self.conf["patch"]["ims_path"]=self.conf["patch"]["out_npy_path"]+"patches_all/"
 		self.conf["patch"]["labels_path"]=self.conf["patch"]["out_npy_path"]+"labels_all/"
 		self.conf['patch']['center_pixel']=int(np.around(self.conf["patch"]["size"]/2))
@@ -251,7 +255,7 @@ class DataForNet(object):
 
 
 		patch["full_ims"][patch["full_ims"]>1]=1
-		#patch["full_ims"]=self.im_seq_normalize(patch["full_ims"])
+		patch["full_ims"]=self.im_seq_normalize(patch["full_ims"])
 		deb.prints(np.min(patch["full_ims"]))
 		deb.prints(np.max(patch["full_ims"]))
 		
@@ -296,6 +300,12 @@ class DataForNet(object):
 				_,self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
 					self.conf["patch"]["size"],self.conf["patch"]["size"]-1,mask=patch["train_mask"],path_train=self.conf["train"], \
 					path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"],test_only=True)
+			elif self.conf["test"]["overlap_full"]=="custom":
+				# Make test with overlap full
+				_,self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
+					self.conf["patch"]["size"],self.conf["patch"]["test_overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
+					path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"],test_only=True)
+			
 
 		deb.prints(self.ram_data['test']['ims'].shape)
 		deb.prints(self.ram_data['test']['labels_int'].shape)
@@ -544,7 +554,8 @@ class DataForNet(object):
 						if not test_only:
 							self.ram_data["train"]=self.in_label_ram_store(self.ram_data["train"],patch,label_patch,data_idx=patches_get["train_n"],label_type=label_type,name="train")
 					#print("herherher")
-					if self.patches_save==True or self.patches_save=="True":
+					if (self.patches_save==True or self.patches_save=="True") and (self.conf["test"]["overlap_full"]=="False" or (self.conf["test"]["overlap_full"]!="False" and test_only==False)):
+
 						if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
 							label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
 						else:
@@ -580,7 +591,7 @@ class DataForNet(object):
 							#deb.prints(self.ram_store)
 						if self.conf["memory_mode"]=="ram" and self.ram_store==True:
 							self.ram_data["test"]=self.in_label_ram_store(self.ram_data["test"],patch,label_patch,data_idx=test_real_count,label_type=label_type,name="test")
-						if self.patches_save==True or self.patches_save=="True":
+						if self.patches_save==True or self.patches_save=="True" and (test_only==True or self.conf["test"]["overlap_full"]=="False"  or self.conf["test"]["overlap_full"]==False):
 							if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
 								label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
 							else:
