@@ -1,0 +1,129 @@
+ 
+ 
+ (This was just before)
+ python main.py -mm="ram" --debug=1 -pl 32 -po 0 -ts 0 -tnl 10000 -bs=5000 --batch_size=200 --filters=256 -m="smcnn_semantic" --phase="repeat" -sc=False --class_n=12 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=8 -tof=False -nap=10000 -psv=True
+ 
+ 
+ 
+=============== 
+python main.py -mm="ram" --debug=1 -pl 5 -po 3 -ts 0 -tnl 9000000 -bs=50000 --batch_size=200 --filters=256 -m="lstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=1 -psv=False -tof=True
+
+
+Toy:
+python main.py -mm="ram" --debug=1 -pl 5 -po 0 -ts 0 -tnl 9000000 -bs=50000 --batch_size=200 --filters=256 -m="lstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=1 -psv=False -tof=False
+For campo verde seq1 , lstm. Patches create is in true. No need for psv. 10 classes for squeeze. 
+
+
+
+lstm 10 fixed epochs sequence 1
+
+[@debug] data["labels"].shape = (2858743, 10)
+[@debug] stats["correct_per_class"] = [ 793082.    5377.   18890.      64.    1020.  135689.   67617. 1061892.                                                      
+     176.   51827.]                                                               
+[@debug] stats["per_class_label_count"] = [1021430.    5656.   22362.     614.    3599.  224966.   81951. 1409862.                                                  
+     248.   88055.]                                                               
+[@debug] correct_per_class = [ 793082.    5377.   18890.      64.    1020.  135689.   67617. 1061892.                                                               
+     176.   51827.]                                                               
+[@debug] targets_label_count = [1021430.    5656.   22362.     614.    3599.  224966.   81951. 1409862.                                                             
+     248.   88055.]                                                               
+[@debug] stats["overall_accuracy"] = 0.7470535126802235
+[@debug] stats["average_accuracy"] = 0.6439183196249968
+
+
+convlstm
+
+[@debug] data["labels"].shape = (2858743, 10)
+[@debug] stats["correct_per_class"] = [ 745007.    5275.   17243.      71.     999.  134983.   72049. 1071089.
+     173.   46255.]
+[@debug] stats["per_class_label_count"] = [1021430.    5656.   22362.     614.    3599.  224966.   81951. 1409862.
+     248.   88055.]
+[@debug] correct_per_class = [ 745007.    5275.   17243.      71.     999.  134983.   72049. 1071089.
+     173.   46255.]
+[@debug] targets_label_count = [1021430.    5656.   22362.     614.    3599.  224966.   81951. 1409862.
+     248.   88055.]
+[@debug] stats["overall_accuracy"] = 0.7321903368018741
+[@debug] stats["average_accuracy"] = 0.6288087620817862
+
+=================== USING TRAIN OVERLAP 4 , masking, normalizing. Gave 75.5% oa on epoch 10.
+
+python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 0 -tnl 9000000 -bs=300000 --batch_size=1000 --filters=256 -m="lstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=1 -psv=False -tof=True --epoch=200
+
+Results seq1
+
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (2851855, 10)
+[@debug] stats["correct_per_class"] = [ 804262.    5233.   17742.      29.     685.  145739.   68967. 1043913.
+     174.   42763.]
+[@debug] stats["per_class_label_count"] = [1018714.    5617.   22178.     590.    3530.  224505.   81748. 1406900.
+     245.   87828.]
+[@debug] correct_per_class = [ 804262.    5233.   17742.      29.     685.  145739.   68967. 1043913.
+     174.   42763.]
+[@debug] targets_label_count = [1018714.    5617.   22178.     590.    3530.  224505.   81748. 1406900.
+     245.   87828.]
+[@debug] stats["overall_accuracy"] = 0.7467094224636246
+[@debug] stats["average_accuracy"] = 0.6196213922980034
+Average accuracy:0.6196213922980034, Overall accuracy:0.7467094224636246
+Per class accuracy:[0.78948753 0.9316361  0.79998196 0.04915254 0.19405099 0.64915703
+
+
+============ lstm 5 epochs seq1
+
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (2851855, 10)
+[@debug] stats["correct_per_class"] = [ 775618.    5511.   17440.      96.    1381.  142725.   66197. 1106222.
+     174.   47423.]
+[@debug] stats["per_class_label_count"] = [1018714.    5617.   22178.     590.    3530.  224505.   81748. 1406900.
+     245.   87828.]
+[@debug] correct_per_class = [ 775618.    5511.   17440.      96.    1381.  142725.   66197. 1106222.
+     174.   47423.]
+[@debug] targets_label_count = [1018714.    5617.   22178.     590.    3530.  224505.   81748. 1406900.
+     245.   87828.]
+[@debug] stats["overall_accuracy"] = 0.7583790199712117
+[@debug] stats["average_accuracy"] = 0.6564734783771987
+Average accuracy:0.6564734783771987, Overall accuracy:0
+
+
+
+================= lstm epoch 10
+
+poch 10, step 500. Overall accuracy 73.5%
+Epoch 10, step 1000. Overall accuracy 73.2%
+Epoch 10, step 1500. Overall accuracy 72.9%
+Epoch 10, step 2000. Overall accuracy 75.3%
+Epoch 10, step 2500. Overall accuracy 75.5%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (2851855, 10)
+[@debug] stats["correct_per_class"] = [ 766556.    5405.   17859.      39.     917.  149333.   69672. 1122884.                                                      
+     172.   44373.]                                                               
+[@debug] stats["per_class_label_count"] = [1018714.    5617.   22178.     590.    3530.  224505.   81748. 1406900.                                                  
+     245.   87828.]                                                               
+[@debug] correct_per_class = [ 766556.    5405.   17859.      39.     917.  149333.   69672. 1122884.                                                               
+     172.   44373.]                                                               
+[@debug] targets_label_count = [1018714.    5617.   22178.     590.    3530.  224505.   81748. 1406900.                                                             
+     245.   87828.]                                                               
+[@debug] stats["overall_accuracy"] = 0.7634364299727721
+[@debug] stats["average_accuracy"] = 0.6368700794357692
+Average accuracy:0.6368700794357692, Overall accuracy:0.7634364299727721
+Per class accuracy:[0.7524742  0.96225743 0.80525746 0.06610169 0.25977337 0.66516559
+ 0.85227773 0.79812638 0.70204082 0.50522612]
+ 
+ 
+ 
+ ================ CONVLSTM 16 FILTERS EPOCH 10
+ 
+ 
+ [@debug] data["labels"].shape = (2865982, 9)
+[@debug] stats["correct_per_class"] = [196489. 932415.  12846.  29123. 169806.  75318. 492450.    183.  55866.]
+[@debug] stats["per_class_label_count"] = [ 383518. 1086067.   25074.   57243.  310511.   82290.  832784.     253.
+   88242.]
+[@debug] correct_per_class = [196489. 932415.  12846.  29123. 169806.  75318. 492450.    183.  55866.]
+[@debug] targets_label_count = [ 383518. 1086067.   25074.   57243.  310511.   82290.  832784.     253.
+   88242.]
+[@debug] stats["overall_accuracy"] = 0.6854530140105556
+[@debug] stats["average_accuracy"] = 0.644647437418526
+Average accuracy:0.644647437418526, Overall accuracy:0.6854530140105556
+Per class accuracy:[0.51233319 0.85852438 0.51232352 0.5087609  0.54685985 0.91527525
+ 0.5913298  0.72332016 0.63309988]
+Epoch: [ 9] [2699/2700] time: 3824.8867
+Epoch - 9. Steps per epoch - 2699
+
