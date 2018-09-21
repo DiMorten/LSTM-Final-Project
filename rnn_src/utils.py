@@ -762,6 +762,197 @@ class DataForNet(object):
 
 		
 		return patches_get["train_n"],test_real_count
+	def patches_multitemporal_get3(self,img,label,window,overlap,mask,path_train,path_test,patches_save=True, \
+		label_type="one_hot",memory_mode="hdd",test_only=False, ram_store=True):
+
+		fname=sys._getframe().f_code.co_name
+
+		deb.prints(window,fname)
+		deb.prints(overlap,fname)
+		print("STARTED PATCH EXTRACTION")
+		#window= 256
+		#overlap= 200
+		patches_get={}
+		t_steps, h, w, channels = img.shape
+		mask_train=np.zeros((h,w))
+		mask_test=np.zeros((h,w))
+		
+		gridx = range(0, w - window, window - overlap)
+		gridx = np.hstack((gridx, w - window))
+
+		gridy = range(0, h - window, window - overlap)
+		gridy = np.hstack((gridy, h - window))
+		deb.prints(gridx.shape)
+		deb.prints(gridy.shape)
+		
+		counter=0
+		patches_get["train_n"]=0
+		patches_get["test_n"]=0
+		patches_get["test_n_limited"]=0
+		test_counter=0
+		test_real_count=0
+		
+
+		deb.prints(self.patches_save)
+
+		# This value checks which patches were taken into accoutn
+		mask_covered_areas=np.zeros((h,w))
+		#======================== START IMG LOOP ==================================#
+		for i in range(len(gridx)):
+			for j in range(len(gridy)):
+				counter=counter+1
+				if counter % 10000000 == 0:
+					deb.prints(counter,fname)
+				xx = gridx[i]
+				yy = gridy[j]
+				#patch_clouds=Bclouds[yy: yy + window, xx: xx + window]
+				patch = img[:,yy: yy + window, xx: xx + window,:]
+				label_patch = label[:,yy: yy + window, xx: xx + window]
+				mask_patch = mask[yy: yy + window, xx: xx + window].astype(np.float64)
+				
+				patch_train = self.full_ims_train[:,yy: yy + window, xx: xx + window,:]
+				patch_test = self.full_ims_test[:,yy: yy + window, xx: xx + window,:]
+				
+				is_mask_from_train=self.is_mask_from_train(mask_patch,label_patch[self.conf["t_len"]-1])
+				
+				no_zero=True
+				#if np.count_nonzero(label_patch[label_patch==0])>=1000 and no_zero==True:				
+				
+				if np.all(label_patch==0) and no_zero==True:
+					continue
+				#deb.prints(is_mask_from_train)
+				#elif np.all(mask_patch==1): # Train sample
+				#=======================IS PATCH FROM TRAIN =================================#
+				if is_mask_from_train==True: # Train sample
+					patch = patch_train.copy()
+					#deb.prints("train")
+					mask_train_areas=mask_patch.copy()
+					mask_train_areas[mask_train_areas==2]=0 # Remove test from this patch
+					mask_train[yy: yy + window, xx: xx + window]=mask_train_areas.astype(np.uint8)*255
+					
+					"""
+					for t_step in range(0,self.conf["t_len"]):
+						label_patch[t_step]=cv2.bitwise_and(label_patch[t_step],label_patch[t_step],mask=mask_train_areas.astype(np.uint8))
+					center_label=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
+					if center_label==0:
+						print("A2")
+					
+					label_patch[self.conf['t_len']-1]=self.full_label_train[yy: yy + window, xx: xx + window]
+					center_label=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
+					if center_label==0:
+						print("A3")
+					"""
+					if self.conf["memory_mode"]=="ram" and self.ram_store==True:
+						if not test_only:
+							self.ram_data["train"]=self.in_label_ram_store(self.ram_data["train"],patch,label_patch,data_idx=patches_get["train_n"],label_type=label_type,name="train")
+					
+					#print("herherher")
+					if self.patches_save==True or self.patches_save=="True":
+						if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
+							label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
+						else:
+							label_patch_parsed=label_patch[self.conf["t_len"]-1].copy()
+						#print("HEERERER")
+						np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
+						np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch_parsed)
+
+					patches_get["train_n"]+=1	
+				is_mask_from_test=self.is_mask_from_test(mask_patch,label_patch[self.conf["t_len"]-1])
+				
+				#============================ IS PATCH FROM TEST ===============================#
+				if is_mask_from_test==True: # Test sample
+					patch=patch_test.copy()
+					#deb.prints("test")
+					test_counter+=1
+					
+					#if np.random.rand(1)[0]>=0.7:
+					
+					patches_get["test_n"]+=1
+					#if patches_get["test_n"]<=self.test_n_limit:
+					if True:
+						patches_get["test_n_limited"]+=1					
+						##if test_counter>=self.conf["extract"]["test_skip"]:
+						mask_test,label_patch=self.mask_test_update(mask_test,yy,xx,window,label_patch,mask_patch)
+							##deb.prints(np.average(mask_test))
+							#mask_test[yy: yy + window, xx: xx + window]=255
+							#mask_test[int(yy + window/2), int(xx + window/2)]=255
+						##	test_counter=0
+							
+							
+					
+							#if self.conf["memory_mode"]=="hdd":
+							#deb.prints(self.ram_store)
+						if self.conf["memory_mode"]=="ram" and self.ram_store==True:
+							self.ram_data["test"]=self.in_label_ram_store(self.ram_data["test"],patch,label_patch,data_idx=test_real_count,label_type=label_type,name="test")
+						if self.patches_save==True or self.patches_save=="True":
+							if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
+								label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
+							else:
+								label_patch_parsed=label_patch[self.conf["t_len"]-1].copy()
+							np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
+							np.save(path_test["labels_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",label_patch_parsed)
+
+						test_real_count+=1
+					#np.random.choice(index, samples_per_class, replace=replace)
+		#==========================END IMG LOOP=============================================#
+		print("Final mask test average",np.average(mask_test))
+		cv2.imwrite("mask_train.png",mask_train)
+		cv2.imwrite("mask_test.png",mask_test)
+		
+		deb.prints(counter,fname)
+		deb.prints(patches_get["train_n"],fname)
+		deb.prints(patches_get["test_n"],fname)
+		deb.prints(patches_get["test_n_limited"],fname)
+		deb.prints(test_real_count)
+		if self.ram_store:
+			if not test_only:
+				#===================CLIP TRAIN DATA.================================#
+				self.ram_data["train"]["n"]=patches_get["train_n"]
+				self.ram_data["train"]["ims"]=self.ram_data["train"]["ims"][0:self.ram_data["train"]["n"]]
+				self.ram_data["train"]["labels_int"]=self.ram_data["train"]["labels_int"][0:self.ram_data["train"]["n"]]
+				count,unique=np.unique(self.ram_data["train"]["labels_int"],return_counts=True)
+				print("Before squeezing count",count,unique)
+				deb.prints(self.conf["squeeze_classes"])
+			
+
+			#============ CLIP TEST DATA.=============================#
+			if self.conf["test"]["overlap_full"]!="True":
+				self.ram_data["test"]["n"]=test_real_count
+				self.ram_data["test"]["ims"]=self.ram_data["test"]["ims"][0:self.ram_data["test"]["n"]]
+				self.ram_data["test"]["labels_int"]=self.ram_data["test"]["labels_int"][0:self.ram_data["test"]["n"]]
+			elif test_only:
+				self.ram_data["test"]["n"]=test_real_count
+				self.ram_data["test"]["ims"]=self.ram_data["test"]["ims"][0:self.ram_data["test"]["n"]]
+				self.ram_data["test"]["labels_int"]=self.ram_data["test"]["labels_int"][0:self.ram_data["test"]["n"]]
+
+			unique,count=np.unique(self.ram_data["train"]["labels_int"],return_counts=True)
+			print("Train patches unique",unique,count)
+			unique,count=np.unique(self.ram_data["test"]["labels_int"],return_counts=True)
+			print("Test patches unique",unique,count)
+			
+			#deb.prints()
+			#===============ELIMINATE UNUSED CLASSES ==============================#
+
+			if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
+				print("Elminating unused classes")
+				if not test_only:
+					self.ram_data["train"]=self.labels_unused_classes_eliminate(self.ram_data["train"])
+				if self.conf["test"]["overlap_full"]!="True" or test_only:
+					self.ram_data["test"]=self.labels_unused_classes_eliminate(self.ram_data["test"],training=False)
+
+				if no_zero==False:
+					self.ram_data["test"]["labels_int"]+=1
+				count,unique=np.unique(self.ram_data["train"],return_counts=True)
+				#print("train count,unique",count,unique)
+			#print("train count,unique",count,unique)
+			unique,count=np.unique(self.ram_data["train"]["labels_int"],return_counts=True)
+			print("Train patches unique",unique,count)
+			unique,count=np.unique(self.ram_data["test"]["labels_int"],return_counts=True)
+			print("Test patches unique",unique,count)
+			
+
+		
+		return patches_get["train_n"],test_real_count
 
 
 	def in_label_ram_store(self,data,patch,label_patch,data_idx,label_type,name):
