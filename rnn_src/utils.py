@@ -639,16 +639,18 @@ class DataForNet(object):
 					mask_train_areas[mask_train_areas==2]=0 # Remove test from this patch
 					mask_train[yy: yy + window, xx: xx + window]=mask_train_areas.astype(np.uint8)*255
 					
-					center_label=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
-					if center_label==0:
-						print("A1")
+					"""
 					for t_step in range(0,self.conf["t_len"]):
 						label_patch[t_step]=cv2.bitwise_and(label_patch[t_step],label_patch[t_step],mask=mask_train_areas.astype(np.uint8))
 					center_label=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
 					if center_label==0:
-						print("A1")
+						print("A2")
 					
 					label_patch[self.conf['t_len']-1]=self.full_label_train[yy: yy + window, xx: xx + window]
+					center_label=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
+					if center_label==0:
+						print("A3")
+					"""
 					if self.conf["memory_mode"]=="ram" and self.ram_store==True:
 						if not test_only:
 							self.ram_data["train"]=self.in_label_ram_store(self.ram_data["train"],patch,label_patch,data_idx=patches_get["train_n"],label_type=label_type,name="train")
@@ -906,11 +908,23 @@ class DataSemantic(DataForNet):
 		mask_test[yy: yy + window, xx: xx + window]=mask_test_areas.astype(np.uint8)*255
 		
 		#deb.prints(mask_test_areas.dtype)
+		center_label=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
+		if center_label==0:
+			print("A1")
+		
 		for t_step in range(0,self.conf["t_len"]):
 			#deb.prints(label_patch[t_step].dtype)
 		
 			label_patch[t_step]=cv2.bitwise_and(label_patch[t_step],label_patch[t_step],mask=mask_test_areas.astype(np.uint8))
+		center_label=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
+		if center_label==0:
+			print("A2")
+		
 		label_patch[self.conf['t_len']-1]=self.full_label_test[yy: yy + window, xx: xx + window]
+		center_label=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
+		if center_label==0:
+			print("A3")
+		
 		return mask_test,label_patch
 	def is_mask_from_train(self,mask_patch,label_patch=None):
 		return np.any(mask_patch==1)
@@ -1130,7 +1144,32 @@ class DataOneHot(DataForNet):
 		#deb.prints(data.patches['train']['labels_int'].shape)
 
 	def mask_test_update(self,mask_test,yy,xx,window,label_patch,mask_patch):
-		mask_test[int(yy + window/2), int(xx + window/2)]=255
+		
+		#mask_test_areas=mask_patch.copy()
+		#mask_test_areas[mask_test_areas==1]=0 # Remove test from this patch
+		#mask_test_areas[mask_test_areas==2]=1 # Remove change 2 (test) to 1 values for bitwise and 
+		mask_test[self.conf["patch"]["center_pixel"], self.conf["patch"]["center_pixel"]]=255
+		"""
+		#mask_test[yy: yy + window, xx: xx + window]=mask_test_areas.astype(np.uint8)*255
+		
+		#deb.prints(mask_test_areas.dtype)
+		center_label=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
+		if center_label==0:
+			print("A1")
+		
+		for t_step in range(0,self.conf["t_len"]):
+			#deb.prints(label_patch[t_step].dtype)
+		
+			label_patch[t_step]=cv2.bitwise_and(label_patch[t_step],label_patch[t_step],mask=mask_test_areas.astype(np.uint8))
+		center_label=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
+		if center_label==0:
+			print("A2")
+		
+		label_patch[self.conf['t_len']-1]=self.full_label_test[yy: yy + window, xx: xx + window]
+		center_label=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])
+		if center_label==0:
+			print("A3")
+		"""
 		#print("here",int(yy + window/2),int(xx + window/2))
 		return mask_test,label_patch
 
