@@ -229,9 +229,14 @@ class DataForNet(object):
 		# This will be hannover
 		#foldername='/mnt/Data/Jorge/tf_patches/hannover_overlap4_masked_norm/patch_npy/'
 		
+
+		# This is seq1 complete
+		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap4_masked_norm_complete/patch_npy/'
+		
+		
 		foldername=self.conf["path"]+'patch_npy/'
 
-		self.patches_create=True
+		self.patches_create=False
 		if self.patches_create==True:
 			foldername=self.conf["path"]+'patch_npy/'
 			add_id=0

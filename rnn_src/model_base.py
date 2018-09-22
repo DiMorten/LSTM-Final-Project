@@ -931,6 +931,7 @@ class NeuralNetOneHot(NeuralNet):
 
 		# Prepare the optimization function
 		optimizer = tf.train.AdamOptimizer()
+		#optimizer = tf.train.AdagradOptimizer(0.001)
 		minimize = optimizer.minimize(cross_entropy)
 
 		mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
