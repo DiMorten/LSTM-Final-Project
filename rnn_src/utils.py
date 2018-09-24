@@ -308,9 +308,13 @@ class DataForNet(object):
 
 			#========================== BEGIN PATCH EXTRACTION ============================#
 			#view_as_windows_flag=False
-			view_as_windows_flag=False
-			
-
+			view_as_windows_flag="3"
+			self.ram_store=False
+			path_save=self.conf['path']+'buffer/'
+			path_train=path_save+'train/'
+			path_test=path_save+'test/'
+			pathlib.Path(path_train).mkdir(parents=True, exist_ok=True)
+			pathlib.Path(path_test).mkdir(parents=True, exist_ok=True)			
 			if view_as_windows_flag==True:
 				self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get2(patch["full_ims"],patch["full_label_ims"], \
 					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
@@ -319,12 +323,9 @@ class DataForNet(object):
 			elif view_as_windows_flag==False:
 
 				#path_save='/mnt/Data/Jorge/tf_patches/atomic/seq1_11x11/'
-				path_save='/media/lvc/80D0DD48D0DD4556/Jorge/atomic/seq1_11x11'
-				path_train=path_save+'train/'
-				path_test=path_save+'test/'
-				pathlib.Path(path_train).mkdir(parents=True, exist_ok=True)
-				pathlib.Path(path_test).mkdir(parents=True, exist_ok=True)			
-				self.ram_store=False
+				#path_save='/media/lvc/80D0DD48D0DD4556/Jorge/atomic/seq1_11x11'
+				
+				
 				self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
 					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=path_train, \
 					path_test=path_test,patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
@@ -338,8 +339,8 @@ class DataForNet(object):
 						path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"],test_only=True)
 			elif view_as_windows_flag=="3":
 				self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get3(patch["full_ims"],patch["full_label_ims"], \
-					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
-					path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
+					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=path_train, \
+					path_test=path_test,patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
 
 			deb.prints(self.ram_data['test']['ims'].shape)
 			deb.prints(self.ram_data['test']['labels_int'].shape)
@@ -852,7 +853,7 @@ class DataForNet(object):
 		deb.prints(indices['train_row_flat'].shape)
 
 		# ===== get input patches
-
+		"""
 		self.ram_data["train"]["ims"]=np.zeros((train_mask.shape[0],
 			self.conf['t_len'],self.conf['patch']['size'],
 			self.conf['patch']['size'],self.conf['band_n']))
@@ -865,95 +866,76 @@ class DataForNet(object):
 			self.conf['patch']['size'],self.conf['band_n']))
 
 		deb.prints(self.ram_data["test"]["ims"].shape)
-
+		"""
 		window_half=int(window/2)
 		# Get input patches train
-		for row,col,count in zip(indices['train_row_flat'],
-			indices['train_col_flat'],range(0,self.ram_data["train"]["n"])):
+
+		self.bsave={} # Batch save info
+		self.bsave['size']=1000000
+		self.bsave['id']=0 # Goes from 0 to needs
+		self.bsave['in_buffer']=np.zeros((self.bsave['size'],
+			self.conf['t_len'],self.conf['patch']['size'],
+			self.conf['patch']['size'],self.conf['band_n']))
+		train_get=False
+		if train_get==True:
+			# Get train patches
+			for row,col,count in zip(indices['train_row_flat'],
+				indices['train_col_flat'],range(0,self.ram_data["train"]["n"])):
+
+				# Reset buffer indices and store
+
+				if count % self.bsave['size'] ==0 and count!=0:
+					print(count)
+					np.save(path_train+"patch"+str(count)+
+						".npy",self.bsave['in_buffer'])
+					self.bsave['id']=0
+				if count % 100000==0:
+					print("Count",count)
+				# Add a patch
+				self.bsave['in_buffer'][self.bsave['id']]=img[:,
+					row-window_half:row+window_half+1,
+					col-window_half:col+window_half+1,:]
+				if count==0: deb.prints(self.bsave['in_buffer'][self.bsave['id']].shape)
 			
-			self.ram_data["train"]["ims"][count]=img[:,
-				row-window_half:row+window_half+1,
-				col-window_half:col+window_half+1,:]
-			if count==0: deb.prints(self.ram_data["train"]["ims"][count].shape)
+				self.bsave['id']+=1		
+			print("Finished train loop")
+			# Save last buffer
+			if self.bsave['id']>0:
+				np.save(path_train+"patch"+str(self.bsave['id'])+
+						".npy",self.bsave['in_buffer'])
+		print("Starting test")
 		
 
-		if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
-			print("Elminating unused classes")
-			self.ram_data["train"]=self.labels_unused_classes_eliminate(self.ram_data["train"])
+		self.bsave['id']=0
+		self.bsave['in_buffer']=np.zeros((self.bsave['size'],
+			self.conf['t_len'],self.conf['patch']['size'],
+			self.conf['patch']['size'],self.conf['band_n']))
 
-		self.val_set_get(mode='stratified',validation_split=0.15)
-
-		pathlib.Path(self.conf["path"]+foldername).mkdir(parents=True, exist_ok=True) 
-		np.save(self.conf["path"]+foldername+"train_ims.npy",self.ram_data["train"]['ims'])
-		np.save(self.conf["path"]+foldername+"train_labels_int.npy",self.ram_data['train']['labels_int'])
-		np.save(self.conf["path"]+foldername+"train_n.npy",self.ram_data['train']['n'])
-		
-
-		np.save(self.conf["path"]+foldername+"val_ims.npy",self.ram_data["val"]['ims'])
-		np.save(self.conf["path"]+foldername+"val_labels_int.npy",self.ram_data['val']['labels_int'])
-		np.save(self.conf["path"]+foldername+"val_n.npy",self.ram_data['val']['n'])
-		
-		self.ram_data['train']['ims']=None
-		self.ram_data['train']=None
-		self.ram_data['val']=None
-		#self.val_set_get(mode='stratified',validation_split=0.15)
 		# Get input patches test
 		for row,col,count in zip(indices['test_row_flat'],
 			indices['test_col_flat'],range(0,self.ram_data["test"]["n"])):
+
+			# Reset buffer indices and store
+
+			if count % self.bsave['size'] ==0 and count!=0:
+				print(count)
+				np.save(path_test+"patch"+str(count)+
+					".npy",self.bsave['in_buffer'])
+				self.bsave['id']=0
 			
-			self.ram_data["test"]["ims"][count]=img[:,
+			self.bsave['in_buffer'][self.bsave['id']]=img[:,
 				row-window_half:row+window_half+1,
 				col-window_half:col+window_half+1,:]
-			if count==0: deb.prints(self.ram_data["test"]["ims"][count].shape)
-		if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
-			print("Elminating unused classes")
-			self.ram_data["test"]=self.labels_unused_classes_eliminate(self.ram_data["test"],training=False)
-
-		
-		np.save(self.conf["path"]+foldername+"test_ims.npy",self.ram_data["test"]['ims'])
-		np.save(self.conf["path"]+foldername+"test_labels_int.npy",self.ram_data['test']['labels_int'])
-		np.save(self.conf["path"]+foldername+"test_n.npy",self.ram_data['test']['n'])
-				
-		self.ram_data['test']=None
-
-
-
-
-
-
-		#==========================END IMG LOOP=============================================#
-
-		#===================CLIP TRAIN DATA.================================#
-		count,unique=np.unique(self.ram_data["train"]["labels_int"],return_counts=True)
-		print("Before squeezing count",count,unique)
-		deb.prints(self.conf["squeeze_classes"])
+			if count==0: deb.prints(self.bsave['in_buffer'][self.bsave['id']].shape)
 			
-		unique,count=np.unique(self.ram_data["test"]["labels_int"],return_counts=True)
-		print("Test patches unique",unique,count)
-			
-			#deb.prints()
-			#===============ELIMINATE UNUSED CLASSES ==============================#
-
-		if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
-			print("Elminating unused classes")
-			if not test_only:
-				self.ram_data["train"]=self.labels_unused_classes_eliminate(self.ram_data["train"])
-			if self.conf["test"]["overlap_full"]!="True" or test_only:
-				self.ram_data["test"]=self.labels_unused_classes_eliminate(self.ram_data["test"],training=False)
-
-			if no_zero==False:
-				self.ram_data["test"]["labels_int"]+=1
-			count,unique=np.unique(self.ram_data["train"],return_counts=True)
-			#print("train count,unique",count,unique)
-		#print("train count,unique",count,unique)
-		unique,count=np.unique(self.ram_data["train"]["labels_int"],return_counts=True)
-		print("Train patches unique",unique,count)
-		unique,count=np.unique(self.ram_data["test"]["labels_int"],return_counts=True)
-		print("Test patches unique",unique,count)
-			
-
-		
-		return self.ram_data["train"]["n"],self.ram_data["test"]["n"]
+			self.bsave['id']+=1		
+		print("finished test loop")
+		# Save last buffer
+		if self.bsave['id']>0:
+			np.save(path_test+"patch"+str(self.bsave['id'])+
+					".npy",self.bsave['in_buffer'])
+		print("Test finished")
+		return None,None
 
 
 	def in_label_ram_store(self,data,patch,label_patch,data_idx,label_type,name):
