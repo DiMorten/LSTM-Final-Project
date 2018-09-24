@@ -158,7 +158,8 @@ class DataForNet(object):
 		#	self.conf["train"]["n_apriori"]=3950
 		#	if self.conf["extract"]["test_skip"]==0:
 		#		self.conf["test"]["n_apriori"]=15587
-		if self.test_n_limit<=self.conf["test"]["n_apriori"]:
+
+		if self.test_n_limit<=self.conf["test"]["n_apriori"] and self.ram_store:
 			self.conf["test"]["n_apriori"]=self.test_n_limit
 
 		deb.prints(self.conf["train"]["n_apriori"])
@@ -231,12 +232,13 @@ class DataForNet(object):
 		
 
 		# This is seq1 complete
-		foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap4_masked_norm_complete/patch_npy/'
+		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap4_masked_norm_complete/patch_npy/'
 		
-		
+		# This is seq1 7x7
+		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap6_7x7_masked_norm/patch_npy/'
 		foldername=self.conf["path"]+'patch_npy/'
 
-		self.patches_create=False
+		self.patches_create=True
 		if self.patches_create==True:
 			foldername=self.conf["path"]+'patch_npy/'
 			add_id=0
@@ -308,15 +310,24 @@ class DataForNet(object):
 			#view_as_windows_flag=False
 			view_as_windows_flag=False
 			
+
 			if view_as_windows_flag==True:
 				self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get2(patch["full_ims"],patch["full_label_ims"], \
 					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
 					path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"],\
 					foldername=foldername)
-			elif view_as_windows_flag==False:			
+			elif view_as_windows_flag==False:
+
+				#path_save='/mnt/Data/Jorge/tf_patches/atomic/seq1_11x11/'
+				path_save='/media/lvc/80D0DD48D0DD4556/Jorge/atomic/seq1_11x11'
+				path_train=path_save+'train/'
+				path_test=path_save+'test/'
+				pathlib.Path(path_train).mkdir(parents=True, exist_ok=True)
+				pathlib.Path(path_test).mkdir(parents=True, exist_ok=True)			
+				self.ram_store=False
 				self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
-					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
-					path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
+					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=path_train, \
+					path_test=path_test,patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
 				deb.prints(self.conf["test"]["overlap_full"])
 				#print(self.conf["test"]["overlap_full"]==True)
 				#print(self.conf["test"]["overlap_full"]=="True")
@@ -618,6 +629,11 @@ class DataForNet(object):
 
 		# This value checks which patches were taken into accoutn
 		mask_covered_areas=np.zeros((h,w))
+
+		if self.ram_store==False:
+			self.unused_classes_elimination_configure(label[self.conf['t_len']-1])
+			self.train_labels=[]
+			self.test_labels=[]
 		#======================== START IMG LOOP ==================================#
 		for i in range(len(gridx)):
 			for j in range(len(gridy)):
@@ -643,6 +659,7 @@ class DataForNet(object):
 					continue
 				#deb.prints(is_mask_from_train)
 				#elif np.all(mask_patch==1): # Train sample
+				
 				#=======================IS PATCH FROM TRAIN =================================#
 				if is_mask_from_train==True: # Train sample
 					patch = patch_train.copy()
@@ -669,14 +686,15 @@ class DataForNet(object):
 					
 					#print("herherher")
 					if self.patches_save==True or self.patches_save=="True":
+						label_center=label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]]
 						if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
-							label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
+							label_parsed=self.labels_unused_classes_eliminate_prior(label_center)
 						else:
-							label_patch_parsed=label_patch[self.conf["t_len"]-1].copy()
+							label_parsed=label_center.copy()
 						#print("HEERERER")
-						np.save(path_train["ims_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
-						np.save(path_train["labels_path"]+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",label_patch_parsed)
-
+						np.save(path_train+"patch_"+str(patches_get["train_n"])+"_"+str(i)+"_"+str(j)+".npy",patch)
+						self.train_labels.append(label_parsed)
+						
 					patches_get["train_n"]+=1	
 				is_mask_from_test=self.is_mask_from_test(mask_patch,label_patch[self.conf["t_len"]-1])
 				
@@ -706,16 +724,23 @@ class DataForNet(object):
 						if self.conf["memory_mode"]=="ram" and self.ram_store==True:
 							self.ram_data["test"]=self.in_label_ram_store(self.ram_data["test"],patch,label_patch,data_idx=test_real_count,label_type=label_type,name="test")
 						if self.patches_save==True or self.patches_save=="True":
+							
+							label_center=label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]]
 							if self.conf["squeeze_classes"]==True or self.conf["squeeze_classes"]=="True":
-								label_patch_parsed=self.labels_unused_classes_eliminate_prior(label_patch[self.conf["t_len"]-1])
+								label_parsed=self.labels_unused_classes_eliminate_prior(label_center)
 							else:
-								label_patch_parsed=label_patch[self.conf["t_len"]-1].copy()
-							np.save(path_test["ims_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
-							np.save(path_test["labels_path"]+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",label_patch_parsed)
+								label_parsed=label_center.copy()
+							np.save(path_test+"patch_"+str(test_real_count)+"_"+str(i)+"_"+str(j)+".npy",patch)
+							self.test_labels.append(label_parsed)
+						
 
 						test_real_count+=1
 					#np.random.choice(index, samples_per_class, replace=replace)
 		#==========================END IMG LOOP=============================================#
+		
+		np.save(path_save+"train_labels.npy",self.train_labels)
+		np.save(path_save+"test_labels.npy",self.test_labels)
+		
 		print("Final mask test average",np.average(mask_test))
 		cv2.imwrite("mask_train.png",mask_train)
 		cv2.imwrite("mask_test.png",mask_test)
@@ -1109,6 +1134,7 @@ class DataSemantic(DataForNet):
 	# 	return data
 
 
+
 	def labels_unused_classes_eliminate(self,data,training=True):
 		fname=sys._getframe().f_code.co_name
 		##deb.prints(data["labels_int"].shape[0])
@@ -1137,46 +1163,7 @@ class DataSemantic(DataForNet):
 
 
 		return data
-	def labels_unused_classes_eliminate_prior(self,labels_int,unused_map=[[0,0],
-					[1,1],
-					[2,2],
-					[3,3],
-					[4,4],
-					[5,-1],
-					[6,5],
-					[7,6],
-					[8,7],
-					[9,8],
-					[10,9],
-					[11,10]]):
-		fname=sys._getframe().f_code.co_name
-		##deb.prints(data["labels_int"].shape[0])
-		##idxs=[i for i in range(data["labels_int"].shape[0]) if (data["labels_int"][i] == 0 or data["labels_int"][i] == 2 or data["labels_int"][i] == 3)]
-		##deb.prints(len(idxs))
 
-		# self.old_n_classes=self.n_classes
-		label_classes = np.unique(labels_int).astype(np.int)
-		# self.n_classes=self.classes.shape[0]
-		##deb.prints(label_classes,fname)		
-		
-		new_labels = labels_int.copy()
-		for label_class in label_classes:
-			#print(len(unused_map))
-			##print(label_class)
-			if unused_map[label_class][1]==-1:
-				print("Unused map error!")
-			new_labels[labels_int == label_class] = unused_map[label_class][1]
-
-		# #data["old_labels_int"]=data["labels_int"].copy()
-		# #data["old_labels"]=data["labels"].copy()
-		
-		labels_int=new_labels.copy()
-		##deb.prints(np.unique(data["labels_int"]))
-		#data["labels"]=utils.DataOneHot.labels_onehot_get(None,data["labels_int"],data["n"],self.n_classes)
-		# print(data.keys())
-
-
-		return labels_int
 class DataOneHot(DataForNet):
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args, **kwargs)
@@ -1425,6 +1412,51 @@ class DataOneHot(DataForNet):
 
 
 		return data
+	def unused_classes_elimination_configure(self,label):
+		fname=sys._getframe().f_code.co_name
+		##deb.prints(data["labels_int"].shape[0])
+		##idxs=[i for i in range(data["labels_int"].shape[0]) if (data["labels_int"][i] == 0 or data["labels_int"][i] == 2 or data["labels_int"][i] == 3)]
+		##deb.prints(len(idxs))
+
+		# self.old_n_classes=self.n_classes
+		self.classes = np.unique(label)[1:] #No bcknd
+		# self.n_classes=self.classes.shape[0]
+		deb.prints(self.classes,fname)		
+		self.labels2new_labels = dict((c, i) for i, c in enumerate(self.classes))
+		self.new_labels2labels = dict((i, c) for i, c in enumerate(self.classes))
+
+	def labels_unused_classes_eliminate_prior(self,label,unused_map=[[0,0],
+					[1,1],
+					[2,2],
+					[3,3],
+					[4,4],
+					[5,-1],
+					[6,5],
+					[7,6],
+					[8,7],
+					[9,8],
+					[10,9],
+					[11,10]]):
+		fname=sys._getframe().f_code.co_name
+
+		new_label=self.labels2new_labels[label]
+
+		##new_labels = labels_int.copy()
+		##for i in range(len(self.classes)):
+		##	new_labels[labels_int == self.classes[i]] = self.labels2new_labels[self.classes[i]]
+
+		# #data["old_labels_int"]=data["labels_int"].copy()
+		# #data["old_labels"]=data["labels"].copy()
+		
+		##data["labels_int"]=new_labels.copy()
+		##deb.prints(np.unique(data["labels_int"]))
+		#data["labels"]=utils.DataOneHot.labels_onehot_get(None,data["labels_int"],data["n"],self.n_classes)
+		# print(data.keys())
+
+
+		return new_label
+
+
 
 	def data_balance(self, data, samples_per_class):
 		fname=sys._getframe().f_code.co_name
