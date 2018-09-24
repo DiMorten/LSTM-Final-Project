@@ -238,7 +238,7 @@ class DataForNet(object):
 		foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap6_7x7_masked_norm/patch_npy/'
 		#foldername=self.conf["path"]+'patch_npy/'
 
-		self.patches_create=True
+		self.patches_create=False
 		#self.ram_store=False
 		if self.patches_create==True:
 			foldername=self.conf["path"]+'patch_npy/'
@@ -378,7 +378,10 @@ class DataForNet(object):
 				
 		else:
 			print("Loading dataset...")
+			#self.ram_store=False
 			if self.ram_store:
+
+				foldername=self.conf['path']+'buffer/'
 
 				self.ram_data={'train':{},'test':{}}
 				self.ram_data['train']['ims']=np.load(foldername+"train_ims.npy")
@@ -388,19 +391,23 @@ class DataForNet(object):
 				
 				deb.prints(self.ram_data['train']['labels_int'].shape)
 				
-				self.ram_data['test']['ims']=np.load(foldername+"test_ims.npy")
-				deb.prints(self.ram_data['test']['ims'].shape)
+				self.ram_data['train']['n']=self.ram_data['train']['ims'].shape[0]
 				
-				self.ram_data['test']['labels_int']=np.load(foldername+"test_labels_int.npy")
-				self.ram_data['train']['n']=np.load(foldername+"train_n.npy")
-				self.ram_data['test']['n']=np.load(foldername+"test_n.npy")
 				self.ram_data['val']={}
 				self.ram_data['val']['ims']=np.load(foldername+"val_ims.npy")
 				deb.prints(self.ram_data['val']['ims'].shape)
 				
 				self.ram_data['val']['labels_int']=np.load(foldername+"val_labels_int.npy")
-				self.ram_data['val']['n']=np.load(foldername+"val_n.npy")
+				self.ram_data['val']['n']=self.ram_data['val']['ims'].shape[0]
 
+
+				"""
+				self.ram_data['test']['ims']=np.load(foldername+"test_ims.npy")
+				deb.prints(self.ram_data['test']['ims'].shape)
+				
+				self.ram_data['test']['labels_int']=np.load(foldername+"test_labels_int.npy")
+				self.ram_data['test']['n']=np.load(foldername+"test_n.npy")
+				"""
 
 		# ================== PATCHES ARE STORED IN self.ram_data ========================#
 
@@ -1208,8 +1215,8 @@ class DataOneHot(DataForNet):
 
 		self.ram_data["train"]["labels"]=self.labels_onehot_get(self.ram_data["train"]["labels_int"], \
 			self.ram_data["train"]["n"],self.conf["class_n"])
-		self.ram_data["test"]["labels"]=self.labels_onehot_get(self.ram_data["test"]["labels_int"], \
-			self.ram_data["test"]["n"],self.conf["class_n"])
+		#self.ram_data["test"]["labels"]=self.labels_onehot_get(self.ram_data["test"]["labels_int"], \
+		#	self.ram_data["test"]["n"],self.conf["class_n"])
 		self.ram_data["val"]["labels"]=self.labels_onehot_get(self.ram_data["val"]["labels_int"], \
 			self.ram_data["val"]["n"],self.conf["class_n"])
 	def create(self):
@@ -1225,7 +1232,7 @@ class DataOneHot(DataForNet):
 			deb.prints(np.unique(self.ram_data["train"]["labels_int"],return_counts=True)[1])
 			#self.ram_data=self.data_normalize_per_band(self.ram_data)
 			
-			data_balance=True
+			data_balance=False
 			if data_balance:
 				self.ram_data["train"]["ims"],self.ram_data["train"]["labels_int"],self.ram_data["train"]["labels"]=self.data_balance(self.ram_data, \
 					self.conf["balanced"]["samples_per_class"])

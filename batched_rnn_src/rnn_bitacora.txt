@@ -46,7 +46,7 @@ convlstm
 
 =================== USING TRAIN OVERLAP 4 , masking, normalizing. Gave 75.5% oa on epoch 10.
 
-python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 0 -tnl 9000000 -bs=300000 --batch_size=1000 --filters=256 -m="lstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=1 -psv=False -tof=True --epoch=200
+python main.py -mm="ram" --debug=1 -pl 5 -po 4 -ts 0 -tnl 9000000 -bs=300000 --batch_size=1000 --filters=256 -m="lstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=1 -psv=False -tof=False --epoch=200
 
 Results seq1
 
@@ -126,4 +126,6 @@ Per class accuracy:[0.51233319 0.85852438 0.51232352 0.5087609  0.54685985 0.915
  0.5913298  0.72332016 0.63309988]
 Epoch: [ 9] [2699/2700] time: 3824.8867
 Epoch - 9. Steps per epoch - 2699
+
+python main.py -mm="ram" --debug=1 -pl 9 -po 8 -ts 0 -tnl 900 -bs=300000 --batch_size=1000 --filters=256 -m="lstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=1 -psv=True -tof=False --epoch=200
 

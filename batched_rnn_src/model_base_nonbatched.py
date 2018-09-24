@@ -35,7 +35,7 @@ class NeuralNet(object):
 						timesteps=7, patch_len=32,
 						kernel=[3,3], channels=7, filters=32, n_classes=6,
 						checkpoint_dir='./checkpoint',log_dir="../data/summaries/",data=None, conf=None, debug=1, \
-						patience=100,squeeze_classes=True,n_repetitions=10,fine_early_stop=False,fine_early_stop_steps=400):
+						patience=10,squeeze_classes=True,n_repetitions=10,fine_early_stop=False,fine_early_stop_steps=400):
 		self.squeeze_classes=squeeze_classes		
 		self.ram_data=data
 		self.sess = sess
@@ -282,7 +282,7 @@ class NeuralNet(object):
 			text_file.write("epoch,oa,aa,f1,class_acc\n")
 
 		start_time = time.time()
-		early_stop={"best":{}, "patience":self.early_stop["patience"]}
+		early_stop={"best":{}, "patience":self.early_stop["patience"], "signal":False}
 		early_stop["count"]=0
 		early_stop["best"]["metric1"]=0
 
@@ -330,11 +330,12 @@ class NeuralNet(object):
 			# ================= VALIDATION ASSESS
 			#y_pred_val=np.around(self.sess.run(self.prediction,{self.data: self.ram_data['val']['ims'], self.keep_prob: 1.0, self.training: False}),decimals=2)
 			
-			stats = self.data_stats_get(self.ram_data["val"],self.test_batch_size) # For each epoch, get metrics on the entire test set
+			stats,_ = self.data_stats_get(self.ram_data["val"],self.test_batch_size) # For each epoch, get metrics on the entire test set
 			print("VAL Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
 			print("VAL Per class accuracy:{}".format(stats["per_class_accuracy"]))
+			if early_stop["signal"]==False:
+				early_stop=self.early_stop_check(early_stop,stats["average_accuracy"])
 			
-
 			# Check early stop and store results if they are the best
 			if epoch % 5 == 0:
 				print("Writing to file...")
@@ -357,8 +358,10 @@ class NeuralNet(object):
 			# =__________________________________ Test stats get and model save  _______________________________ = #
 			save_path = self.saver.save(self.sess, "./model.ckpt")
 			print("Model saved in path: %s" % save_path)
-			stats = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
-			early_stop=self.early_stop_check(early_stop,stats["overall_accuracy"],stats["average_accuracy"],stats["per_class_accuracy"])
+			stats,predicted = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
+			if early_stop["signal"]==True:
+				np.save("predicted.npy",predicted)
+				np.save("labels.npy",data["test"]["labels_int"])
 			#if early_stop["signal"]:
 				#deb.prints(early_stop["best"]["metric1"])
 				#deb.prints(early_stop["best"]["metric2"])
@@ -454,12 +457,12 @@ class NeuralNet(object):
 
 		return float(sum(metric))
 
-	def early_stop_check(self,early_stop,metric1,metric2,metric3):
+	def early_stop_check(self,early_stop,metric1):
 		early_stop["signal"]=False
 		if metric1>early_stop["best"]["metric1"]:
 			early_stop["best"]["metric1"]=metric1
-			early_stop["best"]["metric2"]=metric2
-			early_stop["best"]["metric3"]=metric3
+			#early_stop["best"]["metric2"]=metric2
+			#early_stop["best"]["metric3"]=metric3
 			early_stop["count"]=0
 		else:
 			early_stop["count"]+=1
@@ -476,6 +479,7 @@ class NeuralNet(object):
 		predicted=np.zeros((data["n"],self.n_classes))
 		stats={"correct_per_class":np.zeros(self.n_classes).astype(np.float32)}
 		stats["per_class_label_count"]=np.zeros(self.n_classes).astype(np.float32)
+		
 		mask=cv2.imread(self.conf["train"]["mask"]["dir"],0)
 		label=cv2.imread(self.conf["label"]["last_dir"],0)
 		
@@ -547,7 +551,7 @@ class NeuralNet(object):
 				print("Deb prints error")
 		if self.debug>=2:
 			deb.prints(stats["per_class_accuracy"])
-		return stats
+		return stats,predicted
 
 	def reconstruct_init(self):
 		reconstruct={}
@@ -931,6 +935,7 @@ class NeuralNetOneHot(NeuralNet):
 
 		# Prepare the optimization function
 		optimizer = tf.train.AdamOptimizer()
+		#optimizer = tf.train.AdagradOptimizer(0.001)
 		minimize = optimizer.minimize(cross_entropy)
 
 		mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
