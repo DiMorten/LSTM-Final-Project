@@ -128,3 +128,4 @@ Epoch: [ 9] [2699/2700] time: 3824.8867
 Epoch - 9. Steps per epoch - 2699
 
 python main.py -mm="ram" --debug=1 -pl 9 -po 8 -ts 0 -tnl 900 -bs=300000 --batch_size=1000 --filters=256 -m="lstm" --phase="train" -sc=True --class_n=10 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=1 -psv=True -tof=False --epoch=200
+
