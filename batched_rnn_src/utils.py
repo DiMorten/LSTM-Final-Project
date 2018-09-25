@@ -37,6 +37,133 @@ def mask_train_test_switch(mask):
 	out[mask==1]=2
 	out[mask==2]=1
 	return mask
+def val_set_get(buffr,mode='stratified',validation_split=0.2):
+	buffr['train']['idx']=range(buffr['train']['n'])
+	clss_train_unique,clss_train_count=np.unique(buffr['train']['labels_int'],return_counts=True)
+	deb.prints(clss_train_count)
+	buffr['val']={'n':int(buffr['train']['n']*validation_split)}
+	
+	#===== CHOOSE VAL IDX
+	#mode='stratified'
+	if mode=='random':
+		buffr['val']['idx']=np.random.choice(buffr['train']['idx'],buffr['val']['n'],replace=False)
+		
+
+		buffr['val']['ims']=buffr['train']['ims'][buffr['val']['idx']]
+		buffr['val']['labels_int']=buffr['train']['labels_int'][buffr['val']['idx']]
+	
+	elif mode=='stratified':
+		while True:
+			buffr['val']['idx']=np.random.choice(buffr['train']['idx'],buffr['val']['n'],replace=False)
+			buffr['val']['ims']=buffr['train']['ims'][buffr['val']['idx']]
+			buffr['val']['labels_int']=buffr['train']['labels_int'][buffr['val']['idx']]
+	
+			clss_val_unique,clss_val_count=np.unique(buffr['val']['labels_int'],return_counts=True)
+			
+			if not np.array_equal(clss_train_unique,clss_val_unique):
+				deb.prints(clss_train_unique)
+				deb.prints(clss_val_unique)
+				
+				pass
+			else:
+				percentages=clss_val_count/clss_train_count
+				deb.prints(percentages)
+				#if np.any(percentages<0.1) or np.any(percentages>0.3):
+				if np.any(percentages>0.23):
+				
+					pass
+				else:
+					break
+	elif mode=='random_v2':
+		while True:
+
+			buffr['val']['idx']=np.random.choice(buffr['train']['idx'],buffr['val']['n'],replace=False)
+			
+
+			buffr['val']['ims']=buffr['train']['ims'][buffr['val']['idx']]
+			buffr['val']['labels_int']=buffr['train']['labels_int'][buffr['val']['idx']]
+			clss_val_unique,clss_val_count=np.unique(buffr['val']['labels_int'].argmax(axis=3),return_counts=True)
+					
+			deb.prints(clss_train_unique)
+			deb.prints(clss_val_unique)
+
+			deb.prints(clss_train_count)
+			deb.prints(clss_val_count)
+
+			clss_train_count_in_val=clss_train_count[np.isin(clss_train_unique,clss_val_unique)]
+			percentages=clss_val_count/clss_train_count_in_val
+			deb.prints(percentages)
+			#if np.any(percentages<0.1) or np.any(percentages>0.3):
+			if np.any(percentages>0.26):
+				pass
+			else:
+				break				
+
+	deb.prints(buffr['val']['idx'].shape)
+
+	
+	deb.prints(buffr['val']['ims'].shape)
+	#deb.prints(data.patches['val']['labels_int'].shape)
+	
+	
+	buffr['train']['ims']=np.delete(buffr['train']['ims'],buffr['val']['idx'],axis=0)
+	buffr['train']['labels_int']=np.delete(buffr['train']['labels_int'],buffr['val']['idx'],axis=0)
+	buffr['train']['n']=buffr['train']['ims'].shape[0]
+	buffr['val']['n']=buffr['val']['ims'].shape[0]
+	print("train",np.unique(buffr['train']['labels_int'],return_counts=True))
+	print("val",np.unique(buffr['val']['labels_int'],return_counts=True))
+	return buffr
+def labels_onehot_get(labels,n_samples,class_n):
+	out=np.zeros((n_samples,class_n))
+	deb.prints(out.shape)
+	deb.prints(labels.shape)
+	out[np.arange(n_samples),labels.astype(np.int)]=1
+	return out
+def data_balance( data, samples_per_class,class_n,debug=1):
+	fname=sys._getframe().f_code.co_name
+
+	balance={}
+	balance["unique"]={}
+#	classes = range(0,self.conf["class_n"])
+	classes,counts=np.unique(data["train"]["labels_int"],return_counts=True)
+	print(classes,counts)
+	num_total_samples=len(classes)*samples_per_class
+	balance["out_labels"]=np.zeros(num_total_samples)
+	deb.prints(num_total_samples)
+	balance["out_data"]=np.zeros(num_total_samples)
+	
+	#balance["unique"]=dict(zip(unique, counts))
+	#print(balance["unique"])
+	k=0
+	for clss in classes:
+		deb.prints(clss,fname)
+		balance["data"]=data["train"]["ims"][data["train"]["labels_int"]==clss]
+		balance["labels_int"]=data["train"]["labels_int"][data["train"]["labels_int"]==clss]
+		balance["num_samples"]=balance["data"].shape[0]
+		if debug>=1: deb.prints(balance["data"].shape,fname)
+		if debug>=2: 
+			deb.prints(balance["labels_int"].shape,fname)
+			deb.prints(np.unique(balance["labels_int"].shape),fname)
+		if balance["num_samples"] > samples_per_class:
+			replace=False
+		else: 
+			replace=True
+
+		index = range(balance["labels_int"].shape[0])
+		index = np.random.choice(index, samples_per_class, replace=replace)
+		balance["out_labels"][k*samples_per_class:k*samples_per_class + samples_per_class] = balance["labels_int"][index]
+		balance["out_data"][k*samples_per_class:k*samples_per_class + samples_per_class] = balance["data"][index]
+
+		k+=1
+	idx = np.random.permutation(balance["out_labels"].shape[0])
+	balance["out_data"] = balance["out_data"][idx]
+	balance["out_labels"] = balance["out_labels"][idx]
+
+	balance["labels"]=labels_onehot_get(balance["out_labels"],num_total_samples,class_n)
+	#balance["labels"]=np.zeros((num_total_samples,self.conf["class_n"]))
+	#balance["labels"][np.arange(num_total_samples),balance["out_labels"].astype(np.int)]=1
+	if debug>=1: deb.prints(np.unique(balance["out_labels"],return_counts=True),fname)
+	return balance["out_data"],balance["out_labels"],balance["labels"]
 
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=7,t_len=6,path="../data/",class_n=9,pc_mode="local", \
@@ -235,10 +362,10 @@ class DataForNet(object):
 		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap4_masked_norm_complete/patch_npy/'
 		
 		# This is seq1 7x7
-		foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap6_7x7_masked_norm/patch_npy/'
+		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap6_7x7_masked_norm/patch_npy/'
 		#foldername=self.conf["path"]+'patch_npy/'
 
-		self.patches_create=False
+		self.patches_create=True
 		#self.ram_store=False
 		if self.patches_create==True:
 			foldername=self.conf["path"]+'patch_npy/'
@@ -308,8 +435,8 @@ class DataForNet(object):
 		
 
 			#========================== BEGIN PATCH EXTRACTION ============================#
-			view_as_windows_flag=False
-			"""
+			#view_as_windows_flag=False
+			
 			
 			view_as_windows_flag="3"
 			self.ram_store=True # This should be removed for normal 
@@ -318,7 +445,7 @@ class DataForNet(object):
 			path_test=path_save+'test/'
 			pathlib.Path(path_train).mkdir(parents=True, exist_ok=True)
 			pathlib.Path(path_test).mkdir(parents=True, exist_ok=True)			
-			"""
+			
 			if view_as_windows_flag==True:
 				self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get2(patch["full_ims"],patch["full_label_ims"], \
 					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
@@ -879,10 +1006,51 @@ class DataForNet(object):
 		deb.prints(indices['train_row_flat'].shape)
 
 
+		# ============= HERE, DO VAL / BALANCING FROM LABELS
+		labels=self.ram_data["train"]["labels_int"].copy()
+		val_percentage=0.15
 
-		np.save(self.conf['path']+"buffer/train_labels_int.npy",self.ram_data["train"]["labels_int"])
-		np.save(self.conf['path']+"buffer/test_labels_int.npy",self.ram_data["test"]["labels_int"])
+		data={"train":{},"val":{}}
+		data['train']['labels_int']=labels
+		data['train']['ims']=np.arange(labels.shape[0])
+		data['train']['n']=data['train']['labels_int'].shape[0]
+		data=val_set_get(data,mode='stratified',validation_split=0.15)
+
+		data['val']['idxs']=np.sort(data['val']['ims'])
+		print(data['val']['ims'][0:10])
+
+		# Count after validation split
+		data['val']['n']=data['val']['labels_int'].shape[0]
+
+		# Balancing
+		class_n=np.unique(data['train']['labels_int']).shape[0]
+		data['train']['idxs'],data['train']['labels_int'], \
+		data['train']['labels'] = data_balance(data,50000,class_n=self.conf['class_n'])
+
+
+		data['train']['n']=data['train']['labels_int'].shape[0]
+
+		data['train']['idxs']=data['train']['idxs'].astype(np.int)
+		data['val']['idxs']=data['val']['idxs'].astype(np.int)
+
+		deb.prints(data['train']['idxs'].dtype)
+		deb.prints(data['train']['idxs'][0:15])
+		deb.prints(np.unique(data['train']['labels_int'],return_counts=True))
+
+
+		data['val']['ims']=np.zeros((data['val']['n'],
+			self.conf['t_len'],self.conf['patch']['size'],
+			self.conf['patch']['size'],self.conf['band_n']))
 		
+		data['train']['ims']=np.zeros((data['train']['n'],
+			self.conf['t_len'],self.conf['patch']['size'],
+			self.conf['patch']['size'],self.conf['band_n']))
+
+		np.save(self.conf['path']+'train_labels_int',data['train']['labels_int'])
+		np.save(self.conf['path']+'val_labels_int',data['val']['labels_int'])
+		
+		print("OK")
+		pass
 		# ===== get input patches
 		"""
 		self.ram_data["train"]["ims"]=np.zeros((train_mask.shape[0],
