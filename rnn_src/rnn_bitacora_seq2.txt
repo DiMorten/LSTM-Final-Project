@@ -114,4 +114,44 @@ Average accuracy:0.6335176071164056, Overall accuracy:0.6699152332429164
 Per class accuracy:[0.47561783 0.83124061 0.58100024 0.51856122 0.52058059 0.9362377
  0.60736397 0.71146245 0.51959384]
 
+ 
+ epoch 10 
+ 
+ Epoch 10, step 2000. Overall accuracy 66.5%
+Epoch 10, step 2500. Overall accuracy 66.1%
+Model saved in path: ./model.ckpt
+[@debug] data["labels"].shape = (2865982, 9)
+[@debug] stats["correct_per_class"] = [179350. 895469.  14914.  30762. 164492.  76561. 511700.    178.  48165.]                                                     
+[@debug] stats["per_class_label_count"] = [ 383518. 1086067.   25074.   57243.  310511.   82290.  832784.     253.                                                  
+   88242.]                                                                        
+[@debug] correct_per_class = [179350. 895469.  14914.  30762. 164492.  76561. 511700.    178.  48165.]                                                              
+[@debug] targets_label_count = [ 383518. 1086067.   25074.   57243.  310511.   82290.  832784.     253.                                                             
+   88242.]                                                                        
+[@debug] stats["overall_accuracy"] = 0.670482578048292
+[@debug] stats["average_accuracy"] = 0.6387000532785462
 
+
+
+ ================ CONVLSTM 16 FILTERS EPOCH 10
+ 
+ 
+ [@debug] data["labels"].shape = (2865982, 9)
+[@debug] stats["correct_per_class"] = [196489. 932415.  12846.  29123. 169806.  75318. 492450.    183.  55866.]
+[@debug] stats["per_class_label_count"] = [ 383518. 1086067.   25074.   57243.  310511.   82290.  832784.     253.
+   88242.]
+[@debug] correct_per_class = [196489. 932415.  12846.  29123. 169806.  75318. 492450.    183.  55866.]
+[@debug] targets_label_count = [ 383518. 1086067.   25074.   57243.  310511.   82290.  832784.     253.
+   88242.]
+[@debug] stats["overall_accuracy"] = 0.6854530140105556
+[@debug] stats["average_accuracy"] = 0.644647437418526
+Average accuracy:0.644647437418526, Overall accuracy:0.6854530140105556
+Per class accuracy:[0.51233319 0.85852438 0.51232352 0.5087609  0.54685985 0.91527525
+ 0.5913298  0.72332016 0.63309988]
+Epoch: [ 9] [2699/2700] time: 3824.8867
+Epoch - 9. Steps per epoch - 2699
+
+
+
+========================== this for training
+
+python main.py -mm="ram" --debug=1 -pl 7 -po 6 -ts 0 -tnl 7000000 -bs=300000 --batch_size=1000 --filters=256 -m="lstm" --phase="train" -sc=True --class_n=9 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=8 -psv=False -tof=False --epoch=200

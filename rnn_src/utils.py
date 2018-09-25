@@ -235,13 +235,14 @@ class DataForNet(object):
 		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap4_masked_norm_complete/patch_npy/'
 		
 		# This is seq1 7x7
-		foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap6_7x7_masked_norm/patch_npy/'
+		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap6_7x7_masked_norm/patch_npy/'
 		#foldername=self.conf["path"]+'patch_npy/'
 
+		foldername='/mnt/Data/Jorge/tf_patches/seq2_overlap6_7x7_masked_norm/patch_npy/'
 		self.patches_create=True
 		#self.ram_store=False
 		if self.patches_create==True:
-			foldername=self.conf["path"]+'patch_npy/'
+			#foldername=self.conf["path"]+'patch_npy/'
 			add_id=0
 			if self.debug>=1: 
 				deb.prints(add_id)
