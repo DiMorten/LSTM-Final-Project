@@ -238,8 +238,8 @@ class DataForNet(object):
 		foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap6_7x7_masked_norm/patch_npy/'
 		#foldername=self.conf["path"]+'patch_npy/'
 
-		self.patches_create=False
-		self.ram_store=False
+		self.patches_create=True
+		#self.ram_store=False
 		if self.patches_create==True:
 			foldername=self.conf["path"]+'patch_npy/'
 			add_id=0
@@ -308,17 +308,17 @@ class DataForNet(object):
 		
 
 			#========================== BEGIN PATCH EXTRACTION ============================#
-			#view_as_windows_flag=False
-			
+			view_as_windows_flag=False
+			"""
 			
 			view_as_windows_flag="3"
-			self.ram_store=False # This should be removed for normal 
+			self.ram_store=True # This should be removed for normal 
 			path_save=self.conf['path']+'buffer/'
 			path_train=path_save+'train/'
 			path_test=path_save+'test/'
 			pathlib.Path(path_train).mkdir(parents=True, exist_ok=True)
 			pathlib.Path(path_test).mkdir(parents=True, exist_ok=True)			
-			
+			"""
 			if view_as_windows_flag==True:
 				self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get2(patch["full_ims"],patch["full_label_ims"], \
 					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
@@ -331,8 +331,8 @@ class DataForNet(object):
 				
 				
 				self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get(patch["full_ims"],patch["full_label_ims"], \
-					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=path_train, \
-					path_test=path_test,patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
+					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
+					path_test=self.conf["test"],patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
 				deb.prints(self.conf["test"]["overlap_full"])
 				#print(self.conf["test"]["overlap_full"]==True)
 				#print(self.conf["test"]["overlap_full"]=="True")
@@ -400,7 +400,7 @@ class DataForNet(object):
 				
 				self.ram_data['val']['labels_int']=np.load(foldername+"val_labels_int.npy")
 				self.ram_data['val']['n']=np.load(foldername+"val_n.npy")
-				
+
 
 		# ================== PATCHES ARE STORED IN self.ram_data ========================#
 
