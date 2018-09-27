@@ -94,7 +94,7 @@ def val_set_get(buffr,mode='stratified',validation_split=0.2):
 			percentages=clss_val_count/clss_train_count_in_val
 			deb.prints(percentages)
 			#if np.any(percentages<0.1) or np.any(percentages>0.3):
-			if np.any(percentages>0.26):
+			if np.any(percentages>0.23):
 				pass
 			else:
 				break				
@@ -986,7 +986,8 @@ class DataForNet(object):
 		# Unused classes eliminate
 
 		data={'labels_int':self.ram_data["train"]["labels_int"]}
-		self.ram_data["train"]["labels_int"]=self.labels_unused_classes_eliminate(data)['labels_int']
+		self.ram_data["train"]["labels_int"]=self.labels_unused_classes_eliminate( \
+			self.ram_data["train"])['labels_int']
 		deb.prints(np.unique(self.ram_data["train"]["labels_int"],return_counts=True))
 		
 		# Test
@@ -998,7 +999,7 @@ class DataForNet(object):
 		self.ram_data["test"]["n"]=test_mask.shape[0]
 
 		#data={'labels_int':self.ram_data["test"]["labels_int"]}
-		self.ram_data["test"]["labels_int"]=self.labels_unused_classes_eliminate(data)['labels_int']
+		self.ram_data["test"]["labels_int"]=self.labels_unused_classes_eliminate(self.ram_data["test"])['labels_int']
 		
 		deb.prints(np.unique(self.ram_data["test"]["labels_int"],return_counts=True))
 		deb.prints(train_mask.shape)
@@ -1006,17 +1007,27 @@ class DataForNet(object):
 		deb.prints(indices['train_row_flat'].shape)
 
 
+		# ============== Here I reconstrucat the label 
+
+		label_reconstructed=np.zeros((h,w))
+		for row,col,value in zip(indices['row_flat'],
+				indices['col_flat'],label_flat):
+			label_reconstructed[row,col]=value
+		deb.prints(np.unique(label_reconstructed,return_counts=True))
+
+		deb.prints(label_reconstructed.dtype)
+		print(label_flat.shape,label_flat.dtype)
+		print(label_reconstructed.shape)
+		print(np.all(label_reconstructed==label))
+		print("DONE TEST")
 		# ============= HERE, DO VAL / BALANCING FROM LABELS
-		labels=self.ram_data["train"]["labels_int"].copy()
 		val_percentage=0.15
 
-		data={"train":{},"val":{}}
-		self.ram_data['train']['labels_int']=labels
-		self.ram_data['train']['ims']=np.arange(labels.shape[0])
+		self.ram_data['train']['ims']=np.arange(self.ram_data["train"]["labels_int"].shape[0])
 		self.ram_data['train']['n']=self.ram_data['train']['labels_int'].shape[0]
 		self.ram_data=val_set_get(self.ram_data,mode='stratified',validation_split=0.15)
 
-		self.ram_data['val']['idxs']=np.sort(self.ram_data['val']['ims'])
+		self.ram_data['val']['idxs']=self.ram_data['val']['ims'].copy()
 		print(self.ram_data['val']['ims'][0:10])
 
 		# Count after validation split
@@ -1024,10 +1035,13 @@ class DataForNet(object):
 
 		# Balancing
 		class_n=np.unique(self.ram_data['train']['labels_int']).shape[0]
+		
+
+		deb.prints(self.ram_data['train']['labels_int'].shape)
 		self.ram_data['train']['idxs'],self.ram_data['train']['labels_int'], \
-		self.ram_data['train']['labels'] = data_balance(self.ram_data,50000,class_n=self.conf['class_n'])
+			self.ram_data['train']['labels'] = data_balance(self.ram_data,11000,class_n=self.conf['class_n'])
 
-
+		
 		self.ram_data['train']['n']=self.ram_data['train']['labels_int'].shape[0]
 
 		self.ram_data['train']['idxs']=self.ram_data['train']['idxs'].astype(np.int)
@@ -1059,7 +1073,7 @@ class DataForNet(object):
 
 		self.ram_data['val']['row_flat']=indices['train_row_flat'][self.ram_data['val']['idxs']]
 		self.ram_data['val']['col_flat']=indices['train_col_flat'][self.ram_data['val']['idxs']]
-
+		print(self.ram_data['train']['row_flat'].shape, )
 		
 		# ===== get input patches
 		"""
