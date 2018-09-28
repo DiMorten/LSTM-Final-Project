@@ -983,6 +983,8 @@ class DataForNet(object):
 		train_mask=mask_flat[mask_flat==1]
 		self.ram_data["train"]["n"]=train_mask.shape[0]
 
+		
+
 		# Unused classes eliminate
 
 		data={'labels_int':self.ram_data["train"]["labels_int"]}
@@ -1039,7 +1041,8 @@ class DataForNet(object):
 
 		deb.prints(self.ram_data['train']['labels_int'].shape)
 		self.ram_data['train']['idxs'],self.ram_data['train']['labels_int'], \
-			self.ram_data['train']['labels'] = data_balance(self.ram_data,11000,class_n=self.conf['class_n'])
+			self.ram_data['train']['labels'] = data_balance(self.ram_data, \
+			self.conf["balanced"]["samples_per_class"],class_n=self.conf['class_n'])
 
 		
 		self.ram_data['train']['n']=self.ram_data['train']['labels_int'].shape[0]
@@ -1063,7 +1066,8 @@ class DataForNet(object):
 
 		np.save(self.conf['path']+'train_labels_int',self.ram_data['train']['labels_int'])
 		np.save(self.conf['path']+'val_labels_int',self.ram_data['val']['labels_int'])
-		
+		np.save(self.conf['path']+'test_labels_int',self.ram_data['test']['labels_int'])
+
 		print("OK")
 		
 		# Taking balanced indices train val
@@ -1141,43 +1145,26 @@ class DataForNet(object):
 			#np.save(self.conf['path']+"val_ims.npy",self.ram_data['val']['ims'])
 			print("Finished saving val")
 
-		test_mode=False
+		test_mode=True
+
 		if test_mode==True:
 			print("Starting test")	
 
-			self.bsave['id']=0
-			self.bsave['in_buffer']=np.zeros((self.bsave['size'],
-				self.conf['t_len'],self.conf['patch']['size'],
-				self.conf['patch']['size'],self.conf['band_n']))
 			test_get=True
-			self.bsave['batch_id']=0
 			if test_get==True:
 				# Get input patches test
 				for row,col,count in zip(indices['test_row_flat'],
 					indices['test_col_flat'],range(0,self.ram_data["test"]["n"])):
 
-					# Reset buffer indices and store
-
-					if count % self.bsave['size'] ==0 and count!=0:
-						print(count)
-						self.bsave['batch_id']+=1
-						np.save(path_train+"patch"+
-							str(self.bsave['batch_id'])+
-							"_"+str(count)+
-							".npy",self.bsave['in_buffer'])
-						self.bsave['id']=0
-					
-					self.bsave['in_buffer'][self.bsave['id']]=img[:,
+					if count%500000==0:
+						print("Test extract",count)
+					patch_test=img[:,
 						row-window_half:row+window_half+1,
 						col-window_half:col+window_half+1,:]
-					if count==0: deb.prints(self.bsave['in_buffer'][self.bsave['id']].shape)
+					if count==0: deb.prints(patch_test.shape)
 					
-					self.bsave['id']+=1		
-				print("finished test loop")
+					np.save(path_test+'patch'+str(count)+'.npy',patch_test)	
 				# Save last buffer
-				if self.bsave['id']>0:
-					np.save(path_test+"patch"+str(self.bsave['id'])+
-							".npy",self.bsave['in_buffer'])
 				print("Test finished")
 		return None,None
 

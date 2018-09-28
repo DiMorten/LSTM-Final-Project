@@ -309,7 +309,7 @@ class DataForNet(object):
 		
 
 			#========================== BEGIN PATCH EXTRACTION ============================#
-			view_as_windows_flag=False
+			view_as_windows_flag=True
 			"""
 			
 			view_as_windows_flag="3"
@@ -643,12 +643,23 @@ class DataForNet(object):
 			self.unused_classes_elimination_configure(label[self.conf['t_len']-1])
 			self.train_labels=[]
 			self.test_labels=[]
+
+
+		# ====================== SELECT VALID IDS =============#
+		mask_flat = mask.flatten()
+
+
 		#======================== START IMG LOOP ==================================#
 		for i in range(len(gridx)):
 			for j in range(len(gridy)):
 				counter=counter+1
 				if counter % 10000000 == 0:
 					deb.prints(counter,fname)
+				if mask[i,j]==0:
+					continue
+
+				
+
 				xx = gridx[i]
 				yy = gridy[j]
 				#patch_clouds=Bclouds[yy: yy + window, xx: xx + window]

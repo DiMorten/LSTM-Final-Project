@@ -316,9 +316,9 @@ class NeuralNet(object):
 						
 						#break
 					
-			if int(epoch)==int(self.epoch):
-				save_path = self.saver.save(self.sess, "./model_final.ckpt")
-				print("Model saved in path: %s" % save_path)
+			#if int(epoch)==int(self.epoch):
+				#save_path = self.saver.save(self.sess, "./model_final.ckpt")
+				#print("Model saved in path: %s" % save_path)
 
 			# ================= VALIDATION ASSESS
 			#y_pred_val=np.around(self.sess.run(self.prediction,{self.data: self.ram_data['val']['ims'], self.keep_prob: 1.0, self.training: False}),decimals=2)
@@ -349,8 +349,8 @@ class NeuralNet(object):
 
 			#metrics_val=self.metrics_get(y_pred_val,self.ram_data['val']['labels'])
 			# =__________________________________ Test stats get and model save  _______________________________ = #
-			save_path = self.saver.save(self.sess, "./model.ckpt")
-			print("Model saved in path: %s" % save_path)
+			#save_path = self.saver.save(self.sess, "./model.ckpt")
+			#print("Model saved in path: %s" % save_path)
 			
 			test_mode=False
 			if test_mode==True:
