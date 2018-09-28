@@ -1145,27 +1145,23 @@ class DataForNet(object):
 			#np.save(self.conf['path']+"val_ims.npy",self.ram_data['val']['ims'])
 			print("Finished saving val")
 
-		test_mode=True
-
-		if test_mode==True:
+		test_get=False
+		if test_get==True:
 			print("Starting test")	
+			# Get input patches test
+			for row,col,count in zip(indices['test_row_flat'],
+				indices['test_col_flat'],range(0,self.ram_data["test"]["n"])):
 
-			test_get=True
-			if test_get==True:
-				# Get input patches test
-				for row,col,count in zip(indices['test_row_flat'],
-					indices['test_col_flat'],range(0,self.ram_data["test"]["n"])):
-
-					if count%500000==0:
-						print("Test extract",count)
-					patch_test=img[:,
-						row-window_half:row+window_half+1,
-						col-window_half:col+window_half+1,:]
-					if count==0: deb.prints(patch_test.shape)
-					
-					np.save(path_test+'patch'+str(count)+'.npy',patch_test)	
-				# Save last buffer
-				print("Test finished")
+				if count%500000==0:
+					print("Test extract",count)
+				patch_test=img[:,
+					row-window_half:row+window_half+1,
+					col-window_half:col+window_half+1,:]
+				if count==0: deb.prints(patch_test.shape)
+				
+				np.save(path_test+'patch'+str(count)+'.npy',patch_test)	
+			# Save last buffer
+			print("Test finished")
 		return None,None
 
 

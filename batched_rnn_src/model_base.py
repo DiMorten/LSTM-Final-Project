@@ -292,6 +292,11 @@ class NeuralNet(object):
 
 		counter=1
 		self.ram_data['val']['labels']=self.int_to_onehot(self.ram_data['val']['labels_int'].astype(np.uint8),self.n_classes)
+		
+		test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test/'
+		test_filelist=os.listdir(test_folder)
+		test_filelist.sort()
+		deb.prints(len(test_filelist))
 		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
 		for epoch in range(args.epoch):
 			#data["train"]["ims"]=self.data_shuffle(data["train"]["ims"])
@@ -313,12 +318,6 @@ class NeuralNet(object):
 				if self.debug>=1 and (idx % 500 == 0):
 					self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1.0, self.training: True})
 					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
-						
-						#break
-					
-			#if int(epoch)==int(self.epoch):
-				#save_path = self.saver.save(self.sess, "./model_final.ckpt")
-				#print("Model saved in path: %s" % save_path)
 
 			# ================= VALIDATION ASSESS
 			#y_pred_val=np.around(self.sess.run(self.prediction,{self.data: self.ram_data['val']['ims'], self.keep_prob: 1.0, self.training: False}),decimals=2)
@@ -327,8 +326,10 @@ class NeuralNet(object):
 			print("VAL Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
 			print("VAL Per class accuracy:{}".format(stats["per_class_accuracy"]))
 			if early_stop["signal"]==False:
-				early_stop=self.early_stop_check(early_stop,stats["average_accuracy"])
-			
+				early_stop=self.early_stop_check(early_stop,stats["overall_accuracy"])
+			if early_stop['best']['updated']:
+				early_stop['best']['predicted']=self.predict_from_files(
+					test_folder,test_filelist)
 			# Check early stop and store results if they are the best
 			if epoch % 5 == 0:
 				print("Writing to file...")
@@ -354,19 +355,16 @@ class NeuralNet(object):
 			
 			test_mode=False
 			if test_mode==True:
-				stats,predicted = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
-				if early_stop["signal"]==True:
-					np.save("predicted.npy",predicted)
-					np.save("labels.npy",data["test"]["labels_int"])
-				#if early_stop["signal"]:
-					#deb.prints(early_stop["best"]["metric1"])
-					#deb.prints(early_stop["best"]["metric2"])
-					#deb.prints(early_stop["best"]["metric3"])
-					
-					#break
 				
-				print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
-				print("Per class accuracy:{}".format(stats["per_class_accuracy"]))
+				if early_stop["signal"]==True:
+					stats,predicted=self.predict_from_files(test_folder,test_filelist)
+					#stats,predicted = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
+					np.save(test_folder+"predicted.npy",early_stop['best']['predicted'])
+					np.save(test_folder+"labels.npy",self.ram_data["test"]["labels_int"])
+
+				
+				#print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
+				#print("Per class accuracy:{}".format(stats["per_class_accuracy"]))
 			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
 
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
@@ -393,6 +391,66 @@ class NeuralNet(object):
 
 
 		return early_stop
+	def predict_from_files(self,folder,file_list,batch_size=100000):
+		#labels=np.load(folder+"labels.npy") # Load test label. Pending: store test labels
+		
+		batch={}
+		stats={}
+		batch['size']=batch_size
+		batch['n']=int(len(file_list)/batch['size'])
+		predicted=np.zeros((len(file_list),self.n_classes))
+		print("Getting test. ")
+			
+		for batch_idx in range(0,batch['n']):
+			time1 =time.time()
+
+			batch['ims']=np.zeros((batch['size'],self.conf['t_len'],
+				self.conf['patch']['size'],self.conf['patch']['size'],
+				self.conf['band_n']))
+			for patch_idx in range(batch['size']):
+				#global_idx=
+				#print(global_idx)
+				
+				batch['ims'][patch_idx]=np.load(folder+file_list[batch_idx+patch_idx])
+			time2=time.time()-time1
+			print("Predicting batch ",batch_idx)
+			batch["prediction"] = self.batch_prediction_from_sess_get(batch["ims"])
+			predicted[batch_idx*batch_size:(batch_idx+1)*batch_size,:]=batch["prediction"]
+		np.save(folder+"prediction.npy",predicted)
+		
+		if stats_get:
+			predicted=predicted.argmax(axis=1)
+			labels=self.ram_data["test"]["labels_int"].copy().argmax(axis=1)
+
+			deb.prints(predicted.shape)
+			deb.prints(labels.shape)
+
+			# Get metrics here
+
+			stats['f1_score']=f1_score(labels_,predicted,average='macro')
+			stats['f1_score_weighted']=f1_score(labels_,predicted,average='weighted')
+			stats['overall_acc']=accuracy_score(labels_,predicted)
+			stats['confusion_matrix']=confusion_matrix(labels_,predicted)
+			stats['per_class_acc']=(stats['confusion_matrix'].astype('float') / stats['confusion_matrix'].sum(axis=1)[:, np.newaxis]).diagonal()
+			deb.prints(stats['confusion_matrix'])
+			deb.prints(str(stats['f1_score']))
+			deb.prints(str(stats['f1_score_weighted']))
+			deb.prints(str(stats['overall_acc']))
+			deb.prints(str(stats['per_class_acc'][0]))
+			deb.prints(str(stats['per_class_acc'][7]))
+		return predicted
+	def predict_from_files(self,folder,file_list,batch_size=100000):
+		files=sorted(glob.glob(inpath+'*.npy'), key=lambda x: x[11])
+		print(files)
+		predicted=np.zeros((3222054,self.n_classes))
+		for file in files:
+			buffr=np.load(file,mmap_mode='r')
+			batch={}
+			batch['n']=int(buffr.shape[0]/batch_size)
+			batch['']
+			for idx in range(batch['n']):
+
+
 	def metrics_write_to_txt(self,stats,epoch=0,path=None):
 
 		with open(path, "a") as text_file:
@@ -456,13 +514,15 @@ class NeuralNet(object):
 
 	def early_stop_check(self,early_stop,metric1):
 		early_stop["signal"]=False
-		if metric1>early_stop["best"]["metric1"]:
+		if metric1>float(early_stop["best"]["metric1"])*1.05 and early_stop['signal']==False:
 			early_stop["best"]["metric1"]=metric1
 			#early_stop["best"]["metric2"]=metric2
 			#early_stop["best"]["metric3"]=metric3
 			early_stop["count"]=0
+			early_stop['best']['updated']=True
 		else:
 			early_stop["count"]+=1
+			deb.prints(early_stop["count"])
 			if early_stop["count"]>=early_stop["patience"]:
 				early_stop["signal"]=True
 			else:
