@@ -292,8 +292,11 @@ class NeuralNet(object):
 
 		counter=1
 		self.ram_data['val']['labels']=self.int_to_onehot(self.ram_data['val']['labels_int'].astype(np.uint8),self.n_classes)
+		self.ram_data['test']['labels']=self.int_to_onehot(self.ram_data['test']['labels_int'].astype(np.uint8),self.n_classes)
+		deb.prints(self.ram_data['test']['labels'].shape)
+		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test/'
+		test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched/'
 		
-		test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test/'
 		test_filelist=os.listdir(test_folder)
 		test_filelist.sort()
 		deb.prints(len(test_filelist))
@@ -330,6 +333,8 @@ class NeuralNet(object):
 			if early_stop['best']['updated']:
 				early_stop['best']['predicted']=self.predict_from_files(
 					test_folder,test_filelist)
+				np.save('predictions_early.npy',early_stop['best']['predicted'])
+				np.save('labels_early.npy',self.ram_data['test']['labels'])
 			# Check early stop and store results if they are the best
 			if epoch % 5 == 0:
 				print("Writing to file...")
@@ -353,15 +358,16 @@ class NeuralNet(object):
 			#save_path = self.saver.save(self.sess, "./model.ckpt")
 			#print("Model saved in path: %s" % save_path)
 			
-			test_mode=False
+			test_mode=True
 			if test_mode==True:
 				
 				if early_stop["signal"]==True:
-					stats,predicted=self.predict_from_files(test_folder,test_filelist)
+					print("EARLY STOP")
+					#stats,predicted=self.predict_from_files(test_folder,test_filelist)
 					#stats,predicted = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
-					np.save(test_folder+"predicted.npy",early_stop['best']['predicted'])
-					np.save(test_folder+"labels.npy",self.ram_data["test"]["labels_int"])
-
+					np.save(test_folder+"../predicted.npy",early_stop['best']['predicted'])
+					np.save(test_folder+"../labels.npy",self.ram_data["test"]["labels_int"])
+					break
 				
 				#print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
 				#print("Per class accuracy:{}".format(stats["per_class_accuracy"]))
@@ -439,18 +445,35 @@ class NeuralNet(object):
 			deb.prints(str(stats['per_class_acc'][0]))
 			deb.prints(str(stats['per_class_acc'][7]))
 		return predicted
+	
 	def predict_from_files(self,folder,file_list,batch_size=100000):
-		files=sorted(glob.glob(inpath+'*.npy'), key=lambda x: x[11])
+		files=sorted(os.listdir(folder), key=lambda x: x[5])
 		print(files)
-		predicted=np.zeros((3222054,self.n_classes))
+
+		batch_sizes=[int(x[7:-4]) for x in files]
+		total_size=np.sum(np.asarray(batch_sizes))
+		print(batch_sizes,total_size)
+
+		predicted=np.zeros((total_size,self.n_classes))
+		global_count=0
 		for file in files:
-			buffr=np.load(file,mmap_mode='r')
+			buffr=np.load(folder+file,mmap_mode='r')
+			print("Loaded ",file)
+			deb.prints(buffr.shape)
 			batch={}
 			batch['n']=int(buffr.shape[0]/batch_size)
-			batch['']
+			batch['remainder']=buffr.shape[0]-batch['n']*batch_size
+			batch_count=0
 			for idx in range(batch['n']):
-
-
+				predicted[global_count+idx*batch_size:global_count+(idx+1)*batch_size]= \
+					self.batch_prediction_from_sess_get(buffr[idx*batch_size:(idx+1)*batch_size])
+				batch_count+=batch_size
+			print("Predicted ",file)
+			if batch['remainder']>0:
+				predicted[global_count+batch_count:]= \
+					self.batch_prediction_from_sess_get(buffr[batch_count:])
+			global_count+=buffr.shape[0]
+		return predicted
 	def metrics_write_to_txt(self,stats,epoch=0,path=None):
 
 		with open(path, "a") as text_file:
@@ -514,7 +537,8 @@ class NeuralNet(object):
 
 	def early_stop_check(self,early_stop,metric1):
 		early_stop["signal"]=False
-		if metric1>float(early_stop["best"]["metric1"])*1.05 and early_stop['signal']==False:
+		#if metric1>float(early_stop["best"]["metric1"])*1.05 and early_stop['signal']==False:
+		if metric1>float(early_stop["best"]["metric1"])*1.002 and early_stop['signal']==False:
 			early_stop["best"]["metric1"]=metric1
 			#early_stop["best"]["metric2"]=metric2
 			#early_stop["best"]["metric3"]=metric3

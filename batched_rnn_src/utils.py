@@ -442,7 +442,7 @@ class DataForNet(object):
 			self.ram_store=True # This should be removed for normal 
 			path_save=self.conf['path']+'buffer/'
 			path_train=path_save+'train/'
-			path_test=path_save+'test/'
+			path_test=path_save+'test_batched/'
 			pathlib.Path(path_train).mkdir(parents=True, exist_ok=True)
 			pathlib.Path(path_test).mkdir(parents=True, exist_ok=True)			
 			
@@ -1145,22 +1145,71 @@ class DataForNet(object):
 			#np.save(self.conf['path']+"val_ims.npy",self.ram_data['val']['ims'])
 			print("Finished saving val")
 
-		test_get=False
-		if test_get==True:
+		# test_get=False
+		# if test_get==True:
+		# 	print("Starting test")	
+		# 	# Get input patches test
+		# 	for row,col,count in zip(indices['test_row_flat'],
+		# 		indices['test_col_flat'],range(0,self.ram_data["test"]["n"])):
+
+		# 		if count%500000==0:
+		# 			print("Test extract",count)
+		# 		patch_test=img[:,
+		# 			row-window_half:row+window_half+1,
+		# 			col-window_half:col+window_half+1,:]
+		# 		if count==0: deb.prints(patch_test.shape)
+				
+		# 		np.save(path_test+'patch'+str(count)+'.npy',patch_test)	
+		# 	# Save last buffer
+		# 	print("Test finished")
+		# return None,None
+
+
+		test_mode=False
+		if test_mode==True:
 			print("Starting test")	
+			self.bsave={}
+			self.bsave['size']=1000000
+			self.bsave['id']=0 # Goes from 0 to needs
+			self.bsave['in_buffer']=np.zeros((self.bsave['size'],
+				self.conf['t_len'],self.conf['patch']['size'],
+				self.conf['patch']['size'],self.conf['band_n']))
+			
+			self.bsave['batch_id']=0
+			
 			# Get input patches test
 			for row,col,count in zip(indices['test_row_flat'],
 				indices['test_col_flat'],range(0,self.ram_data["test"]["n"])):
 
-				if count%500000==0:
-					print("Test extract",count)
-				patch_test=img[:,
+				# Reset buffer indices and store
+
+				if count % self.bsave['size'] ==0 and count!=0:
+					print(count)
+					np.save(path_test+"patch"+
+						str(self.bsave['batch_id'])+
+						"_"+str(self.bsave['in_buffer'].shape[0])+
+						".npy",self.bsave['in_buffer'])
+					self.bsave['in_buffer']=np.zeros((self.bsave['size'],
+						self.conf['t_len'],self.conf['patch']['size'],
+						self.conf['patch']['size'],self.conf['band_n']))
+					self.bsave['batch_id']+=1
+					self.bsave['id']=0
+				
+				self.bsave['in_buffer'][self.bsave['id']]=img[:,
 					row-window_half:row+window_half+1,
 					col-window_half:col+window_half+1,:]
-				if count==0: deb.prints(patch_test.shape)
+				if count==0: deb.prints(self.bsave['in_buffer'][self.bsave['id']].shape)
 				
-				np.save(path_test+'patch'+str(count)+'.npy',patch_test)	
+				self.bsave['id']+=1		
+			print("finished test loop")
 			# Save last buffer
+			if self.bsave['id']>0:
+				self.bsave['batch_id']+=1
+				self.bsave['in_buffer']=self.bsave['in_buffer'][0:self.bsave['id']]
+				deb.prints(self.bsave['in_buffer'].shape)
+				np.save(path_test+"patch"+
+						str(self.bsave['batch_id'])+"_"+str(self.bsave['in_buffer'].shape[0])+
+						".npy",self.bsave['in_buffer'])
 			print("Test finished")
 		return None,None
 
