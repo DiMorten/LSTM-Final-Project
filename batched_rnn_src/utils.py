@@ -412,7 +412,7 @@ class DataForNet(object):
 			deb.prints(np.max(patch["full_ims"]))
 		
 			self.full_ims_train,self.full_ims_test=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
-
+			patch["full_ims"]=None
 			self.full_label_train,self.full_label_test=self.label_seq_mask(patch["full_label_ims"][self.conf['t_len']-1],patch["train_mask"]) 
 		 
 			#self.label_id=self.conf["seq"]["id_first"]+self.conf['t_len']-2 # Less 1 for python idx, less 1 for id_first starts at 1 
@@ -442,7 +442,15 @@ class DataForNet(object):
 			self.ram_store=True # This should be removed for normal 
 			path_save=self.conf['path']+'buffer/'
 			path_train=path_save+'train/'
-			path_test=path_save+'test_batched/'
+			path_test=path_save+'test_batched_7/'
+			path_test=path_save+'test_batched_5/'
+			path_test=path_save+'test_batched_15/'
+			
+			
+			#path_test=path_save+'test_batched/'
+			#path_test=path_save+'test_batched_11/'
+			
+			
 			pathlib.Path(path_train).mkdir(parents=True, exist_ok=True)
 			pathlib.Path(path_test).mkdir(parents=True, exist_ok=True)			
 			
@@ -473,6 +481,7 @@ class DataForNet(object):
 					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=path_train, \
 					path_test=path_test,patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
 
+			patch["full_ims"]=None
 			deb.prints(self.ram_data['test']['ims'].shape)
 			deb.prints(self.ram_data['test']['labels_int'].shape)
 			deb.prints(self.ram_data['test']['ims'].dtype)
@@ -952,7 +961,7 @@ class DataForNet(object):
 		deb.prints(overlap,fname)
 		print("STARTED PATCH EXTRACTION")
 
-		t_steps, h, w, channels = img.shape
+		t_steps, h, w, channels = self.full_ims_train.shape
 
 		indices={}
 		indices['val']=np.indices((h,w))
@@ -1097,73 +1106,6 @@ class DataForNet(object):
 		window_half=int(window/2)
 		# Get input patches train
 
-		train_get=True
-		if train_get==True:
-			# Get train patches
-			count=0
-			for row,col,count in zip(self.ram_data['train']['row_flat'],
-				self.ram_data['train']['col_flat'],
-				range(0,self.ram_data['train']['n'])):
-
-				# Reset buffer indices and store
-
-
-				if count % 100000==0:
-					print("Count",count)
-				# Add a patch
-				self.ram_data['train']['ims'][count]=img[:,
-					row-window_half:row+window_half+1,
-					col-window_half:col+window_half+1,:]
-				if count==0: deb.prints(self.ram_data['train']['ims'][count].shape)
-			
-				count+=1		
-			print("Finished train loop")
-			#np.save(self.conf['path']+"train_ims.npy",self.ram_data['train']['ims'])
-			print("Finished saving train loop")
-			#self.ram_data['train']['ims']=None
-		val_get=True
-		if val_get==True:
-			# Get val patches
-			count=0
-			for row,col,count in zip(self.ram_data['val']['row_flat'],
-				self.ram_data['val']['col_flat'],
-				range(0,self.ram_data['val']['n'])):
-
-				# Reset buffer indices and store
-
-
-				if count % 100000==0:
-					print("Count",count)
-				# Add a patch
-				self.ram_data['val']['ims'][count]=img[:,
-					row-window_half:row+window_half+1,
-					col-window_half:col+window_half+1,:]
-				if count==0: deb.prints(self.ram_data['val']['ims'][count].shape)
-			
-				count+=1		
-			print("Finished val loop")
-			#np.save(self.conf['path']+"val_ims.npy",self.ram_data['val']['ims'])
-			print("Finished saving val")
-
-		# test_get=False
-		# if test_get==True:
-		# 	print("Starting test")	
-		# 	# Get input patches test
-		# 	for row,col,count in zip(indices['test_row_flat'],
-		# 		indices['test_col_flat'],range(0,self.ram_data["test"]["n"])):
-
-		# 		if count%500000==0:
-		# 			print("Test extract",count)
-		# 		patch_test=img[:,
-		# 			row-window_half:row+window_half+1,
-		# 			col-window_half:col+window_half+1,:]
-		# 		if count==0: deb.prints(patch_test.shape)
-				
-		# 		np.save(path_test+'patch'+str(count)+'.npy',patch_test)	
-		# 	# Save last buffer
-		# 	print("Test finished")
-		# return None,None
-
 
 		test_mode=False
 		if test_mode==True:
@@ -1195,7 +1137,7 @@ class DataForNet(object):
 					self.bsave['batch_id']+=1
 					self.bsave['id']=0
 				
-				self.bsave['in_buffer'][self.bsave['id']]=img[:,
+				self.bsave['in_buffer'][self.bsave['id']]=self.full_ims_test[:,
 					row-window_half:row+window_half+1,
 					col-window_half:col+window_half+1,:]
 				if count==0: deb.prints(self.bsave['in_buffer'][self.bsave['id']].shape)
@@ -1211,6 +1153,81 @@ class DataForNet(object):
 						str(self.bsave['batch_id'])+"_"+str(self.bsave['in_buffer'].shape[0])+
 						".npy",self.bsave['in_buffer'])
 			print("Test finished")
+			self.bsave=None
+			self.full_ims_test=None
+
+
+		train_get=True
+		if train_get==True:
+			# Get train patches
+			count=0
+			for row,col,count in zip(self.ram_data['train']['row_flat'],
+				self.ram_data['train']['col_flat'],
+				range(0,self.ram_data['train']['n'])):
+
+				# Reset buffer indices and store
+
+
+				if count % 100000==0:
+					print("Count",count)
+				# Add a patch
+				self.ram_data['train']['ims'][count]=self.full_ims_train[:,
+					row-window_half:row+window_half+1,
+					col-window_half:col+window_half+1,:]
+				if count==0: deb.prints(self.ram_data['train']['ims'][count].shape)
+			
+				count+=1		
+			print("Finished train loop")
+			#np.save(self.conf['path']+"train_ims.npy",self.ram_data['train']['ims'])
+			print("Finished saving train loop")
+			#self.ram_data['train']['ims']=None
+		val_get=True
+		if val_get==True:
+			# Get val patches
+			count=0
+			for row,col,count in zip(self.ram_data['val']['row_flat'],
+				self.ram_data['val']['col_flat'],
+				range(0,self.ram_data['val']['n'])):
+
+				# Reset buffer indices and store
+
+
+				if count % 100000==0:
+					print("Count",count)
+				# Add a patch
+				self.ram_data['val']['ims'][count]=self.full_ims_train[:,
+					row-window_half:row+window_half+1,
+					col-window_half:col+window_half+1,:]
+				if count==0: deb.prints(self.ram_data['val']['ims'][count].shape)
+			
+				count+=1		
+			print("Finished val loop")
+			#np.save(self.conf['path']+"val_ims.npy",self.ram_data['val']['ims'])
+			print("Finished saving val")
+
+		self.full_ims_train=False
+		# test_get=False
+		# if test_get==True:
+		# 	print("Starting test")	
+		# 	# Get input patches test
+		# 	for row,col,count in zip(indices['test_row_flat'],
+		# 		indices['test_col_flat'],range(0,self.ram_data["test"]["n"])):
+
+		# 		if count%500000==0:
+		# 			print("Test extract",count)
+		# 		patch_test=img[:,
+		# 			row-window_half:row+window_half+1,
+		# 			col-window_half:col+window_half+1,:]
+		# 		if count==0: deb.prints(patch_test.shape)
+				
+		# 		np.save(path_test+'patch'+str(count)+'.npy',patch_test)	
+		# 	# Save last buffer
+		# 	print("Test finished")
+		# return None,None
+
+
+		
+		self.full_ims_test=False
 		return None,None
 
 

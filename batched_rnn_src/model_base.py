@@ -295,7 +295,13 @@ class NeuralNet(object):
 		self.ram_data['test']['labels']=self.int_to_onehot(self.ram_data['test']['labels_int'].astype(np.uint8),self.n_classes)
 		deb.prints(self.ram_data['test']['labels'].shape)
 		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test/'
-		test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched/'
+		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_5/'
+		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_7/'
+		test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_15/'
+		
+		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched/'
+		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_11/'
+		
 		
 		test_filelist=os.listdir(test_folder)
 		test_filelist.sort()
@@ -304,7 +310,11 @@ class NeuralNet(object):
 		for epoch in range(args.epoch):
 			#data["train"]["ims"]=self.data_shuffle(data["train"]["ims"])
 			#data["train"]["labels"]=self.data_shuffle(data["train"]["labels"])
-			
+			##idxs=np.random.permutation(data['train']['ims'].shape[0])
+			##data.patches['train']['in']=data['train']['ims'][idxs]
+			##data.patches['train']['labels']=data['train']['labels'][idxs]
+			##data.patches['train']['labels_int']=data['train']['labels_int'][idxs]
+
 			for idx in range(0, batch["idxs"]):
 				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx,memory_mode=self.conf["memory_mode"])
 				if self.debug>=3:
@@ -330,11 +340,31 @@ class NeuralNet(object):
 			print("VAL Per class accuracy:{}".format(stats["per_class_accuracy"]))
 			if early_stop["signal"]==False:
 				early_stop=self.early_stop_check(early_stop,stats["overall_accuracy"])
-			if early_stop['best']['updated']:
-				early_stop['best']['predicted']=self.predict_from_files(
-					test_folder,test_filelist)
-				np.save('predictions_early.npy',early_stop['best']['predicted'])
-				np.save('labels_early.npy',self.ram_data['test']['labels'])
+			if early_stop['best']['updated']==True:
+
+				
+				predict_mode=False
+				if predict_mode==True:
+					early_stop['best']['predicted']=self.predict_from_files(
+						test_folder,test_filelist)
+					predictions=early_stop['best']['predicted'].argmax(axis=1)
+					label_test=self.ram_data['test']['labels'].argmax(axis=1)
+					metrics={}
+					metrics['f1_score']=f1_score(label_test,predictions,average='macro')
+					metrics['f1_score_weighted']=f1_score(label_test,predictions,average='weighted')
+	        
+					metrics['overall_acc']=accuracy_score(label_test,predictions)
+
+					confusion_matrix_=confusion_matrix(label_test,predictions)
+					metrics['per_class_acc']=(confusion_matrix_.astype('float') / confusion_matrix_.sum(axis=1)[:, np.newaxis]).diagonal()
+					        
+					metrics['average_acc']=np.average(metrics['per_class_acc'][~np.isnan(metrics['per_class_acc'])])
+					print("TEST ",metrics)
+					np.save('predictions_early.npy',early_stop['best']['predicted'])
+					np.save('labels_early.npy',self.ram_data['test']['labels'])
+				else:
+					save_path = self.saver.save(self.sess, "/tmp/model_es.ckpt")
+					print("Model saved in path: %s" % save_path)
 			# Check early stop and store results if they are the best
 			if epoch % 5 == 0:
 				print("Writing to file...")
@@ -355,14 +385,36 @@ class NeuralNet(object):
 
 			#metrics_val=self.metrics_get(y_pred_val,self.ram_data['val']['labels'])
 			# =__________________________________ Test stats get and model save  _______________________________ = #
-			#save_path = self.saver.save(self.sess, "./model.ckpt")
-			#print("Model saved in path: %s" % save_path)
+			#
 			
 			test_mode=True
 			if test_mode==True:
 				
 				if early_stop["signal"]==True:
 					print("EARLY STOP")
+					
+					if predict_mode==False:
+						self.saver.restore(self.sess, "/tmp/model_es.ckpt")
+					
+						print("predicting from model")
+						early_stop['best']['predicted']=self.predict_from_files(
+							test_folder,test_filelist)
+						predictions=early_stop['best']['predicted'].argmax(axis=1)
+						label_test=self.ram_data['test']['labels'].argmax(axis=1)
+						metrics={}
+						metrics['f1_score']=f1_score(label_test,predictions,average='macro')
+						metrics['f1_score_weighted']=f1_score(label_test,predictions,average='weighted')
+		        
+						metrics['overall_acc']=accuracy_score(label_test,predictions)
+
+						confusion_matrix_=confusion_matrix(label_test,predictions)
+						metrics['per_class_acc']=(confusion_matrix_.astype('float') / confusion_matrix_.sum(axis=1)[:, np.newaxis]).diagonal()
+						        
+						metrics['average_acc']=np.average(metrics['per_class_acc'][~np.isnan(metrics['per_class_acc'])])
+						print("TEST ",metrics)
+					np.save('predictions_early.npy',early_stop['best']['predicted'])
+					np.save('labels_early.npy',self.ram_data['test']['labels'])
+
 					#stats,predicted=self.predict_from_files(test_folder,test_filelist)
 					#stats,predicted = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
 					np.save(test_folder+"../predicted.npy",early_stop['best']['predicted'])
@@ -537,14 +589,17 @@ class NeuralNet(object):
 
 	def early_stop_check(self,early_stop,metric1):
 		early_stop["signal"]=False
-		#if metric1>float(early_stop["best"]["metric1"])*1.05 and early_stop['signal']==False:
-		if metric1>float(early_stop["best"]["metric1"])*1.002 and early_stop['signal']==False:
+		#if metric1>float(early_stop["best"]["metric1"])*1.02 and early_stop['signal']==False:
+		
+		if metric1>float(early_stop["best"]["metric1"])*1.005 and early_stop['signal']==False:
 			early_stop["best"]["metric1"]=metric1
 			#early_stop["best"]["metric2"]=metric2
 			#early_stop["best"]["metric3"]=metric3
 			early_stop["count"]=0
 			early_stop['best']['updated']=True
+			print("Best metric updated")
 		else:
+			early_stop['best']['updated']=False
 			early_stop["count"]+=1
 			deb.prints(early_stop["count"])
 			if early_stop["count"]>=early_stop["patience"]:
@@ -1016,9 +1071,8 @@ class NeuralNetOneHot(NeuralNet):
 
 		# Prepare the optimization function
 		optimizer = tf.train.AdamOptimizer()
-		#optimizer = tf.train.AdagradOptimizer(0.001)
+		#optimizer = tf.train.AdagradOptimizer(0.01)
 		minimize = optimizer.minimize(cross_entropy)
-
 		mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
 		
 		error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
