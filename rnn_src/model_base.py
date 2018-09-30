@@ -324,7 +324,7 @@ class NeuralNet(object):
 						#break
 					
 			if int(epoch)==int(self.epoch):
-				save_path = self.saver.save(self.sess, "./model_final.ckpt")
+				save_path = self.saver.save(self.sess, "/tmp/model_final.ckpt")
 				print("Model saved in path: %s" % save_path)
 
 			# ================= VALIDATION ASSESS
@@ -356,7 +356,7 @@ class NeuralNet(object):
 
 			#metrics_val=self.metrics_get(y_pred_val,self.ram_data['val']['labels'])
 			# =__________________________________ Test stats get and model save  _______________________________ = #
-			save_path = self.saver.save(self.sess, "./model.ckpt")
+			save_path = self.saver.save(self.sess, "/tmp/model.ckpt")
 			print("Model saved in path: %s" % save_path)
 			stats,predicted = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
 			if early_stop["signal"]==True:
@@ -427,7 +427,7 @@ class NeuralNet(object):
 			
 			if early_stop["best"]["metric1"]>self.repeat["best_metric1"]:
 				self.repeat["best_metric1"]=early_stop["best"]["metric1"]
-				save_path = self.saver.save(self.sess, "./model_best.ckpt")
+				save_path = self.saver.save(self.sess, "/tmp/model_best.ckpt")
 				print("Best model saved in path: %s" % save_path)
 
 			with open(self.repeat["filename"], 'wb') as handle:

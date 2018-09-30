@@ -205,7 +205,7 @@ class DataForNet(object):
 			deb.prints(im_all_bands.shape)
 			im_all_bands = np.concatenate((im_all_bands, ndvi),axis=2)
 			deb.prints(im_all_bands.shape)
-			np.save(self.conf["in_npy_path2"]+"im"+str(i)+".npy",im_all_bands.astype(np.float64))
+			np.save(self.conf["in_npy_path2"]+"im"+str(i)+".npy",im_all_bands.astype(np.float32))
 
 
 
@@ -229,8 +229,10 @@ class DataForNet(object):
 		
 		# This will be hannover
 		#foldername='/mnt/Data/Jorge/tf_patches/hannover_overlap4_masked_norm/patch_npy/'
-		
+		foldername='/media/lvc/Novo volume/Jorge/tf_patches/hannover_overlap4_masked_norm/patch_npy/'		
+		foldername='/media/lvc/Novo volume/Jorge/tf_patches/hannover_overlap4_masked_norm_new/patch_npy/'		
 
+		
 		# This is seq1 complete 5x5
 		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap4_masked_norm_complete/patch_npy/'
 		
@@ -238,8 +240,8 @@ class DataForNet(object):
 		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap6_7x7_masked_norm/patch_npy/'
 		#foldername=self.conf["path"]+'patch_npy/'
 
-		foldername='/mnt/Data/Jorge/tf_patches/seq2_overlap6_7x7_masked_norm/patch_npy/'
-		self.patches_create=True
+		#foldername='/mnt/Data/Jorge/tf_patches/seq2_overlap6_7x7_masked_norm/patch_npy/'
+		self.patches_create=False
 		#self.ram_store=False
 		if self.patches_create==True:
 			#foldername=self.conf["path"]+'patch_npy/'
@@ -276,7 +278,7 @@ class DataForNet(object):
 
 			#=======================LOAD, NORMALIZE AND MASK FULL IMAGES ================#
 			patch=self.im_load(patch,im_filenames,add_id)
-
+			patch['full_ims']=patch['full_ims'].astype(np.float32)
 
 			deb.prints(im_filenames)
 
@@ -309,7 +311,7 @@ class DataForNet(object):
 		
 
 			#========================== BEGIN PATCH EXTRACTION ============================#
-			view_as_windows_flag=True
+			view_as_windows_flag=False
 			"""
 			
 			view_as_windows_flag="3"
@@ -655,8 +657,8 @@ class DataForNet(object):
 				counter=counter+1
 				if counter % 10000000 == 0:
 					deb.prints(counter,fname)
-				if mask[i,j]==0:
-					continue
+				#if mask[j+self.conf['patch']['center_pixel'],i+self.conf['patch']['center_pixel']]==0:
+				#	continue
 
 				
 
@@ -665,7 +667,7 @@ class DataForNet(object):
 				#patch_clouds=Bclouds[yy: yy + window, xx: xx + window]
 				patch = img[:,yy: yy + window, xx: xx + window,:]
 				label_patch = label[:,yy: yy + window, xx: xx + window]
-				mask_patch = mask[yy: yy + window, xx: xx + window].astype(np.float64)
+				mask_patch = mask[yy: yy + window, xx: xx + window].astype(np.float32)
 				
 				patch_train = self.full_ims_train[:,yy: yy + window, xx: xx + window,:]
 				patch_test = self.full_ims_test[:,yy: yy + window, xx: xx + window,:]

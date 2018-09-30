@@ -115,3 +115,7 @@ Per class accuracy:[0.47561783 0.83124061 0.58100024 0.51856122 0.52058059 0.936
  0.60736397 0.71146245 0.51959384]
 
 
+ 
+ 15x15 convlstm 
+ 
+ python main.py -mm="ram" --debug=1 -pl 15 -po 0 -ts 0 -tnl 90 -bs=50000 --batch_size=1000 --filters=256 -m="convlstm" --phase="train" -sc=True --class_n=9 --log_dir="../data/summaries/" --path="../cv_data/" --im_h=8492 --im_w=7995 --band_n=2 --t_len=7 --id_first=8 -psv=False -tof=False --epoch=200 -nap=2 -tmd="False" -tfld="/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/seq2/test_batched_15/"

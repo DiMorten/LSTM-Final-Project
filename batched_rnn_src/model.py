@@ -46,6 +46,7 @@ class conv_lstm(NeuralNetOneHot):
 		pipe=self.layer_lstm_get(data,filters=16,kernel=self.kernel,name='convlstm')
 		#pipe=self.layer_lstm_multi_get(data,filters=32,kernel=self.kernel,name='multi_convlstm')
 		
+
 		pipe=tf.layers.max_pooling2d(inputs=pipe, pool_size=[2, 2], strides=2)
 
 		if self.debug: deb.prints(pipe.get_shape())
