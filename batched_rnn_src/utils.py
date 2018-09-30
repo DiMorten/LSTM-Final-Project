@@ -409,18 +409,18 @@ class DataForNet(object):
 			#=======================LOAD, NORMALIZE AND MASK FULL IMAGES ================#
 			patch=self.im_load(patch,im_filenames,add_id)
 
-
 			deb.prints(im_filenames)
 
 			patch["full_ims"][patch["full_ims"]>1]=1
 			patch["full_ims"]=self.im_seq_normalize(patch["full_ims"])
 			deb.prints(np.min(patch["full_ims"]))
 			deb.prints(np.max(patch["full_ims"]))
-		
+			deb.prints(patch["full_ims"].dtype)
 			self.full_ims_train,self.full_ims_test=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
 			patch["full_ims"]=None
+			deb.prints(self.full_ims_train.dtype)
 			self.full_label_train,self.full_label_test=self.label_seq_mask(patch["full_label_ims"][self.conf['t_len']-1],patch["train_mask"]) 
-		 
+			deb.prints(self.full_label_train.dtype)
 			#self.label_id=self.conf["seq"]["id_first"]+self.conf['t_len']-2 # Less 1 for python idx, less 1 for id_first starts at 1 
 		 
 			unique,count=np.unique(self.full_label_train,return_counts=True) 
@@ -592,6 +592,9 @@ class DataForNet(object):
 			#for band in range(0,self.conf["band_n"]):
 			#	patch["full_ims_train"][t_step,:,:,band][patch["train_mask"]!=1]=-1
 			# Do the masking here. Do we have the train labels?
+		patch["full_ims"]=patch["full_ims"].astype(np.float32)
+		patch["full_label_ims"]=patch["full_label_ims"].astype(np.uint8)
+		
 		deb.prints(patch["full_ims"].shape,fname)
 		deb.prints(patch["full_label_ims"].shape,fname)
 		return patch
@@ -1119,6 +1122,11 @@ class DataForNet(object):
 		deb.prints(self.ram_self.ram_data["test"]["ims"].shape)
 		"""
 		window_half=int(window/2)
+		if window_half % 2 == 0: # If pair
+			add_id=0
+		else:
+			add_id=1
+
 		# Get input patches train
 
 
@@ -1154,8 +1162,8 @@ class DataForNet(object):
 					self.bsave['id']=0
 				
 				self.bsave['in_buffer'][self.bsave['id']]=self.full_ims_test[:,
-					row-window_half:row+window_half+1,
-					col-window_half:col+window_half+1,:]
+					row-window_half:row+window_half+add_id,
+					col-window_half:col+window_half+add_id,:]
 				if count==0: deb.prints(self.bsave['in_buffer'][self.bsave['id']].shape)
 				
 				self.bsave['id']+=1		
@@ -1188,8 +1196,8 @@ class DataForNet(object):
 					print("Count",count)
 				# Add a patch
 				self.ram_data['train']['ims'][count]=self.full_ims_train[:,
-					row-window_half:row+window_half+1,
-					col-window_half:col+window_half+1,:]
+					row-window_half:row+window_half+add_id,
+					col-window_half:col+window_half+add_id,:]
 				if count==0: deb.prints(self.ram_data['train']['ims'][count].shape)
 			
 				count+=1		
@@ -1212,8 +1220,8 @@ class DataForNet(object):
 					print("Count",count)
 				# Add a patch
 				self.ram_data['val']['ims'][count]=self.full_ims_train[:,
-					row-window_half:row+window_half+1,
-					col-window_half:col+window_half+1,:]
+					row-window_half:row+window_half+add_id,
+					col-window_half:col+window_half+add_id,:]
 				if count==0: deb.prints(self.ram_data['val']['ims'][count].shape)
 			
 				count+=1		
@@ -1298,7 +1306,7 @@ class DataForNet(object):
 
 		deb.prints(im.shape)
 
-		return im
+		return im.astype(np.float32)
 	def im_seq_mask(self,im,mask):
 		im_train=im.copy()
 		im_test=im.copy()
@@ -1333,7 +1341,7 @@ class DataForNet(object):
 		#im_train[t_step,:,:,band][mask!=1]=-1 
 		#im_test[t_step,:,:,band][mask!=2]=-1 
 		deb.prints(im_train.shape) 
-		return im_train,im_test 
+		return im_train.astype(np.uint8),im_test.astype(np.uint8) 
 	def data_normalize_per_band(self,data):
 		whole_data={}
 		whole_data["value"]=np.concatenate((data["train"]["ims"],data["test"]["ims"]),axis=0)
