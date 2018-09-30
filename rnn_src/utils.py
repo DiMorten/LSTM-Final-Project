@@ -229,10 +229,9 @@ class DataForNet(object):
 		
 		# This will be hannover
 		#foldername='/mnt/Data/Jorge/tf_patches/hannover_overlap4_masked_norm/patch_npy/'
-		foldername='/media/lvc/Novo volume/Jorge/tf_patches/hannover_overlap4_masked_norm/patch_npy/'		
-		foldername='/media/lvc/Novo volume/Jorge/tf_patches/hannover_overlap4_masked_norm_new/patch_npy/'		
-
+		#foldername='/media/lvc/Novo volume/Jorge/tf_patches/hannover_overlap4_masked_norm/patch_npy/'		
 		
+		foldername='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/hn_data/media/lvc/Novo volume/Jorge/tf_patches/hannover_overlap4_masked_norm_new/patch_npy/'
 		# This is seq1 complete 5x5
 		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap4_masked_norm_complete/patch_npy/'
 		
@@ -279,6 +278,8 @@ class DataForNet(object):
 			#=======================LOAD, NORMALIZE AND MASK FULL IMAGES ================#
 			patch=self.im_load(patch,im_filenames,add_id)
 			patch['full_ims']=patch['full_ims'].astype(np.float32)
+			patch['full_label_ims']=patch['full_label_ims'].astype(np.uint8)
+			
 
 			deb.prints(im_filenames)
 
@@ -363,8 +364,9 @@ class DataForNet(object):
 			deb.prints(self.ram_data['val']['ims'].shape)
 			
 			self.ram_data_store=True
-			if self.ram_data_store:
-				
+			deb.prints(self.ram_data_store)
+			if self.ram_data_store==True:
+				print("Saving...")
 				pathlib.Path(self.conf["path"]+foldername).mkdir(parents=True, exist_ok=True) 
 
 				#np.save(self.conf["path"]+foldername+"ram_data.npy",self.ram_data)
@@ -657,8 +659,8 @@ class DataForNet(object):
 				counter=counter+1
 				if counter % 10000000 == 0:
 					deb.prints(counter,fname)
-				#if mask[j+self.conf['patch']['center_pixel'],i+self.conf['patch']['center_pixel']]==0:
-				#	continue
+				if mask[j+self.conf['patch']['center_pixel'],i+self.conf['patch']['center_pixel']]==0:
+					continue
 
 				
 
