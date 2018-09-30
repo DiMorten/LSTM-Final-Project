@@ -445,6 +445,8 @@ class DataForNet(object):
 			path_test=path_save+'test_batched_7/'
 			path_test=path_save+'test_batched_5/'
 			path_test=path_save+'test_batched_15/'
+			#path_test=path_save+'test_batched_19/'
+			
 			
 			
 			#path_test=path_save+'test_batched/'
@@ -1111,7 +1113,7 @@ class DataForNet(object):
 		if test_mode==True:
 			print("Starting test")	
 			self.bsave={}
-			self.bsave['size']=1000000
+			self.bsave['size']=200000
 			self.bsave['id']=0 # Goes from 0 to needs
 			self.bsave['in_buffer']=np.zeros((self.bsave['size'],
 				self.conf['t_len'],self.conf['patch']['size'],

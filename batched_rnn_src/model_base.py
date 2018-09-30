@@ -298,6 +298,7 @@ class NeuralNet(object):
 		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_5/'
 		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_7/'
 		test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_15/'
+		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_19/'
 		
 		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched/'
 		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_11/'
@@ -306,6 +307,20 @@ class NeuralNet(object):
 		test_filelist=os.listdir(test_folder)
 		test_filelist.sort()
 		deb.prints(len(test_filelist))
+
+		predict_only=False
+		if predict_only:
+
+			self.saver.restore(self.sess, "/home/lvc/Jorg/results_fcn/lstm_19x19/model_es.ckpt")
+					
+			print("predicting from model")
+			early_stop['best']['predicted']=self.predict_from_files(
+				test_folder,test_filelist)
+			np.save('predictions_only.npy',early_stop['best']['predicted'])
+			np.save('labels_only.npy',self.ram_data['test']['labels'])
+			print("PREDICTION DONE")
+			sys.exit()
+
 		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
 		for epoch in range(args.epoch):
 			#data["train"]["ims"]=self.data_shuffle(data["train"]["ims"])
@@ -501,10 +516,19 @@ class NeuralNet(object):
 	def predict_from_files(self,folder,file_list,batch_size=100000):
 		files=sorted(os.listdir(folder), key=lambda x: x[5])
 		print(files)
-
-		batch_sizes=[int(x[7:-4]) for x in files]
+		
+		len_files=len(files)
+		batch_sizes=[int(x.split('.')[0].split('_')[1]) for x in files] #Extract patch count
 		total_size=np.sum(np.asarray(batch_sizes))
+		id_orders=[int(x.split('_')[0].split('patch')[1]) for x in files] #Extract order (file ID)
+		
+		files.sort(key=dict(zip(files, id_orders)).get)
+
 		print(batch_sizes,total_size)
+		print(id_orders)
+		#files=[files[x] for x in id_orders]
+
+		print(files)
 
 		predicted=np.zeros((total_size,self.n_classes))
 		global_count=0
@@ -522,6 +546,7 @@ class NeuralNet(object):
 				batch_count+=batch_size
 			print("Predicted ",file)
 			if batch['remainder']>0:
+				print(global_count+batch_count)
 				predicted[global_count+batch_count:]= \
 					self.batch_prediction_from_sess_get(buffr[batch_count:])
 			global_count+=buffr.shape[0]
