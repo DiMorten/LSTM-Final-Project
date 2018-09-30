@@ -169,8 +169,13 @@ class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=7,t_len=6,path="../data/",class_n=9,pc_mode="local", \
 		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None, \
 		n_apriori=16000, squeeze_classes=False, data_dir='data',im_h=948,im_w=1068,id_first=1, \
-		train_test_mask_name="TrainTestMask.tif",test_overlap_full=True,ram_store=True,patches_save=False):
+		train_test_mask_name="TrainTestMask.tif",test_overlap_full=True,ram_store=True, \
+		patches_save=False, test_folder=None, test_mode=False):
 		deb.prints(patches_save)
+		if test_mode=="True" or test_mode==True:
+			self.test_mode=True
+		else:
+			self.test_mode=False
 		self.patches_save=patches_save
 		self.ram_store=ram_store
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n, 'label':{}, 'seq':{}}
@@ -293,6 +298,7 @@ class DataForNet(object):
 		deb.prints(self.conf["test"]["n_apriori"])
 		deb.prints(self.conf["class_n"])
 		self.ram_data={"train":{},"test":{}}
+		self.ram_data['test_folder']=test_folder
 		if self.ram_store:
 			print("HEEEERE")
 			self.ram_data["train"]["ims"]=np.zeros((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.patch_shape)
@@ -437,14 +443,21 @@ class DataForNet(object):
 			#========================== BEGIN PATCH EXTRACTION ============================#
 			#view_as_windows_flag=False
 			
-			
 			view_as_windows_flag="3"
 			self.ram_store=True # This should be removed for normal 
+			set_path_test=False
 			path_save=self.conf['path']+'buffer/'
 			path_train=path_save+'train/'
-			path_test=path_save+'test_batched_7/'
-			path_test=path_save+'test_batched_5/'
-			path_test=path_save+'test_batched_15/'
+			path_test=self.ram_data['test_folder']
+			if set_path_test==True:
+
+				
+				
+				path_test=path_save+'test_batched_7/'
+				path_test=path_save+'test_batched_5/'
+				path_test=path_save+'test_batched_15/'
+
+				self.ram_data['test_folder']=path_test
 			#path_test=path_save+'test_batched_19/'
 			
 			
@@ -1109,11 +1122,12 @@ class DataForNet(object):
 		# Get input patches train
 
 
-		test_mode=False
+		#test_mode=False
+		test_mode=self.test_mode
 		if test_mode==True:
 			print("Starting test")	
 			self.bsave={}
-			self.bsave['size']=200000
+			self.bsave['size']=1000000
 			self.bsave['id']=0 # Goes from 0 to needs
 			self.bsave['in_buffer']=np.zeros((self.bsave['size'],
 				self.conf['t_len'],self.conf['patch']['size'],

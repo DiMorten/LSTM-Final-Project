@@ -302,7 +302,7 @@ class NeuralNet(object):
 		
 		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched/'
 		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_11/'
-		
+		test_folder=self.ram_data['test_folder']
 		
 		test_filelist=os.listdir(test_folder)
 		test_filelist.sort()

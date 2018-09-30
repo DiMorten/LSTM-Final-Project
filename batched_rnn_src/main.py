@@ -65,6 +65,8 @@ parser.add_argument('-ir','--im_reconstruct', dest='im_reconstruct',default=Fals
 parser.add_argument('-rst','--ram_store', dest='ram_store',default=True, help="Ram store")
 parser.add_argument('-psv','--patches_save', dest='patches_save',default=True, help="Patches npy store")
 
+parser.add_argument('-tfld','--test_folder', dest='test_folder',default=None, help="Patches npy store")
+parser.add_argument('-tmd','--test_mode', dest='test_mode',default=False, help="Patches npy store")
 args = parser.parse_args()
 
 args.n_classes=args.class_n
@@ -80,6 +82,7 @@ else:
     label_type='one_hot'
 deb.prints(label_type)
 deb.prints(args.patches_save)
+deb.prints(args.test_folder)
 
 def main(_):
 
@@ -95,7 +98,8 @@ def main(_):
                                 balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
                                 n_apriori=args.n_apriori,patch_length=args.patch_len,squeeze_classes=args.squeeze_classes,im_h=args.im_h,im_w=args.im_w, \
                                 id_first=args.id_first, train_test_mask_name=args.train_test_mask_name, \
-                                test_overlap_full=args.test_overlap_full,ram_store=args.ram_store,patches_save=args.patches_save)
+                                test_overlap_full=args.test_overlap_full,ram_store=args.ram_store,patches_save=args.patches_save, \
+                                test_folder=args.test_folder,test_mode=args.test_mode)
     elif label_type=='semantic':
         data=utils.DataSemantic(debug=args.debug, patch_overlap=args.patch_overlap, im_size=args.im_size, \
                                 band_n=args.band_n, t_len=args.t_len, path=args.path, class_n=args.class_n, pc_mode=args.pc_mode, \
@@ -103,7 +107,8 @@ def main(_):
                                 balance_samples_per_class=args.balance_samples_per_class, test_get_stride=args.test_get_stride, \
                                 n_apriori=args.n_apriori,patch_length=args.patch_len,squeeze_classes=args.squeeze_classes,im_h=args.im_h,im_w=args.im_w, \
                                 id_first=args.id_first, train_test_mask_name=args.train_test_mask_name, \
-                                test_overlap_full=args.test_overlap_full,ram_store=args.ram_store,patches_save=args.patches_save)
+                                test_overlap_full=args.test_overlap_full,ram_store=args.ram_store,patches_save=args.patches_save, \
+                                test_folder=args.test_folder,test_mode=args.test_mode)
 
 
     # Load images and create dataset (Extract patches)
