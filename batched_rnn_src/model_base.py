@@ -308,14 +308,15 @@ class NeuralNet(object):
 		test_filelist.sort()
 		deb.prints(len(test_filelist))
 
-		predict_only=False
+		predict_only=True
 		if predict_only:
-
-			self.saver.restore(self.sess, "/home/lvc/Jorg/results_fcn/lstm_19x19/model_es.ckpt")
-					
+			self.saver.restore(self.sess, '/tmp/model_es.ckpt')		
+			
+			#self.saver.restore(self.sess, "/home/lvc/Jorg/results_fcn/lstm_19x19/model_es.ckpt")
+			#self.saver.restore(self.sess, '/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/seq1/15/model_es.ckpt')		
 			print("predicting from model")
 			early_stop['best']['predicted']=self.predict_from_files(
-				test_folder,test_filelist)
+				test_folder,test_filelist,batch_size=5000)
 			np.save('predictions_only.npy',early_stop['best']['predicted'])
 			np.save('labels_only.npy',self.ram_data['test']['labels'])
 			print("PREDICTION DONE")
