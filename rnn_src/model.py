@@ -21,7 +21,7 @@ class conv_lstm(NeuralNetOneHot):
 		if self.debug: deb.prints(pipe.get_shape())
 
 		# Dense
-		pipe = tf.layers.dense(pipe, 256,activation=tf.nn.tanh,name='hidden')
+		pipe = tf.layers.dense(pipe, 300,activation=tf.nn.tanh,name='hidden')
 
 		#pipe = tf.nn.tanh(pipe)
 		if self.debug: deb.prints(pipe.get_shape())
@@ -33,6 +33,39 @@ class conv_lstm(NeuralNetOneHot):
 		pipe = tf.layers.dense(pipe, self.n_classes,activation=tf.nn.softmax)
 		if self.debug: deb.prints(pipe.get_shape())
 		return None,pipe
+
+class conv_lstm(NeuralNetOneHot):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.remove_sparse_loss=False
+		self.model_build()
+		
+	def model_graph_get(self,data):
+
+		# ConvLSTM Layer (Get last image)
+		pipe=self.layer_lstm_get(data,filters=16,kernel=self.kernel,name='convlstm')
+		#pipe=self.layer_lstm_multi_get(data,filters=32,kernel=self.kernel,name='multi_convlstm')
+		pipe=tf.layers.max_pooling2d(inputs=pipe, pool_size=[2, 2], strides=2)
+		if self.debug: deb.prints(pipe.get_shape())
+
+		# Flatten		
+		pipe = tf.contrib.layers.flatten(pipe)
+		if self.debug: deb.prints(pipe.get_shape())
+
+		# Dense
+		pipe = tf.layers.dense(pipe, 300,activation=tf.nn.tanh,name='hidden')
+
+		#pipe = tf.nn.tanh(pipe)
+		if self.debug: deb.prints(pipe.get_shape())
+
+		# Dropout
+		pipe = tf.nn.dropout(pipe, self.keep_prob)
+		
+		# Final dense
+		pipe = tf.layers.dense(pipe, self.n_classes,activation=tf.nn.softmax)
+		if self.debug: deb.prints(pipe.get_shape())
+		return None,pipe
+
 
 # ================================= Implements BasicLSTM ============================================== #
 class lstm(NeuralNetOneHot):
@@ -50,12 +83,12 @@ class lstm(NeuralNetOneHot):
 		if self.debug: deb.prints(pipe.get_shape())
 		
 		# BasicLSTM layer (Get last image)
-		pipe=self.layer_flat_lstm_get(pipe,filters=128,kernel=self.kernel,name='convlstm')
+		pipe=self.layer_flat_lstm_get(pipe,filters=100,kernel=self.kernel,name='convlstm')
 		
 		if self.debug: deb.prints(pipe.get_shape())
 		
 		# Dense
-		pipe = tf.layers.dense(pipe, 256,activation=tf.nn.tanh,name='hidden')
+		pipe = tf.layers.dense(pipe, 300,activation=tf.nn.tanh,name='hidden')
 		if self.debug: deb.prints(pipe.get_shape())
 		
 		# Dropout

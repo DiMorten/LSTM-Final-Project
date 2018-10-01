@@ -232,6 +232,7 @@ class DataForNet(object):
 		#foldername='/media/lvc/Novo volume/Jorge/tf_patches/hannover_overlap4_masked_norm/patch_npy/'		
 		
 		foldername='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/hn_data/media/lvc/Novo volume/Jorge/tf_patches/hannover_overlap4_masked_norm_new/patch_npy/'
+		foldername=self.conf['path']+'tf_patches/5/'
 		# This is seq1 complete 5x5
 		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap4_masked_norm_complete/patch_npy/'
 		

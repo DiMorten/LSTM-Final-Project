@@ -1,4 +1,4 @@
- 
+
 
 from __future__ import division
 import os
@@ -35,7 +35,7 @@ class NeuralNet(object):
 						timesteps=7, patch_len=32,
 						kernel=[3,3], channels=7, filters=32, n_classes=6,
 						checkpoint_dir='./checkpoint',log_dir="../data/summaries/",data=None, conf=None, debug=1, \
-						patience=10,squeeze_classes=True,n_repetitions=10,fine_early_stop=False,fine_early_stop_steps=400):
+						patience=15,squeeze_classes=True,n_repetitions=10,fine_early_stop=False,fine_early_stop_steps=400):
 		self.squeeze_classes=squeeze_classes		
 		self.ram_data=data
 		self.sess = sess
@@ -335,6 +335,14 @@ class NeuralNet(object):
 			print("VAL Per class accuracy:{}".format(stats["per_class_accuracy"]))
 			if early_stop["signal"]==False:
 				early_stop=self.early_stop_check(early_stop,stats["average_accuracy"])
+			if early_stop['best']['updated']==True:
+				predict_mode=True
+				if predict_mode==True:
+					stats,early_stop['best']['predicted'] = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
+					#np.save('predictions.npy')
+					print("BEST updated")
+					print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
+					print("Per class accuracy:{}".format(stats["per_class_accuracy"]))
 			
 			# Check early stop and store results if they are the best
 			if epoch % 5 == 0:
@@ -358,19 +366,19 @@ class NeuralNet(object):
 			# =__________________________________ Test stats get and model save  _______________________________ = #
 			save_path = self.saver.save(self.sess, "/tmp/model.ckpt")
 			print("Model saved in path: %s" % save_path)
-			stats,predicted = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
+			#stats,predicted = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
 			if early_stop["signal"]==True:
-				np.save("predicted.npy",predicted)
+				np.save("predicted.npy",early_stop['best']['predicted'])
 				np.save("labels.npy",data["test"]["labels_int"])
-			#if early_stop["signal"]:
+				sys.exit()
+				#if early_stop["signal"]:
 				#deb.prints(early_stop["best"]["metric1"])
 				#deb.prints(early_stop["best"]["metric2"])
 				#deb.prints(early_stop["best"]["metric3"])
 				
 				#break
 			
-			print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
-			print("Per class accuracy:{}".format(stats["per_class_accuracy"]))
+			
 			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
 
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
@@ -459,13 +467,16 @@ class NeuralNet(object):
 
 	def early_stop_check(self,early_stop,metric1):
 		early_stop["signal"]=False
-		if metric1>early_stop["best"]["metric1"]:
+		if metric1>float(early_stop["best"]["metric1"]) and early_stop['signal']==False:
 			early_stop["best"]["metric1"]=metric1
 			#early_stop["best"]["metric2"]=metric2
 			#early_stop["best"]["metric3"]=metric3
 			early_stop["count"]=0
+			early_stop['best']['updated']=True
 		else:
+			early_stop['best']['updated']=False
 			early_stop["count"]+=1
+			deb.prints(early_stop["count"])
 			if early_stop["count"]>=early_stop["patience"]:
 				early_stop["signal"]=True
 			else:

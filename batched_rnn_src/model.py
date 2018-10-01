@@ -85,12 +85,12 @@ class lstm(NeuralNetOneHot):
 		if self.debug: deb.prints(pipe.get_shape())
 		
 		# BasicLSTM layer (Get last image)
-		pipe=self.layer_flat_lstm_get(pipe,filters=128,kernel=self.kernel,name='convlstm')
+		pipe=self.layer_flat_lstm_get(pipe,filters=100,kernel=self.kernel,name='convlstm')
 		
 		if self.debug: deb.prints(pipe.get_shape())
 		
 		# Dense
-		pipe = tf.layers.dense(pipe, 256,activation=tf.nn.tanh,name='hidden')
+		pipe = tf.layers.dense(pipe, 100,activation=tf.nn.tanh,name='hidden')
 		if self.debug: deb.prints(pipe.get_shape())
 		
 		# Dropout
