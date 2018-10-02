@@ -416,7 +416,10 @@ class DataForNet(object):
 			deb.prints(np.min(patch["full_ims"]))
 			deb.prints(np.max(patch["full_ims"]))
 			deb.prints(patch["full_ims"].dtype)
-			self.full_ims_train,self.full_ims_test=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
+			#self.full_ims_train,self.full_ims_test=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
+			self.full_ims_train=patch["full_ims"].copy()
+			self.full_ims_test=patch['full_ims'].copy()
+
 			patch["full_ims"]=None
 			deb.prints(self.full_ims_train.dtype)
 			self.full_label_train,self.full_label_test=self.label_seq_mask(patch["full_label_ims"][self.conf['t_len']-1],patch["train_mask"]) 
