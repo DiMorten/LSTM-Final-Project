@@ -241,10 +241,10 @@ class DataForNet(object):
 		#foldername=self.conf["path"]+'patch_npy/'
 
 		#foldername='/mnt/Data/Jorge/tf_patches/seq2_overlap6_7x7_masked_norm/patch_npy/'
-		self.patches_create=False
+		self.patches_create=True
 		#self.ram_store=False
 		if self.patches_create==True:
-			#foldername=self.conf["path"]+'patch_npy/'
+			foldername=self.conf["path"]+'patch_npy/'
 			add_id=0
 			if self.debug>=1: 
 				deb.prints(add_id)
@@ -654,6 +654,10 @@ class DataForNet(object):
 		mask_flat = mask.flatten()
 
 
+		locations={}
+		locations['row']=[]
+		locations['col']=[]
+		locations['label']=[]
 		#======================== START IMG LOOP ==================================#
 		for i in range(len(gridx)):
 			for j in range(len(gridy)):
@@ -734,6 +738,12 @@ class DataForNet(object):
 					patches_get["test_n"]+=1
 					#if patches_get["test_n"]<=self.test_n_limit:
 					if True:
+
+
+						# Update locations
+						locations['row'].append(yy)
+						locations['col'].append(xx)
+						locations['label'].append(int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]]))
 						patches_get["test_n_limited"]+=1					
 						##if test_counter>=self.conf["extract"]["test_skip"]:
 						mask_test,label_patch=self.mask_test_update(mask_test,yy,xx,window,label_patch,mask_patch)
@@ -763,6 +773,26 @@ class DataForNet(object):
 					#np.random.choice(index, samples_per_class, replace=replace)
 		#==========================END IMG LOOP=============================================#
 		
+
+
+
+		# ========= For reconstruction
+
+		locations['row']=np.asarray(locations['row'])
+		locations['col']=np.asarray(locations['col'])
+		locations['label']=np.asarray(locations['label'])
+
+		deb.prints(locations['row'].shape)
+		deb.prints(locations['col'].shape)
+		
+		deb.prints(locations['label'].shape)
+		
+		np.save("locations_row.npy",locations['row'])
+		np.save("locations_col.npy",locations['col'])
+		np.save("locations_label.npy",locations['label'])
+
+
+
 		if self.patches_save==True or self.patches_save=="True":
 			np.save(path_save+"train_labels.npy",self.train_labels)
 			np.save(path_save+"test_labels.npy",self.test_labels)
@@ -1129,7 +1159,7 @@ class DataSemantic(DataForNet):
 		mask_test_areas=mask_patch.copy()
 		mask_test_areas[mask_test_areas==1]=0 # Remove test from this patch
 		mask_test_areas[mask_test_areas==2]=1 # Remove change 2 (test) to 1 values for bitwise and 
-		mask_test[yy: yy + window, xx: xx + window]=mask_test_areas.astype(np.uint8)*255
+		mask_test[yy: yy + self.conf["patch"]["center_pixel"], xx: xx + self.conf["patch"]["center_pixel"]]=255
 		
 		#deb.prints(mask_test_areas.dtype)
 		center_label=int(label_patch[self.conf["t_len"]-1,self.conf["patch"]["center_pixel"],self.conf["patch"]["center_pixel"]])

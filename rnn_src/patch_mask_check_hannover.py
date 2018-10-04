@@ -5,9 +5,19 @@ import cv2
 mask=cv2.imread("../hn_data/TrainTestMask.tif",-1).astype(np.uint8)
 #mask=cv2.imread("../cv_data/old_TrainTestMask.tif",0)
 
+mask_test=mask.copy()
+mask_test[mask_test==1]=0
+mask_test[mask_test==2]=1
+print("Mask test",np.count_nonzero(mask_test))
+
+
 print(mask.shape)
 mask_train=mask.copy()
 mask_train[mask_train==2]=0
+
+
+
+
 print(np.max(mask_train))
 print(mask_train.dtype)
 mask_train*=255

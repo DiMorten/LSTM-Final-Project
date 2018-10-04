@@ -1109,6 +1109,10 @@ class DataForNet(object):
 		self.ram_data['val']['col_flat']=indices['train_col_flat'][self.ram_data['val']['idxs']]
 		print(self.ram_data['train']['row_flat'].shape, )
 		
+
+		np.save('locations_row.npy',indices['test_row_flat'])
+		np.save('locations_col.npy',indices['test_col_flat'])
+		np.save('locations_label.npy',self.ram_data["test"]["labels_int"])
 		# ===== get input patches
 		"""
 		self.ram_self.ram_data["train"]["ims"]=np.zeros((train_mask.shape[0],
@@ -1177,6 +1181,11 @@ class DataForNet(object):
 			print("Test finished")
 			self.bsave=None
 			self.full_ims_test=None
+
+
+
+
+
 
 
 		train_get=True
