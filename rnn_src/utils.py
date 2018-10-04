@@ -238,10 +238,10 @@ class DataForNet(object):
 		
 		# This is seq1 7x7
 		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap6_7x7_masked_norm/patch_npy/'
-		#foldername=self.conf["path"]+'patch_npy/'
+		foldername=self.conf["path"]+'patch_npy/'
 
 		#foldername='/mnt/Data/Jorge/tf_patches/seq2_overlap6_7x7_masked_norm/patch_npy/'
-		self.patches_create=True
+		self.patches_create=False
 		#self.ram_store=False
 		if self.patches_create==True:
 			foldername=self.conf["path"]+'patch_npy/'
@@ -664,13 +664,14 @@ class DataForNet(object):
 				counter=counter+1
 				if counter % 10000000 == 0:
 					deb.prints(counter,fname)
-				if mask[j+self.conf['patch']['center_pixel'],i+self.conf['patch']['center_pixel']]==0:
-					continue
-
+				
 				
 
 				xx = gridx[i]
 				yy = gridy[j]
+				#if mask[yy+self.conf['patch']['center_pixel'],xx+self.conf['patch']['center_pixel']]==0:
+				#	continue
+
 				#patch_clouds=Bclouds[yy: yy + window, xx: xx + window]
 				patch = img[:,yy: yy + window, xx: xx + window,:]
 				label_patch = label[:,yy: yy + window, xx: xx + window]
