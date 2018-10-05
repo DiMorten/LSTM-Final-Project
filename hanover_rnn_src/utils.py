@@ -1071,7 +1071,7 @@ class DataForNet(object):
 
 		deb.prints(self.ram_data['train']['labels_int'].shape)
 
-		augment=True
+		augment=False
 		if augment==True:
 			unique,count=np.unique(self.ram_data['train']['labels_int'],return_counts=True)
 			minor_classes=unique[count<self.conf["balanced"]["samples_per_class"]]

@@ -218,20 +218,20 @@ class NeuralNet(object):
 		batch["idxs"] = min(data["train"]["n"], args.train_size) // self.batch_size
 		if self.debug>=1:
 			deb.prints(data["train"]["labels"].shape)
-			#deb.prints(data["test"]["labels"].shape)
+			deb.prints(data["test"]["labels"].shape)
 			deb.prints(batch["idxs"])
-			#deb.prints(data["test"]["ims"].shape)
+			deb.prints(data["test"]["ims"].shape)
 			deb.prints(data["train"]["ims"].shape)
 			
 		
 		self.unique_classes_print(data["train"],memory_mode=self.conf["memory_mode"])
-		#self.unique_classes_print(data["test"],memory_mode=self.conf["memory_mode"])
+		self.unique_classes_print(data["test"],memory_mode=self.conf["memory_mode"])
 
 		
-		if self.data_len_get(data["val"],memory_mode=self.conf["memory_mode"])>1000:
-			data["sub_test"]=self.data_sub_data_get(data["val"],1000,memory_mode=self.conf["memory_mode"])
+		if self.data_len_get(data["test"],memory_mode=self.conf["memory_mode"])>1000:
+			data["sub_test"]=self.data_sub_data_get(data["test"],1000,memory_mode=self.conf["memory_mode"])
 		else:
-			data["sub_test"]=data["val"]
+			data["sub_test"]=data["test"]
 
 		deb.prints(data['sub_test']['labels'].shape)
 		deb.prints(data['sub_test']['ims'].shape)
@@ -239,7 +239,7 @@ class NeuralNet(object):
 		#deb.prints(data["train"]["ims"].shape)
 		deb.prints(data["train"]["labels"].shape)
 		#deb.prints(data["test"]["ims"].shape)
-		#deb.prints(data["test"]["labels"].shape)
+		deb.prints(data["test"]["labels"].shape)
 		return batch,data
 	def random_shuffle(self,data):
 		idxs=np.arange(0,data["n"])
@@ -292,48 +292,11 @@ class NeuralNet(object):
 
 		counter=1
 		self.ram_data['val']['labels']=self.int_to_onehot(self.ram_data['val']['labels_int'].astype(np.uint8),self.n_classes)
-		self.ram_data['test']['labels']=self.int_to_onehot(self.ram_data['test']['labels_int'].astype(np.uint8),self.n_classes)
-		deb.prints(self.ram_data['test']['labels'].shape)
-		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test/'
-		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_5/'
-		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_7/'
-		test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_15/'
-		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_19/'
-		
-		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched/'
-		#test_folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/test_batched_11/'
-		test_folder=self.ram_data['test_folder']
-		
-		test_filelist=os.listdir(test_folder)
-		test_filelist.sort()
-		deb.prints(len(test_filelist))
-
-		predict_only=False
-		if predict_only:
-			self.saver.restore(self.sess, '/tmp/model_es.ckpt')		
-			#self.saver.restore(self.sess, '/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/hannover/5/model.ckpt')
-			
-			#self.saver.restore(self.sess, "/home/lvc/Jorg/results_fcn/lstm_19x19/model_es.ckpt")
-			#self.saver.restore(self.sess, '/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/seq1/15/model_es.ckpt')		
-			print("predicting from model")
-			batch_size=5000
-			#batch_size=500 # Hannover
-			early_stop['best']['predicted']=self.predict_from_files(
-				test_folder,test_filelist,batch_size=batch_size)
-			np.save('predicted_only.npy',early_stop['best']['predicted'])
-			np.save('labels_only.npy',self.ram_data['test']['labels'])
-			print("PREDICTION DONE")
-			sys.exit()
-
 		# =__________________________________ Train in batch. Load images from npy files  _______________________________ = #
 		for epoch in range(args.epoch):
 			#data["train"]["ims"]=self.data_shuffle(data["train"]["ims"])
 			#data["train"]["labels"]=self.data_shuffle(data["train"]["labels"])
-			##idxs=np.random.permutation(data['train']['ims'].shape[0])
-			##data.patches['train']['in']=data['train']['ims'][idxs]
-			##data.patches['train']['labels']=data['train']['labels'][idxs]
-			##data.patches['train']['labels_int']=data['train']['labels_int'][idxs]
-
+			
 			for idx in range(0, batch["idxs"]):
 				batch=self.batch_ims_labels_get(batch,data["train"],self.batch_size,idx,memory_mode=self.conf["memory_mode"])
 				if self.debug>=3:
@@ -350,6 +313,19 @@ class NeuralNet(object):
 				if self.debug>=1 and (idx % 500 == 0):
 					self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1.0, self.training: True})
 					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
+				if self.fine_early_stop and (idx % self.fine_early_stop_steps == 0):
+					stats = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
+					early_stop=self.early_stop_check(early_stop,stats["overall_accuracy"],stats["average_accuracy"],stats["per_class_accuracy"])
+					if early_stop["signal"]:
+						deb.prints(early_stop["best"]["metric1"])
+						deb.prints(early_stop["best"]["metric2"])
+						deb.prints(early_stop["best"]["metric3"])
+						
+						#break
+					
+			if int(epoch)==int(self.epoch):
+				save_path = self.saver.save(self.sess, "./model_final.ckpt")
+				print("Model saved in path: %s" % save_path)
 
 			# ================= VALIDATION ASSESS
 			#y_pred_val=np.around(self.sess.run(self.prediction,{self.data: self.ram_data['val']['ims'], self.keep_prob: 1.0, self.training: False}),decimals=2)
@@ -358,32 +334,8 @@ class NeuralNet(object):
 			print("VAL Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
 			print("VAL Per class accuracy:{}".format(stats["per_class_accuracy"]))
 			if early_stop["signal"]==False:
-				early_stop=self.early_stop_check(early_stop,stats["overall_accuracy"])
-			if early_stop['best']['updated']==True:
-
-				
-				predict_mode=False
-				if predict_mode==True:
-					early_stop['best']['predicted']=self.predict_from_files(
-						test_folder,test_filelist)
-					predictions=early_stop['best']['predicted'].argmax(axis=1)
-					label_test=self.ram_data['test']['labels'].argmax(axis=1)
-					metrics={}
-					metrics['f1_score']=f1_score(label_test,predictions,average='macro')
-					metrics['f1_score_weighted']=f1_score(label_test,predictions,average='weighted')
-	        
-					metrics['overall_acc']=accuracy_score(label_test,predictions)
-
-					confusion_matrix_=confusion_matrix(label_test,predictions)
-					metrics['per_class_acc']=(confusion_matrix_.astype('float') / confusion_matrix_.sum(axis=1)[:, np.newaxis]).diagonal()
-					        
-					metrics['average_acc']=np.average(metrics['per_class_acc'][~np.isnan(metrics['per_class_acc'])])
-					print("TEST ",metrics)
-					np.save('predictions_early.npy',early_stop['best']['predicted'])
-					np.save('labels_early.npy',self.ram_data['test']['labels'])
-				else:
-					save_path = self.saver.save(self.sess, "/tmp/model_es.ckpt")
-					print("Model saved in path: %s" % save_path)
+				early_stop=self.early_stop_check(early_stop,stats["average_accuracy"])
+			
 			# Check early stop and store results if they are the best
 			if epoch % 5 == 0:
 				print("Writing to file...")
@@ -404,157 +356,46 @@ class NeuralNet(object):
 
 			#metrics_val=self.metrics_get(y_pred_val,self.ram_data['val']['labels'])
 			# =__________________________________ Test stats get and model save  _______________________________ = #
-			#
+			save_path = self.saver.save(self.sess, "./model.ckpt")
+			print("Model saved in path: %s" % save_path)
+			stats,predicted = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
+			if early_stop["signal"]==True:
+				np.save("predicted.npy",predicted)
+				np.save("labels.npy",data["test"]["labels_int"])
+			#if early_stop["signal"]:
+				#deb.prints(early_stop["best"]["metric1"])
+				#deb.prints(early_stop["best"]["metric2"])
+				#deb.prints(early_stop["best"]["metric3"])
+				
+				#break
 			
-			test_mode=True
-			if test_mode==True:
-				
-				if early_stop["signal"]==True:
-					print("EARLY STOP")
-					
-					if predict_mode==False:
-						self.saver.restore(self.sess, "/tmp/model_es.ckpt")
-					
-						print("predicting from model")
-						early_stop['best']['predicted']=self.predict_from_files(
-							test_folder,test_filelist)
-						predictions=early_stop['best']['predicted'].argmax(axis=1)
-						label_test=self.ram_data['test']['labels'].argmax(axis=1)
-						metrics={}
-						metrics['f1_score']=f1_score(label_test,predictions,average='macro')
-						metrics['f1_score_weighted']=f1_score(label_test,predictions,average='weighted')
-		        
-						metrics['overall_acc']=accuracy_score(label_test,predictions)
-
-						confusion_matrix_=confusion_matrix(label_test,predictions)
-						metrics['per_class_acc']=(confusion_matrix_.astype('float') / confusion_matrix_.sum(axis=1)[:, np.newaxis]).diagonal()
-						        
-						metrics['average_acc']=np.average(metrics['per_class_acc'][~np.isnan(metrics['per_class_acc'])])
-						print("TEST ",metrics)
-					np.save('predicted.npy',early_stop['best']['predicted'])
-					np.save('labels.npy',self.ram_data['test']['labels'])
-
-					#stats,predicted=self.predict_from_files(test_folder,test_filelist)
-					#stats,predicted = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
-					np.save(test_folder+"../predicted.npy",early_stop['best']['predicted'])
-					np.save(test_folder+"../labels.npy",self.ram_data["test"]["labels_int"])
-					break
-				
-				#print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
-				#print("Per class accuracy:{}".format(stats["per_class_accuracy"]))
+			print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
+			print("Per class accuracy:{}".format(stats["per_class_accuracy"]))
 			print("Epoch: [%2d] [%4d/%4d] time: %4.4f" % (epoch, idx, batch["idxs"],time.time() - start_time))
 
 			print("Epoch - {}. Steps per epoch - {}".format(str(epoch),str(idx)))
+		
+			# ================= save txt
+
+			# Check early stop and store results if they are the best
+			if epoch % 5 == 0:
+				print("Writing to file...")
+				for i in range(len(txt['test']['stats'])):
+
+					self.metrics_write_to_txt(txt['test']['stats'][i],txt['test']['epoch'][i],path='results.txt')
+				txt['test']['stats']=[]
+				#txt['val']['loss']=[]
+				txt['test']['epoch']=[]
+				#self.graph.save('my_model.h5')
+
 			
-			if test_mode==True:
-				# ================= save txt
 
-				# Check early stop and store results if they are the best
-				if epoch % 5 == 0:
-					print("Writing to file...")
-					for i in range(len(txt['test']['stats'])):
-
-						self.metrics_write_to_txt(txt['test']['stats'][i],txt['test']['epoch'][i],path='results.txt')
-					txt['test']['stats']=[]
-					#txt['val']['loss']=[]
-					txt['test']['epoch']=[]
-					#self.graph.save('my_model.h5')
-
-				
-
-				txt['test']['stats'].append(stats)
-				#txt['val']['loss'].append(self.metrics['val']['loss'])
-				txt['test']['epoch'].append(epoch)
+			txt['test']['stats'].append(stats)
+			#txt['val']['loss'].append(self.metrics['val']['loss'])
+			txt['test']['epoch'].append(epoch)
 
 
 		return early_stop
-	def predict_from_files(self,folder,file_list,batch_size=100000):
-		#labels=np.load(folder+"labels.npy") # Load test label. Pending: store test labels
-		
-		batch={}
-		stats={}
-		batch['size']=batch_size
-		batch['n']=int(len(file_list)/batch['size'])
-		predicted=np.zeros((len(file_list),self.n_classes))
-		print("Getting test. ")
-			
-		for batch_idx in range(0,batch['n']):
-			time1 =time.time()
-
-			batch['ims']=np.zeros((batch['size'],self.conf['t_len'],
-				self.conf['patch']['size'],self.conf['patch']['size'],
-				self.conf['band_n']))
-			for patch_idx in range(batch['size']):
-				#global_idx=
-				#print(global_idx)
-				
-				batch['ims'][patch_idx]=np.load(folder+file_list[batch_idx+patch_idx])
-			time2=time.time()-time1
-			print("Predicting batch ",batch_idx)
-			batch["prediction"] = self.batch_prediction_from_sess_get(batch["ims"])
-			predicted[batch_idx*batch_size:(batch_idx+1)*batch_size,:]=batch["prediction"]
-		np.save(folder+"prediction.npy",predicted)
-		
-		if stats_get:
-			predicted=predicted.argmax(axis=1)
-			labels=self.ram_data["test"]["labels_int"].copy().argmax(axis=1)
-
-			deb.prints(predicted.shape)
-			deb.prints(labels.shape)
-
-			# Get metrics here
-
-			stats['f1_score']=f1_score(labels_,predicted,average='macro')
-			stats['f1_score_weighted']=f1_score(labels_,predicted,average='weighted')
-			stats['overall_acc']=accuracy_score(labels_,predicted)
-			stats['confusion_matrix']=confusion_matrix(labels_,predicted)
-			stats['per_class_acc']=(stats['confusion_matrix'].astype('float') / stats['confusion_matrix'].sum(axis=1)[:, np.newaxis]).diagonal()
-			deb.prints(stats['confusion_matrix'])
-			deb.prints(str(stats['f1_score']))
-			deb.prints(str(stats['f1_score_weighted']))
-			deb.prints(str(stats['overall_acc']))
-			deb.prints(str(stats['per_class_acc'][0]))
-			deb.prints(str(stats['per_class_acc'][7]))
-		return predicted
-	
-	def predict_from_files(self,folder,file_list,batch_size=100000):
-		files=sorted(os.listdir(folder), key=lambda x: x[5])
-		print(files)
-		
-		len_files=len(files)
-		batch_sizes=[int(x.split('.')[0].split('_')[1]) for x in files] #Extract patch count
-		total_size=np.sum(np.asarray(batch_sizes))
-		id_orders=[int(x.split('_')[0].split('patch')[1]) for x in files] #Extract order (file ID)
-		
-		files.sort(key=dict(zip(files, id_orders)).get)
-
-		print(batch_sizes,total_size)
-		print(id_orders)
-		#files=[files[x] for x in id_orders]
-
-		print(files)
-
-		predicted=np.zeros((total_size,self.n_classes))
-		global_count=0
-		for file in files:
-			buffr=np.load(folder+file,mmap_mode='r')
-			print("Loaded ",file)
-			deb.prints(buffr.shape)
-			batch={}
-			batch['n']=int(buffr.shape[0]/batch_size)
-			batch['remainder']=buffr.shape[0]-batch['n']*batch_size
-			batch_count=0
-			for idx in range(batch['n']):
-				predicted[global_count+idx*batch_size:global_count+(idx+1)*batch_size]= \
-					self.batch_prediction_from_sess_get(buffr[idx*batch_size:(idx+1)*batch_size])
-				batch_count+=batch_size
-			print("Predicted ",file)
-			if batch['remainder']>0:
-				print(global_count+batch_count)
-				predicted[global_count+batch_count:]= \
-					self.batch_prediction_from_sess_get(buffr[batch_count:])
-			global_count+=buffr.shape[0]
-		return predicted
 	def metrics_write_to_txt(self,stats,epoch=0,path=None):
 
 		with open(path, "a") as text_file:
@@ -618,19 +459,13 @@ class NeuralNet(object):
 
 	def early_stop_check(self,early_stop,metric1):
 		early_stop["signal"]=False
-		#if metric1>float(early_stop["best"]["metric1"])*1.02 and early_stop['signal']==False:
-		
-		if metric1>float(early_stop["best"]["metric1"])*1.005 and early_stop['signal']==False:
+		if metric1>early_stop["best"]["metric1"]:
 			early_stop["best"]["metric1"]=metric1
 			#early_stop["best"]["metric2"]=metric2
 			#early_stop["best"]["metric3"]=metric3
 			early_stop["count"]=0
-			early_stop['best']['updated']=True
-			print("Best metric updated")
 		else:
-			early_stop['best']['updated']=False
 			early_stop["count"]+=1
-			deb.prints(early_stop["count"])
 			if early_stop["count"]>=early_stop["patience"]:
 				early_stop["signal"]=True
 			else:
@@ -816,17 +651,17 @@ class NeuralNet(object):
 		if memory_mode=="hdd":
 			data=self.hdd_data_load(conf)
 		elif memory_mode=="ram":
-			#deb.prints(self.ram_data['test']['ims'].shape)
+			deb.prints(self.ram_data['test']['ims'].shape)
 			data=self.ram_data
 			data["train"]["n"]=data["train"]["ims"].shape[0]
-			#data["test"]["n"]=data["test"]["ims"].shape[0]
-			data['test']['n']=1
+			data["test"]["n"]=data["test"]["ims"].shape[0]
+
 			deb.prints(self.ram_data["train"]["ims"].shape)
 			deb.prints(data["train"]["ims"].shape)
 
 		data["train"]["index"] = range(data["test"]["n"])
 		data["test"]["index"] = range(data["test"]["n"])
-		data["val"]["index"] = range(data["val"]["n"])
+
 		return data
 	def model_build(self):
 		with tf.name_scope('init_definitions'):
@@ -1100,8 +935,9 @@ class NeuralNetOneHot(NeuralNet):
 
 		# Prepare the optimization function
 		optimizer = tf.train.AdamOptimizer()
-		#optimizer = tf.train.AdagradOptimizer(0.01)
+		#optimizer = tf.train.AdagradOptimizer(0.001)
 		minimize = optimizer.minimize(cross_entropy)
+
 		mistakes = tf.not_equal(tf.argmax(target, 1), tf.argmax(prediction, 1))
 		
 		error = tf.reduce_mean(tf.cast(mistakes, tf.float32))

@@ -47,7 +47,7 @@ class conv_lstm(NeuralNetOneHot):
 		#pipe=self.layer_lstm_multi_get(data,filters=32,kernel=self.kernel,name='multi_convlstm')
 		
 
-		pipe=tf.layers.max_pooling2d(inputs=pipe, pool_size=[2, 2], strides=2)
+		#pipe=tf.layers.max_pooling2d(inputs=pipe, pool_size=[2, 2], strides=2)
 
 		if self.debug: deb.prints(pipe.get_shape())
 
@@ -56,7 +56,7 @@ class conv_lstm(NeuralNetOneHot):
 		if self.debug: deb.prints(pipe.get_shape())
 
 		# Dense
-		pipe = tf.layers.dense(pipe, 100,activation=tf.nn.tanh,name='hidden')
+		pipe = tf.layers.dense(pipe, 300,activation=tf.nn.tanh,name='hidden')
 
 		#pipe = tf.nn.tanh(pipe)
 		if self.debug: deb.prints(pipe.get_shape())
@@ -91,7 +91,7 @@ class lstm(NeuralNetOneHot):
 		
 		# Dense
 		#filters=100
-		filters=100 #Hanover
+		filters=300 #Hanover
 		
 		pipe = tf.layers.dense(pipe, filters,activation=tf.nn.tanh,name='hidden')
 		if self.debug: deb.prints(pipe.get_shape())

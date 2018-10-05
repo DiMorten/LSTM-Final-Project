@@ -86,9 +86,12 @@ class lstm(NeuralNetOneHot):
 		pipe=self.layer_flat_lstm_get(pipe,filters=100,kernel=self.kernel,name='convlstm')
 		
 		if self.debug: deb.prints(pipe.get_shape())
-		
+		if self.conf['path']='../hn_data/':
+			filters=300
+		else:
+			filters=100
 		# Dense
-		pipe = tf.layers.dense(pipe, 300,activation=tf.nn.tanh,name='hidden')
+		pipe = tf.layers.dense(pipe, filters,activation=tf.nn.tanh,name='hidden')
 		if self.debug: deb.prints(pipe.get_shape())
 		
 		# Dropout

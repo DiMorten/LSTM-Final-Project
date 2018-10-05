@@ -37,145 +37,13 @@ def mask_train_test_switch(mask):
 	out[mask==1]=2
 	out[mask==2]=1
 	return mask
-def val_set_get(buffr,mode='stratified',validation_split=0.2):
-	buffr['train']['idx']=range(buffr['train']['n'])
-	clss_train_unique,clss_train_count=np.unique(buffr['train']['labels_int'],return_counts=True)
-	deb.prints(clss_train_count)
-	buffr['val']={'n':int(buffr['train']['n']*validation_split)}
-	
-	#===== CHOOSE VAL IDX
-	#mode='stratified'
-	if mode=='random':
-		buffr['val']['idx']=np.random.choice(buffr['train']['idx'],buffr['val']['n'],replace=False)
-		
-
-		buffr['val']['ims']=buffr['train']['ims'][buffr['val']['idx']]
-		buffr['val']['labels_int']=buffr['train']['labels_int'][buffr['val']['idx']]
-	
-	elif mode=='stratified':
-		while True:
-			buffr['val']['idx']=np.random.choice(buffr['train']['idx'],buffr['val']['n'],replace=False)
-			buffr['val']['ims']=buffr['train']['ims'][buffr['val']['idx']]
-			buffr['val']['labels_int']=buffr['train']['labels_int'][buffr['val']['idx']]
-	
-			clss_val_unique,clss_val_count=np.unique(buffr['val']['labels_int'],return_counts=True)
-			
-			if not np.array_equal(clss_train_unique,clss_val_unique):
-				deb.prints(clss_train_unique)
-				deb.prints(clss_val_unique)
-				
-				pass
-			else:
-				percentages=clss_val_count/clss_train_count
-				deb.prints(percentages)
-				#if np.any(percentages<0.1) or np.any(percentages>0.3):
-				if np.any(percentages>0.23):
-				
-					pass
-				else:
-					break
-	elif mode=='random_v2':
-		while True:
-
-			buffr['val']['idx']=np.random.choice(buffr['train']['idx'],buffr['val']['n'],replace=False)
-			
-
-			buffr['val']['ims']=buffr['train']['ims'][buffr['val']['idx']]
-			buffr['val']['labels_int']=buffr['train']['labels_int'][buffr['val']['idx']]
-			clss_val_unique,clss_val_count=np.unique(buffr['val']['labels_int'].argmax(axis=3),return_counts=True)
-					
-			deb.prints(clss_train_unique)
-			deb.prints(clss_val_unique)
-
-			deb.prints(clss_train_count)
-			deb.prints(clss_val_count)
-
-			clss_train_count_in_val=clss_train_count[np.isin(clss_train_unique,clss_val_unique)]
-			percentages=clss_val_count/clss_train_count_in_val
-			deb.prints(percentages)
-			#if np.any(percentages<0.1) or np.any(percentages>0.3):
-			if np.any(percentages>0.23):
-				pass
-			else:
-				break				
-
-	deb.prints(buffr['val']['idx'].shape)
-
-	
-	deb.prints(buffr['val']['ims'].shape)
-	#deb.prints(data.patches['val']['labels_int'].shape)
-	
-	
-	buffr['train']['ims']=np.delete(buffr['train']['ims'],buffr['val']['idx'],axis=0)
-	buffr['train']['labels_int']=np.delete(buffr['train']['labels_int'],buffr['val']['idx'],axis=0)
-	buffr['train']['n']=buffr['train']['ims'].shape[0]
-	buffr['val']['n']=buffr['val']['ims'].shape[0]
-	print("train",np.unique(buffr['train']['labels_int'],return_counts=True))
-	print("val",np.unique(buffr['val']['labels_int'],return_counts=True))
-	return buffr
-def labels_onehot_get(labels,n_samples,class_n):
-	out=np.zeros((n_samples,class_n))
-	deb.prints(out.shape)
-	deb.prints(labels.shape)
-	out[np.arange(n_samples),labels.astype(np.int)]=1
-	return out
-def data_balance( data, samples_per_class,class_n,debug=1):
-	fname=sys._getframe().f_code.co_name
-
-	balance={}
-	balance["unique"]={}
-#	classes = range(0,self.conf["class_n"])
-	classes,counts=np.unique(data["train"]["labels_int"],return_counts=True)
-	print(classes,counts)
-	num_total_samples=len(classes)*samples_per_class
-	balance["out_labels"]=np.zeros(num_total_samples)
-	deb.prints(num_total_samples)
-	balance["out_data"]=np.zeros(num_total_samples)
-	
-	#balance["unique"]=dict(zip(unique, counts))
-	#print(balance["unique"])
-	k=0
-	for clss in classes:
-		deb.prints(clss,fname)
-		balance["data"]=data["train"]["ims"][data["train"]["labels_int"]==clss]
-		balance["labels_int"]=data["train"]["labels_int"][data["train"]["labels_int"]==clss]
-		balance["num_samples"]=balance["data"].shape[0]
-		if debug>=1: deb.prints(balance["data"].shape,fname)
-		if debug>=2: 
-			deb.prints(balance["labels_int"].shape,fname)
-			deb.prints(np.unique(balance["labels_int"].shape),fname)
-		if balance["num_samples"] > samples_per_class:
-			replace=False
-		else: 
-			replace=True
-
-		index = range(balance["labels_int"].shape[0])
-		index = np.random.choice(index, samples_per_class, replace=replace)
-		balance["out_labels"][k*samples_per_class:k*samples_per_class + samples_per_class] = balance["labels_int"][index]
-		balance["out_data"][k*samples_per_class:k*samples_per_class + samples_per_class] = balance["data"][index]
-
-		k+=1
-	idx = np.random.permutation(balance["out_labels"].shape[0])
-	balance["out_data"] = balance["out_data"][idx]
-	balance["out_labels"] = balance["out_labels"][idx]
-
-	balance["labels"]=labels_onehot_get(balance["out_labels"],num_total_samples,class_n)
-	#balance["labels"]=np.zeros((num_total_samples,self.conf["class_n"]))
-	#balance["labels"][np.arange(num_total_samples),balance["out_labels"].astype(np.int)]=1
-	if debug>=1: deb.prints(np.unique(balance["out_labels"],return_counts=True),fname)
-	return balance["out_data"],balance["out_labels"],balance["labels"]
 
 class DataForNet(object):
 	def __init__(self,debug=1,patch_overlap=0,im_size=(948,1068),band_n=7,t_len=6,path="../data/",class_n=9,pc_mode="local", \
 		patch_length=5,test_n_limit=1000,memory_mode="ram",flag_store=False,balance_samples_per_class=None,test_get_stride=None, \
 		n_apriori=16000, squeeze_classes=False, data_dir='data',im_h=948,im_w=1068,id_first=1, \
-		train_test_mask_name="TrainTestMask.tif",test_overlap_full=True,ram_store=True, \
-		patches_save=False, test_folder=None, test_mode=False):
+		train_test_mask_name="TrainTestMask.tif",test_overlap_full=True,ram_store=True,patches_save=False):
 		deb.prints(patches_save)
-		if test_mode=="True" or test_mode==True:
-			self.test_mode=True
-		else:
-			self.test_mode=False
 		self.patches_save=patches_save
 		self.ram_store=ram_store
 		self.conf={"band_n": band_n, "t_len":t_len, "path": path, "class_n":class_n, 'label':{}, 'seq':{}}
@@ -298,7 +166,6 @@ class DataForNet(object):
 		deb.prints(self.conf["test"]["n_apriori"])
 		deb.prints(self.conf["class_n"])
 		self.ram_data={"train":{},"test":{}}
-		self.ram_data['test_folder']=test_folder
 		if self.ram_store:
 			print("HEEEERE")
 			self.ram_data["train"]["ims"]=np.zeros((self.conf["train"]["n_apriori"],self.conf["t_len"])+self.patch_shape)
@@ -368,7 +235,7 @@ class DataForNet(object):
 		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap4_masked_norm_complete/patch_npy/'
 		
 		# This is seq1 7x7
-		#foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap6_7x7_masked_norm/patch_npy/'
+		foldername='/mnt/Data/Jorge/tf_patches/seq1_overlap6_7x7_masked_norm/patch_npy/'
 		#foldername=self.conf["path"]+'patch_npy/'
 
 		self.patches_create=True
@@ -409,21 +276,18 @@ class DataForNet(object):
 			#=======================LOAD, NORMALIZE AND MASK FULL IMAGES ================#
 			patch=self.im_load(patch,im_filenames,add_id)
 
+
 			deb.prints(im_filenames)
 
 			patch["full_ims"][patch["full_ims"]>1]=1
 			patch["full_ims"]=self.im_seq_normalize(patch["full_ims"])
 			deb.prints(np.min(patch["full_ims"]))
 			deb.prints(np.max(patch["full_ims"]))
-			deb.prints(patch["full_ims"].dtype)
-			#self.full_ims_train,self.full_ims_test=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
-			self.full_ims_train=patch["full_ims"].copy()
-			self.full_ims_test=patch['full_ims'].copy()
+		
+			self.full_ims_train,self.full_ims_test=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
 
-			patch["full_ims"]=None
-			deb.prints(self.full_ims_train.dtype)
 			self.full_label_train,self.full_label_test=self.label_seq_mask(patch["full_label_ims"][self.conf['t_len']-1],patch["train_mask"]) 
-			deb.prints(self.full_label_train.dtype)
+		 
 			#self.label_id=self.conf["seq"]["id_first"]+self.conf['t_len']-2 # Less 1 for python idx, less 1 for id_first starts at 1 
 		 
 			unique,count=np.unique(self.full_label_train,return_counts=True) 
@@ -444,34 +308,17 @@ class DataForNet(object):
 		
 
 			#========================== BEGIN PATCH EXTRACTION ============================#
-			#view_as_windows_flag=False
+			view_as_windows_flag=False
+			"""
 			
 			view_as_windows_flag="3"
 			self.ram_store=True # This should be removed for normal 
-			set_path_test=False
 			path_save=self.conf['path']+'buffer/'
 			path_train=path_save+'train/'
-			path_test=self.ram_data['test_folder']
-			if set_path_test==True:
-
-				
-				
-				path_test=path_save+'test_batched_7/'
-				path_test=path_save+'test_batched_5/'
-				path_test=path_save+'test_batched_15/'
-
-				self.ram_data['test_folder']=path_test
-			#path_test=path_save+'test_batched_19/'
-			
-			
-			
-			#path_test=path_save+'test_batched/'
-			#path_test=path_save+'test_batched_11/'
-			
-			
+			path_test=path_save+'test/'
 			pathlib.Path(path_train).mkdir(parents=True, exist_ok=True)
 			pathlib.Path(path_test).mkdir(parents=True, exist_ok=True)			
-			
+			"""
 			if view_as_windows_flag==True:
 				self.conf["train"]["n"],self.conf["test"]["n"]=self.patches_multitemporal_get2(patch["full_ims"],patch["full_label_ims"], \
 					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=self.conf["train"], \
@@ -499,7 +346,6 @@ class DataForNet(object):
 					self.conf["patch"]["size"],self.conf["patch"]["overlap"],mask=patch["train_mask"],path_train=path_train, \
 					path_test=path_test,patches_save=self.patches_save,label_type=label_type,memory_mode=self.conf["memory_mode"])
 
-			patch["full_ims"]=None
 			deb.prints(self.ram_data['test']['ims'].shape)
 			deb.prints(self.ram_data['test']['labels_int'].shape)
 			deb.prints(self.ram_data['test']['ims'].dtype)
@@ -509,11 +355,11 @@ class DataForNet(object):
 			deb.prints(self.conf["test"]["n"])
 
 			deb.prints(self.ram_data['train']['ims'].shape)
-			#self.val_set_get(mode='stratified',validation_split=0.15)
+			self.val_set_get(mode='stratified',validation_split=0.15)
 			deb.prints(self.ram_data['train']['ims'].shape)
 			deb.prints(self.ram_data['val']['ims'].shape)
 			
-			self.ram_data_store=False
+			self.ram_data_store=True
 			if self.ram_data_store:
 				
 				pathlib.Path(self.conf["path"]+foldername).mkdir(parents=True, exist_ok=True) 
@@ -532,10 +378,7 @@ class DataForNet(object):
 				
 		else:
 			print("Loading dataset...")
-			#self.ram_store=False
 			if self.ram_store:
-
-				foldername=self.conf['path']
 
 				self.ram_data={'train':{},'test':{}}
 				self.ram_data['train']['ims']=np.load(foldername+"train_ims.npy")
@@ -545,23 +388,19 @@ class DataForNet(object):
 				
 				deb.prints(self.ram_data['train']['labels_int'].shape)
 				
-				self.ram_data['train']['n']=self.ram_data['train']['ims'].shape[0]
+				self.ram_data['test']['ims']=np.load(foldername+"test_ims.npy")
+				deb.prints(self.ram_data['test']['ims'].shape)
 				
+				self.ram_data['test']['labels_int']=np.load(foldername+"test_labels_int.npy")
+				self.ram_data['train']['n']=np.load(foldername+"train_n.npy")
+				self.ram_data['test']['n']=np.load(foldername+"test_n.npy")
 				self.ram_data['val']={}
 				self.ram_data['val']['ims']=np.load(foldername+"val_ims.npy")
 				deb.prints(self.ram_data['val']['ims'].shape)
 				
 				self.ram_data['val']['labels_int']=np.load(foldername+"val_labels_int.npy")
-				self.ram_data['val']['n']=self.ram_data['val']['ims'].shape[0]
+				self.ram_data['val']['n']=np.load(foldername+"val_n.npy")
 
-
-				"""
-				self.ram_data['test']['ims']=np.load(foldername+"test_ims.npy")
-				deb.prints(self.ram_data['test']['ims'].shape)
-				
-				self.ram_data['test']['labels_int']=np.load(foldername+"test_labels_int.npy")
-				self.ram_data['test']['n']=np.load(foldername+"test_n.npy")
-				"""
 
 		# ================== PATCHES ARE STORED IN self.ram_data ========================#
 
@@ -595,9 +434,6 @@ class DataForNet(object):
 			#for band in range(0,self.conf["band_n"]):
 			#	patch["full_ims_train"][t_step,:,:,band][patch["train_mask"]!=1]=-1
 			# Do the masking here. Do we have the train labels?
-		#patch["full_ims"]=patch["full_ims"].astype(np.float32)
-		#patch["full_label_ims"]=patch["full_label_ims"].astype(np.uint8)
-		
 		deb.prints(patch["full_ims"].shape,fname)
 		deb.prints(patch["full_label_ims"].shape,fname)
 		return patch
@@ -910,10 +746,9 @@ class DataForNet(object):
 					#np.random.choice(index, samples_per_class, replace=replace)
 		#==========================END IMG LOOP=============================================#
 		
-		if self.patches_save==True or self.patches_save=="True":
-			np.save(path_save+"train_labels.npy",self.train_labels)
-			np.save(path_save+"test_labels.npy",self.test_labels)
-			
+		np.save(path_save+"train_labels.npy",self.train_labels)
+		np.save(path_save+"test_labels.npy",self.test_labels)
+		
 		print("Final mask test average",np.average(mask_test))
 		cv2.imwrite("mask_train.png",mask_train)
 		cv2.imwrite("mask_test.png",mask_test)
@@ -982,7 +817,7 @@ class DataForNet(object):
 		deb.prints(overlap,fname)
 		print("STARTED PATCH EXTRACTION")
 
-		t_steps, h, w, channels = self.full_ims_train.shape
+		t_steps, h, w, channels = img.shape
 
 		indices={}
 		indices['val']=np.indices((h,w))
@@ -1013,13 +848,10 @@ class DataForNet(object):
 		train_mask=mask_flat[mask_flat==1]
 		self.ram_data["train"]["n"]=train_mask.shape[0]
 
-		
-
 		# Unused classes eliminate
 
 		data={'labels_int':self.ram_data["train"]["labels_int"]}
-		self.ram_data["train"]["labels_int"]=self.labels_unused_classes_eliminate( \
-			self.ram_data["train"])['labels_int']
+		self.ram_data["train"]["labels_int"]=self.labels_unused_classes_eliminate(data)['labels_int']
 		deb.prints(np.unique(self.ram_data["train"]["labels_int"],return_counts=True))
 		
 		# Test
@@ -1030,8 +862,8 @@ class DataForNet(object):
 		test_mask=mask_flat[mask_flat==2]
 		self.ram_data["test"]["n"]=test_mask.shape[0]
 
-		#data={'labels_int':self.ram_data["test"]["labels_int"]}
-		self.ram_data["test"]["labels_int"]=self.labels_unused_classes_eliminate(self.ram_data["test"])['labels_int']
+		data={'labels_int':self.ram_data["test"]["labels_int"]}
+		self.ram_data["test"]["labels_int"]=self.labels_unused_classes_eliminate(data)['labels_int']
 		
 		deb.prints(np.unique(self.ram_data["test"]["labels_int"],return_counts=True))
 		deb.prints(train_mask.shape)
@@ -1039,120 +871,75 @@ class DataForNet(object):
 		deb.prints(indices['train_row_flat'].shape)
 
 
-		# ============== Here I reconstrucat the label 
 
-		label_reconstructed=np.zeros((h,w))
-		for row,col,value in zip(indices['row_flat'],
-				indices['col_flat'],label_flat):
-			label_reconstructed[row,col]=value
-		deb.prints(np.unique(label_reconstructed,return_counts=True))
-
-		deb.prints(label_reconstructed.dtype)
-		print(label_flat.shape,label_flat.dtype)
-		print(label_reconstructed.shape)
-		print(np.all(label_reconstructed==label))
-		print("DONE TEST")
-		# ============= HERE, DO VAL / BALANCING FROM LABELS
-		val_percentage=0.15
-
-		self.ram_data['train']['ims']=np.arange(self.ram_data["train"]["labels_int"].shape[0])
-		self.ram_data['train']['n']=self.ram_data['train']['labels_int'].shape[0]
-		self.ram_data=val_set_get(self.ram_data,mode='stratified',validation_split=0.15)
-
-		self.ram_data['val']['idxs']=self.ram_data['val']['ims'].copy()
-		print(self.ram_data['val']['ims'][0:10])
-
-		# Count after validation split
-		self.ram_data['val']['n']=self.ram_data['val']['labels_int'].shape[0]
-
-		# Balancing
-		class_n=np.unique(self.ram_data['train']['labels_int']).shape[0]
+		np.save(self.conf['path']+"buffer/train_labels_int.npy",self.ram_data["train"]["labels_int"])
+		np.save(self.conf['path']+"buffer/test_labels_int.npy",self.ram_data["test"]["labels_int"])
 		
-
-		deb.prints(self.ram_data['train']['labels_int'].shape)
-
-		augment=True
-		if augment==True:
-			unique,count=np.unique(self.ram_data['train']['labels_int'],return_counts=True)
-			minor_classes=unique[count<self.conf["balanced"]["samples_per_class"]]
-			print(unique,count)
-			deb.prints(minor_classes)
-
-		self.ram_data['train']['idxs'],self.ram_data['train']['labels_int'], \
-			self.ram_data['train']['labels'] = data_balance(self.ram_data, \
-			self.conf["balanced"]["samples_per_class"],class_n=self.conf['class_n'])
-
-		
-		self.ram_data['train']['n']=self.ram_data['train']['labels_int'].shape[0]
-
-		self.ram_data['train']['idxs']=self.ram_data['train']['idxs'].astype(np.int)
-		self.ram_data['val']['idxs']=self.ram_data['val']['idxs'].astype(np.int)
-
-		deb.prints(self.ram_data['train']['idxs'].dtype)
-		deb.prints(self.ram_data['train']['idxs'][0:15])
-		deb.prints(self.ram_data['train']['labels_int'].shape)
-		deb.prints(np.unique(self.ram_data['train']['labels_int'],return_counts=True))
-
-
-		self.ram_data['val']['ims']=np.zeros((self.ram_data['val']['n'],
-			self.conf['t_len'],self.conf['patch']['size'],
-			self.conf['patch']['size'],self.conf['band_n']))
-
-		self.ram_data['train']['ims']=np.zeros((self.ram_data['train']['n'],
-			self.conf['t_len'],self.conf['patch']['size'],
-			self.conf['patch']['size'],self.conf['band_n']))
-
-		np.save(self.conf['path']+'train_labels_int',self.ram_data['train']['labels_int'])
-		np.save(self.conf['path']+'val_labels_int',self.ram_data['val']['labels_int'])
-		np.save(self.conf['path']+'test_labels_int',self.ram_data['test']['labels_int'])
-
-		print("OK")
-		
-		# Taking balanced indices train val
-
-		self.ram_data['train']['row_flat']=indices['train_row_flat'][self.ram_data['train']['idxs']]
-		self.ram_data['train']['col_flat']=indices['train_col_flat'][self.ram_data['train']['idxs']]
-
-		self.ram_data['val']['row_flat']=indices['train_row_flat'][self.ram_data['val']['idxs']]
-		self.ram_data['val']['col_flat']=indices['train_col_flat'][self.ram_data['val']['idxs']]
-		print(self.ram_data['train']['row_flat'].shape, )
-		
-
-		np.save('locations_row.npy',indices['test_row_flat'])
-		np.save('locations_col.npy',indices['test_col_flat'])
-		np.save('locations_label.npy',self.ram_data["test"]["labels_int"])
 		# ===== get input patches
 		"""
-		self.ram_self.ram_data["train"]["ims"]=np.zeros((train_mask.shape[0],
+		self.ram_data["train"]["ims"]=np.zeros((train_mask.shape[0],
 			self.conf['t_len'],self.conf['patch']['size'],
 			self.conf['patch']['size'],self.conf['band_n']))
 
 
-		deb.prints(self.ram_self.ram_data["train"]["ims"].shape)
+		deb.prints(self.ram_data["train"]["ims"].shape)
 
-		self.ram_self.ram_data["test"]["ims"]=np.zeros((test_mask.shape[0],
+		self.ram_data["test"]["ims"]=np.zeros((test_mask.shape[0],
 			self.conf['t_len'],self.conf['patch']['size'],
 			self.conf['patch']['size'],self.conf['band_n']))
 
-		deb.prints(self.ram_self.ram_data["test"]["ims"].shape)
+		deb.prints(self.ram_data["test"]["ims"].shape)
 		"""
 		window_half=int(window/2)
 		# Get input patches train
 
+		self.bsave={} # Batch save info
+		self.bsave['size']=1000000
+		self.bsave['id']=0 # Goes from 0 to needs
+		self.bsave['batch_id']=0
+		self.bsave['in_buffer']=np.zeros((self.bsave['size'],
+			self.conf['t_len'],self.conf['patch']['size'],
+			self.conf['patch']['size'],self.conf['band_n']))
+		train_get=False
+		if train_get==True:
+			# Get train patches
+			for row,col,count in zip(indices['train_row_flat'],
+				indices['train_col_flat'],range(0,self.ram_data["train"]["n"])):
 
-		#test_mode=False
-		test_mode=self.test_mode
-		if test_mode==True:
-			print("Starting test")	
-			self.bsave={}
-			self.bsave['size']=1000000
-			self.bsave['id']=0 # Goes from 0 to needs
-			self.bsave['in_buffer']=np.zeros((self.bsave['size'],
-				self.conf['t_len'],self.conf['patch']['size'],
-				self.conf['patch']['size'],self.conf['band_n']))
+				# Reset buffer indices and store
+
+				if count % self.bsave['size'] ==0 and count!=0:
+					print(count)
+					self.bsave['batch_id']+=1
+					np.save(path_train+"patch"+
+						str(self.bsave['batch_id'])+
+						"_"+str(count)+
+						".npy",self.bsave['in_buffer'])
+					self.bsave['id']=0
+
+				if count % 100000==0:
+					print("Count",count)
+				# Add a patch
+				self.bsave['in_buffer'][self.bsave['id']]=img[:,
+					row-window_half:row+window_half+1,
+					col-window_half:col+window_half+1,:]
+				if count==0: deb.prints(self.bsave['in_buffer'][self.bsave['id']].shape)
 			
-			self.bsave['batch_id']=0
-			
+				self.bsave['id']+=1		
+			print("Finished train loop")
+			# Save last buffer
+			if self.bsave['id']>0:
+				np.save(path_train+"patch"+str(self.bsave['id'])+
+						".npy",self.bsave['in_buffer'])
+		print("Starting test")	
+
+		self.bsave['id']=0
+		self.bsave['in_buffer']=np.zeros((self.bsave['size'],
+			self.conf['t_len'],self.conf['patch']['size'],
+			self.conf['patch']['size'],self.conf['band_n']))
+		test_get=True
+		self.bsave['batch_id']=0
+		if test_get==True:
 			# Get input patches test
 			for row,col,count in zip(indices['test_row_flat'],
 				indices['test_col_flat'],range(0,self.ram_data["test"]["n"])):
@@ -1161,17 +948,14 @@ class DataForNet(object):
 
 				if count % self.bsave['size'] ==0 and count!=0:
 					print(count)
-					np.save(path_test+"patch"+
-						str(self.bsave['batch_id'])+
-						"_"+str(self.bsave['in_buffer'].shape[0])+
-						".npy",self.bsave['in_buffer'])
-					self.bsave['in_buffer']=np.zeros((self.bsave['size'],
-						self.conf['t_len'],self.conf['patch']['size'],
-						self.conf['patch']['size'],self.conf['band_n']))
 					self.bsave['batch_id']+=1
+					np.save(path_train+"patch"+
+						str(self.bsave['batch_id'])+
+						"_"+str(count)+
+						".npy",self.bsave['in_buffer'])
 					self.bsave['id']=0
 				
-				self.bsave['in_buffer'][self.bsave['id']]=self.full_ims_test[:,
+				self.bsave['in_buffer'][self.bsave['id']]=img[:,
 					row-window_half:row+window_half+1,
 					col-window_half:col+window_half+1,:]
 				if count==0: deb.prints(self.bsave['in_buffer'][self.bsave['id']].shape)
@@ -1180,121 +964,9 @@ class DataForNet(object):
 			print("finished test loop")
 			# Save last buffer
 			if self.bsave['id']>0:
-				self.bsave['batch_id']+=1
-				self.bsave['in_buffer']=self.bsave['in_buffer'][0:self.bsave['id']]
-				deb.prints(self.bsave['in_buffer'].shape)
-				np.save(path_test+"patch"+
-						str(self.bsave['batch_id'])+"_"+str(self.bsave['in_buffer'].shape[0])+
+				np.save(path_test+"patch"+str(self.bsave['id'])+
 						".npy",self.bsave['in_buffer'])
 			print("Test finished")
-			self.bsave=None
-			self.full_ims_test=None
-
-
-
-
-		
-		train_get=True
-		if train_get==True:
-
-
-			if augment==True:
-				cont_transf=0
-
-
-			# Get train patches
-			count=0
-
-			for row,col,count in zip(self.ram_data['train']['row_flat'],
-				self.ram_data['train']['col_flat'],
-				range(0,self.ram_data['train']['n'])):
-
-				# Reset buffer indices and store
-
-
-				if count % 100000==0:
-					print("Count",count)
-				# Add a patch
-				self.ram_data['train']['ims'][count]=self.full_ims_train[:,
-					row-window_half:row+window_half+1,
-					col-window_half:col+window_half+1,:]
-
-				if augment==True and (self.ram_data['train']['labels_int'][count] in minor_classes):
-					
-					if cont_transf == 0:
-						self.ram_data['train']['ims'][count] = np.rot90(self.ram_data['train']['ims'][count],1,(1,2))
-						
-					elif cont_transf == 1:
-						self.ram_data['train']['ims'][count] = np.rot90(self.ram_data['train']['ims'][count],2,(1,2))
-
-					elif cont_transf == 2:
-						self.ram_data['train']['ims'][count] = np.flip(self.ram_data['train']['ims'][count],1)
-						
-					elif cont_transf == 3:
-						self.ram_data['train']['ims'][count] = np.flip(self.ram_data['train']['ims'][count],2)
-					
-					elif cont_transf == 4:
-						self.ram_data['train']['ims'][count] = np.rot90(self.ram_data['train']['ims'][count],3,(1,2))
-
-					cont_transf+=1
-					if cont_transf==6:
-						cont_transf = 0
-
-
-				if count==0: deb.prints(self.ram_data['train']['ims'][count].shape)
-			
-				count+=1		
-			print("Finished train loop")
-			#np.save(self.conf['path']+"train_ims.npy",self.ram_data['train']['ims'])
-			print("Finished saving train loop")
-			#self.ram_data['train']['ims']=None
-		val_get=True
-		if val_get==True:
-			# Get val patches
-			count=0
-			for row,col,count in zip(self.ram_data['val']['row_flat'],
-				self.ram_data['val']['col_flat'],
-				range(0,self.ram_data['val']['n'])):
-
-				# Reset buffer indices and store
-
-
-				if count % 100000==0:
-					print("Count",count)
-				# Add a patch
-				self.ram_data['val']['ims'][count]=self.full_ims_train[:,
-					row-window_half:row+window_half+1,
-					col-window_half:col+window_half+1,:]
-				if count==0: deb.prints(self.ram_data['val']['ims'][count].shape)
-			
-				count+=1		
-			print("Finished val loop")
-			#np.save(self.conf['path']+"val_ims.npy",self.ram_data['val']['ims'])
-			print("Finished saving val")
-
-		self.full_ims_train=False
-		# test_get=False
-		# if test_get==True:
-		# 	print("Starting test")	
-		# 	# Get input patches test
-		# 	for row,col,count in zip(indices['test_row_flat'],
-		# 		indices['test_col_flat'],range(0,self.ram_data["test"]["n"])):
-
-		# 		if count%500000==0:
-		# 			print("Test extract",count)
-		# 		patch_test=img[:,
-		# 			row-window_half:row+window_half+1,
-		# 			col-window_half:col+window_half+1,:]
-		# 		if count==0: deb.prints(patch_test.shape)
-				
-		# 		np.save(path_test+'patch'+str(count)+'.npy',patch_test)	
-		# 	# Save last buffer
-		# 	print("Test finished")
-		# return None,None
-
-
-		
-		self.full_ims_test=False
 		return None,None
 
 
@@ -1349,9 +1021,7 @@ class DataForNet(object):
 
 		deb.prints(im.shape)
 
-		#return im.astype(np.float32)
 		return im
-		
 	def im_seq_mask(self,im,mask):
 		im_train=im.copy()
 		im_test=im.copy()
@@ -1386,8 +1056,7 @@ class DataForNet(object):
 		#im_train[t_step,:,:,band][mask!=1]=-1 
 		#im_test[t_step,:,:,band][mask!=2]=-1 
 		deb.prints(im_train.shape) 
-		return im_train,im_test
-		#return im_train.astype(np.uint8),im_test.astype(np.uint8) 
+		return im_train,im_test 
 	def data_normalize_per_band(self,data):
 		whole_data={}
 		whole_data["value"]=np.concatenate((data["train"]["ims"],data["test"]["ims"]),axis=0)
@@ -1538,8 +1207,8 @@ class DataOneHot(DataForNet):
 
 		self.ram_data["train"]["labels"]=self.labels_onehot_get(self.ram_data["train"]["labels_int"], \
 			self.ram_data["train"]["n"],self.conf["class_n"])
-		#self.ram_data["test"]["labels"]=self.labels_onehot_get(self.ram_data["test"]["labels_int"], \
-		#	self.ram_data["test"]["n"],self.conf["class_n"])
+		self.ram_data["test"]["labels"]=self.labels_onehot_get(self.ram_data["test"]["labels_int"], \
+			self.ram_data["test"]["n"],self.conf["class_n"])
 		self.ram_data["val"]["labels"]=self.labels_onehot_get(self.ram_data["val"]["labels_int"], \
 			self.ram_data["val"]["n"],self.conf["class_n"])
 	def create(self):
@@ -1555,8 +1224,8 @@ class DataOneHot(DataForNet):
 			deb.prints(np.unique(self.ram_data["train"]["labels_int"],return_counts=True)[1])
 			#self.ram_data=self.data_normalize_per_band(self.ram_data)
 			
-			data_balance=False
-			if data_balance==True:
+			data_balance=True
+			if data_balance:
 				self.ram_data["train"]["ims"],self.ram_data["train"]["labels_int"],self.ram_data["train"]["labels"]=self.data_balance(self.ram_data, \
 					self.conf["balanced"]["samples_per_class"])
 
