@@ -416,7 +416,7 @@ class DataForNet(object):
 			deb.prints(np.min(patch["full_ims"]))
 			deb.prints(np.max(patch["full_ims"]))
 			deb.prints(patch["full_ims"].dtype)
-			#self.full_ims_train,self.full_ims_test=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
+			self.full_ims_train,self.full_ims_test=self.im_seq_mask(patch["full_ims"],patch["train_mask"])
 			self.full_ims_train=patch["full_ims"].copy()
 			self.full_ims_test=patch['full_ims'].copy()
 
@@ -1071,7 +1071,7 @@ class DataForNet(object):
 
 		deb.prints(self.ram_data['train']['labels_int'].shape)
 
-		augment=False
+		augment=True
 		if augment==True:
 			unique,count=np.unique(self.ram_data['train']['labels_int'],return_counts=True)
 			minor_classes=unique[count<self.conf["balanced"]["samples_per_class"]]
@@ -1180,7 +1180,7 @@ class DataForNet(object):
 			print("finished test loop")
 			# Save last buffer
 			if self.bsave['id']>0:
-				self.bsave['batch_id']+=1
+				#self.bsave['batch_id']+=1
 				self.bsave['in_buffer']=self.bsave['in_buffer'][0:self.bsave['id']]
 				deb.prints(self.bsave['in_buffer'].shape)
 				np.save(path_test+"patch"+

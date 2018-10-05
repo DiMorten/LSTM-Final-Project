@@ -307,8 +307,9 @@ class NeuralNet(object):
 		test_filelist=os.listdir(test_folder)
 		test_filelist.sort()
 		deb.prints(len(test_filelist))
-
-		predict_only=False
+		batch_size=5000
+		#batch_size=500 # Hannover
+		predict_only=True
 		if predict_only:
 			self.saver.restore(self.sess, '/tmp/model_es.ckpt')		
 			#self.saver.restore(self.sess, '/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/hannover/5/model.ckpt')
@@ -316,12 +317,26 @@ class NeuralNet(object):
 			#self.saver.restore(self.sess, "/home/lvc/Jorg/results_fcn/lstm_19x19/model_es.ckpt")
 			#self.saver.restore(self.sess, '/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/seq1/15/model_es.ckpt')		
 			print("predicting from model")
-			batch_size=5000
-			#batch_size=500 # Hannover
+
 			early_stop['best']['predicted']=self.predict_from_files(
 				test_folder,test_filelist,batch_size=batch_size)
 			np.save('predicted_only.npy',early_stop['best']['predicted'])
 			np.save('labels_only.npy',self.ram_data['test']['labels'])
+			
+			predictions=early_stop['best']['predicted'].copy()
+			label_test=self.ram_data['test']['labels'].copy()
+			metrics={}
+			metrics['f1_score']=f1_score(label_test,predictions,average='macro')
+			metrics['f1_score_weighted']=f1_score(label_test,predictions,average='weighted')
+    
+			metrics['overall_acc']=accuracy_score(label_test,predictions)
+
+			confusion_matrix_=confusion_matrix(label_test,predictions)
+			metrics['per_class_acc']=(confusion_matrix_.astype('float') / confusion_matrix_.sum(axis=1)[:, np.newaxis]).diagonal()
+			        
+			metrics['average_acc']=np.average(metrics['per_class_acc'][~np.isnan(metrics['per_class_acc'])])
+			print("TEST ",metrics)
+
 			print("PREDICTION DONE")
 			sys.exit()
 
@@ -417,7 +432,7 @@ class NeuralNet(object):
 					
 						print("predicting from model")
 						early_stop['best']['predicted']=self.predict_from_files(
-							test_folder,test_filelist)
+							test_folder,test_filelist,batch_size=batch_size)
 						predictions=early_stop['best']['predicted'].argmax(axis=1)
 						label_test=self.ram_data['test']['labels'].argmax(axis=1)
 						metrics={}
