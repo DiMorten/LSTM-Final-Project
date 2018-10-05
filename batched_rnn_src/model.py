@@ -90,7 +90,10 @@ class lstm(NeuralNetOneHot):
 		if self.debug: deb.prints(pipe.get_shape())
 		
 		# Dense
-		pipe = tf.layers.dense(pipe, 100,activation=tf.nn.tanh,name='hidden')
+		#filters=100
+		filters=300 #Hanover
+		
+		pipe = tf.layers.dense(pipe, filters,activation=tf.nn.tanh,name='hidden')
 		if self.debug: deb.prints(pipe.get_shape())
 		
 		# Dropout

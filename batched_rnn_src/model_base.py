@@ -308,7 +308,7 @@ class NeuralNet(object):
 		test_filelist.sort()
 		deb.prints(len(test_filelist))
 
-		predict_only=True
+		predict_only=False
 		if predict_only:
 			self.saver.restore(self.sess, '/tmp/model_es.ckpt')		
 			#self.saver.restore(self.sess, '/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/hannover/5/model.ckpt')
