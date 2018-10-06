@@ -25,7 +25,7 @@ import pickle
 # Local
 import deb
 import argparse
-
+from sklearn.preprocessing import StandardScaler
 from skimage.util import view_as_windows
 
 def mask_train_test_switch_from_path(path):
@@ -412,7 +412,9 @@ class DataForNet(object):
 			deb.prints(im_filenames)
 
 			patch["full_ims"][patch["full_ims"]>1]=1
-			patch["full_ims"]=self.im_seq_normalize(patch["full_ims"])
+			print(np.min(patch["full_ims"]),np.max(patch["full_ims"]),np.average(patch["full_ims"]))
+			print("Normalizing...")
+			patch["full_ims"]=self.im_seq_normalize2(patch["full_ims"],patch["train_mask"])
 			deb.prints(np.min(patch["full_ims"]))
 			deb.prints(np.max(patch["full_ims"]))
 			deb.prints(patch["full_ims"].dtype)
@@ -1351,15 +1353,63 @@ class DataForNet(object):
 
 		#return im.astype(np.float32)
 		return im
-		
+	def im_seq_normalize2(self,im,mask):
+		print(np.min(im),np.max(im),np.average(im))
+		mask_flat=np.reshape(mask,-1)
+		t_steps,h,w,channels=im.shape
+		im_flat=np.reshape(im,(t_steps,h*w,channels))
+		deb.prints(im_flat.shape)
+
+		scalers=[]
+
+		# Fit scaler with training data
+		# For each time step, normalize the channels
+		for t_step in range(t_steps):
+			print("Normalizing time",t_step)
+			print(np.min(im_flat[t_step]),np.max(im_flat[t_step]),np.average(im_flat[t_step]))
+			deb.prints(t_step)
+
+			# This scaler is restarted each t_step
+			scaler=StandardScaler()
+			im_flat_train=[]
+			
+			for channel in range(channels):
+				print("Masking channel",channel,t_step)
+				deb.prints(im_flat[t_step,:,channel].shape)
+				im_flat_train.append(im_flat[t_step,:,channel][mask_flat==1])
+			im_flat_train=np.asarray(im_flat_train)
+
+			deb.prints(im_flat_train.shape)
+			im_flat_train=np.transpose(im_flat_train,(1,0))
+			deb.prints(im_flat_train.shape)
+
+			scaler.fit(im_flat_train) # Two channels (largenumer, 2)
+
+			print(np.min(im_flat_train),np.max(im_flat_train),np.average(im_flat_train))
+			
+			train_fitted=scaler.transform(im_flat_train)
+			deb.prints(train_fitted.shape)
+			print(np.min(train_fitted),np.max(train_fitted),np.average(train_fitted))
+			
+			#scalers.append(scaler)
+
+			im_flat[t_step]=scaler.transform(im_flat[t_step]) # Transform each timestep 
+			print("Normalized time",t_step)
+			print(np.min(im_flat[t_step]),np.max(im_flat[t_step]),np.average(im_flat[t_step]))
+			print(np.min(im_flat[t_step]),np.max(im_flat[t_step]),np.average(im_flat[t_step]))
+
+		im=np.reshape(im_flat,(t_steps,h,w,channels))
+		deb.prints(im.shape)
+		print(np.min(im),np.max(im),np.average(im))
+		return im
 	def im_seq_mask(self,im,mask):
 		im_train=im.copy()
 		im_test=im.copy()
 		
 		for band in range(0,self.conf["band_n"]):
 			for t_step in range(0,self.conf["t_len"]):
-				im_train[t_step,:,:,band][mask!=1]=-1
-				im_test[t_step,:,:,band][mask!=2]=-1
+				im_train[t_step,:,:,band][mask!=1]=-2
+				im_test[t_step,:,:,band][mask!=2]=-2
 		deb.prints(im_train.shape)
 		return im_train,im_test
 	def label_seq_mask(self,im,mask): 

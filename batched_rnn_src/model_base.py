@@ -451,8 +451,8 @@ class NeuralNet(object):
 
 					#stats,predicted=self.predict_from_files(test_folder,test_filelist)
 					#stats,predicted = self.data_stats_get(data["test"],self.test_batch_size) # For each epoch, get metrics on the entire test set
-					np.save(test_folder+"../predicted.npy",early_stop['best']['predicted'])
-					np.save(test_folder+"../labels.npy",self.ram_data["test"]["labels_int"])
+					#np.save(test_folder+"../predicted.npy",early_stop['best']['predicted'])
+					#np.save(test_folder+"../labels.npy",self.ram_data["test"]["labels_int"])
 					break
 				
 				#print("Average accuracy:{}, Overall accuracy:{}".format(stats["average_accuracy"],stats["overall_accuracy"]))
