@@ -414,7 +414,9 @@ class DataForNet(object):
 			patch["full_ims"][patch["full_ims"]>1]=1
 			print(np.min(patch["full_ims"]),np.max(patch["full_ims"]),np.average(patch["full_ims"]))
 			print("Normalizing...")
-			patch["full_ims"]=self.im_seq_normalize2(patch["full_ims"],patch["train_mask"])
+			patch["full_ims"]=self.im_seq_normalize3(patch["full_ims"],patch["train_mask"])
+			#patch["full_ims"]=self.im_seq_normalize2(patch["full_ims"],patch["train_mask"])
+			
 			deb.prints(np.min(patch["full_ims"]))
 			deb.prints(np.max(patch["full_ims"]))
 			deb.prints(patch["full_ims"].dtype)
@@ -1398,6 +1400,42 @@ class DataForNet(object):
 		deb.prints(im.shape)
 		print(np.min(im),np.max(im),np.average(im))
 		return im
+
+
+	def im_seq_normalize3(self,im,mask):
+		
+		t_steps,h,w,channels=im.shape
+		#im=im.copy()
+		im_flat=np.transpose(im,(1,2,3,0))
+		#im=np.reshape(im,(h,w,t_steps*channels))
+		im_flat=np.reshape(im_flat,(h*w,channels*t_steps))
+		im_check=np.reshape(im_flat,(h,w,channels,t_steps))
+		im_check=np.transpose(im_check,(3,0,1,2))
+
+		deb.prints(im_check.shape)
+		deb.prints(np.all(im_check==im))
+		deb.prints(im.shape)
+		mask_flat=np.reshape(mask,-1)
+		train_flat=im_flat[mask_flat==1,:]
+
+		deb.prints(train_flat.shape)
+		print(np.min(train_flat),np.max(train_flat),np.average(train_flat))
+
+		scaler=StandardScaler()
+		scaler.fit(train_flat)
+		train_norm_flat=scaler.transform(train_flat)
+
+		im_norm_flat=scaler.transform(im_flat)
+		im_norm=np.reshape(im_norm_flat,(h,w,channels,t_steps))
+		deb.prints(im_norm.shape)
+		im_norm=np.transpose(im_norm,(3,0,1,2))
+		deb.prints(im_norm.shape)
+		for t_step in range(t_steps):
+			print("Normalized time",t_step)
+			print(np.min(im_norm[t_step]),np.max(im_norm[t_step]),np.average(im_norm[t_step]))
+		print("FINISHED NORMALIZING, RESULT:")
+		print(np.min(im_norm),np.max(im_norm),np.average(im_norm))
+		return im_norm
 	def im_seq_mask(self,im,mask):
 		im_train=im.copy()
 		im_test=im.copy()

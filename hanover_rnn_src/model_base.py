@@ -317,7 +317,7 @@ class NeuralNet(object):
 			#self.saver.restore(self.sess, '/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/seq1/15/model_es.ckpt')		
 			print("predicting from model")
 			#batch_size=5000
-			batch_size=500 # Hannover
+			batch_size=100 # Hannover
 			early_stop['best']['predicted']=self.predict_from_files(
 				test_folder,test_filelist,batch_size=batch_size)
 			np.save('predicted.npy',early_stop['best']['predicted'])
