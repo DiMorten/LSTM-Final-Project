@@ -362,9 +362,9 @@ class NeuralNet(object):
 					deb.prints(batch["labels"].shape)
 				self.writer.add_summary(summary, counter)
 				counter += 1
-				if self.debug>=1 and (idx % 500 == 0):
-					self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1.0, self.training: True})
-					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
+				if self.debug>=1 and (idx % 1000 == 0):
+					#self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1.0, self.training: False})
+					print('Epoch {:2d}, step {:2d}.%'.format(epoch + 1, idx))
 
 			# ================= VALIDATION ASSESS
 			#y_pred_val=np.around(self.sess.run(self.prediction,{self.data: self.ram_data['val']['ims'], self.keep_prob: 1.0, self.training: False}),decimals=2)

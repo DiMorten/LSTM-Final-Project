@@ -8,6 +8,14 @@ label_checker=np.load('cv/locations_label.npy')
 
 #folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/hn_data/results/convlstm_16_300_nompool/'
 folder='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/seq1/15/convlstm/'
+
+
+
+# == normy3
+
+path='/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/normy3/convlstm/seq1/'
+
+
 mask_path='../cv_data/TrainTestMask.tif'
 
 labels=np.load(folder+'labels.npy').argmax(axis=1)
@@ -133,7 +141,7 @@ for idx in range(custom_colormap.shape[0]):
 label_rgb=cv2.cvtColor(label_rgb,cv2.COLOR_BGR2RGB)
 
 
-cv2.imwrite("reconstruction.png",prediction_rgb)
-cv2.imwrite("label.png",label_rgb)
+cv2.imwrite("reconstruction_normy3.png",prediction_rgb)
+cv2.imwrite("label_normy3.png",label_rgb)
 
 print(prediction_rgb[0,0,:])

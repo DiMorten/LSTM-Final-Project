@@ -309,6 +309,8 @@ class NeuralNet(object):
 		deb.prints(len(test_filelist))
 
 		predict_only=False
+		#batch_size=5000
+		batch_size=100 # Hannover
 		if predict_only:
 			self.saver.restore(self.sess, '/tmp/model_es.ckpt')		
 			#self.saver.restore(self.sess, '/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/hannover/5/model.ckpt')
@@ -316,8 +318,7 @@ class NeuralNet(object):
 			#self.saver.restore(self.sess, "/home/lvc/Jorg/results_fcn/lstm_19x19/model_es.ckpt")
 			#self.saver.restore(self.sess, '/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/seq1/15/model_es.ckpt')		
 			print("predicting from model")
-			#batch_size=5000
-			batch_size=100 # Hannover
+			
 			early_stop['best']['predicted']=self.predict_from_files(
 				test_folder,test_filelist,batch_size=batch_size)
 			np.save('predicted.npy',early_stop['best']['predicted'])
@@ -347,9 +348,9 @@ class NeuralNet(object):
 					deb.prints(batch["labels"].shape)
 				self.writer.add_summary(summary, counter)
 				counter += 1
-				if self.debug>=1 and (idx % 500 == 0):
-					self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1.0, self.training: True})
-					print('Epoch {:2d}, step {:2d}. Overall accuracy {:3.1f}%'.format(epoch + 1, idx, 100 - 100 * self.incorrect))
+				if self.debug>=1 and (idx % 1000 == 0):
+					#self.incorrect = self.sess.run(self.error,{self.data: data["sub_test"]["ims"], self.target: data["sub_test"]["labels"], self.keep_prob: 1.0, self.training: True})
+					print('Epoch {:2d}, step {:2d}.%'.format(epoch + 1, idx))
 
 			# ================= VALIDATION ASSESS
 			#y_pred_val=np.around(self.sess.run(self.prediction,{self.data: self.ram_data['val']['ims'], self.keep_prob: 1.0, self.training: False}),decimals=2)
@@ -417,7 +418,7 @@ class NeuralNet(object):
 					
 						print("predicting from model")
 						early_stop['best']['predicted']=self.predict_from_files(
-							test_folder,test_filelist)
+							test_folder,test_filelist,batch_size=batch_size)
 						predictions=early_stop['best']['predicted'].argmax(axis=1)
 						label_test=self.ram_data['test']['labels'].argmax(axis=1)
 						metrics={}
