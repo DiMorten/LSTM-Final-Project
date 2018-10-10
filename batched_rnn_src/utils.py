@@ -395,6 +395,11 @@ class DataForNet(object):
 			deb.prints(self.conf["train"]["mask"]["dir"])
 			patch["train_mask"]=cv2.imread(self.conf["train"]["mask"]["dir"],-1).astype(np.uint8)
 
+			mask_invert=False
+			if mask_invert==True:
+				patch["train_mask"][patch["train_mask"]==2]=3
+				patch["train_mask"][patch["train_mask"]==1]=2
+				patch["train_mask"][patch["train_mask"]==3]=1
 			deb.prints((self.conf["t_len"],)+self.patch_shape)
 
 			#patch["values"]=np.zeros((self.conf["t_len"],)+patch_shape)
