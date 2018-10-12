@@ -111,6 +111,8 @@ def main(_):
         data.create()
         deb.prints(data.ram_data["train"]["ims"].shape)
 
+
+
 if __name__ == '__main__':
     tf.app.run()
 
