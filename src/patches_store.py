@@ -27,7 +27,7 @@ parser.add_argument('--dataset_name', dest='dataset_name', default='20160419', h
 parser.add_argument('--epoch', dest='epoch', type=int, default=200, help='# of epoch')
 parser.add_argument('--batch_size', dest='batch_size', type=int, default=200, help='# images in batch')
 parser.add_argument('--train_size', dest='train_size', type=int, default=1e8, help='# images used to train')
-parser.add_argument('--timesteps', dest='timesteps', type=int, default=utils.conf["t_len"], help='# timesteps used to train')
+parser.add_argument('--timesteps', dest='timesteps', type=int, default=7, help='# timesteps used to train')
 parser.add_argument('-pl','--patch_len', dest='patch_len', type=int, default=5, help='# timesteps used to train')
 parser.add_argument('--kernel', dest='kernel', type=int, default=[3,3], help='# timesteps used to train')
 #parser.add_argument('--channels', dest='channels', type=int, default=7, help='# timesteps used to train')
@@ -49,7 +49,7 @@ parser.add_argument('--path', dest='path', default="../data/", help='Data path')
 parser.add_argument('--class_n', dest='class_n', type=int, default=6, help='Class number')
 parser.add_argument('--pc_mode', dest='pc_mode', default="local", help="Class number. 'local' or 'remote'")
 parser.add_argument('-tnl','--test_n_limit', dest='test_n_limit',type=int, default=1000, help="Class number. 'local' or 'remote'")
-parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="hdd", help="Class number. 'local' or 'remote'")
+parser.add_argument('-mm','--memory_mode', dest='memory_mode',default="ram", help="Class number. 'local' or 'remote'")
 parser.add_argument('-bs','--balance_samples_per_class', dest='balance_samples_per_class',type=int,default=None, help="Class number. 'local' or 'remote'")
 parser.add_argument('-ts','--test_get_stride', dest='test_get_stride',type=int,default=8, help="Class number. 'local' or 'remote'")
 parser.add_argument('-nap','--n_apriori', dest='n_apriori',type=int,default=4000000, help="Class number. 'local' or 'remote'")
@@ -63,7 +63,7 @@ parser.add_argument('--id_first', dest='id_first', type=int, default=1, help='Cl
 parser.add_argument('-ir','--im_reconstruct', dest='im_reconstruct',default=False, help="Class number. 'local' or 'remote'")
 
 parser.add_argument('-rst','--ram_store', dest='ram_store',default=True, help="Ram store")
-parser.add_argument('-psv','--patches_save', dest='patches_save',default=False, help="Ram store")
+parser.add_argument('-psv','--patches_save', dest='patches_save',default=True, help="Patches npy store")
 
 args = parser.parse_args()
 
@@ -78,6 +78,8 @@ if args.model=='unet' or args.model=='smcnn_unet' or args.model=='convlstm_seman
     label_type='semantic'
 else:
     label_type='one_hot'
+deb.prints(label_type)
+deb.prints(args.patches_save)
 
 def main(_):
 

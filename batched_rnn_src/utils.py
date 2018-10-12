@@ -1435,9 +1435,9 @@ class DataForNet(object):
 		deb.prints(im_norm.shape)
 		im_norm=np.transpose(im_norm,(3,0,1,2))
 		deb.prints(im_norm.shape)
-		for t_step in range(t_steps):
-			print("Normalized time",t_step)
-			print(np.min(im_norm[t_step]),np.max(im_norm[t_step]),np.average(im_norm[t_step]))
+		#for t_step in range(t_steps):
+		#	print("Normalized time",t_step)
+		#	print(np.min(im_norm[t_step]),np.max(im_norm[t_step]),np.average(im_norm[t_step]))
 		print("FINISHED NORMALIZING, RESULT:")
 		print(np.min(im_norm),np.max(im_norm),np.average(im_norm))
 		return im_norm

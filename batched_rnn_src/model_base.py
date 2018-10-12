@@ -309,7 +309,7 @@ class NeuralNet(object):
 		deb.prints(len(test_filelist))
 		batch_size=5000
 		#batch_size=500 # Hannover
-		predict_only=False
+		predict_only=True
 		if predict_only:
 			self.saver.restore(self.sess, '/tmp/model_es.ckpt')		
 			#self.saver.restore(self.sess, '/home/lvc/Jorg/deep_learning/LSTM-Final-Project/cv_data/buffer/hannover/5/model.ckpt')
@@ -320,8 +320,8 @@ class NeuralNet(object):
 
 			early_stop['best']['predicted']=self.predict_from_files(
 				test_folder,test_filelist,batch_size=batch_size)
-			np.save('predicted_only.npy',early_stop['best']['predicted'])
-			np.save('labels_only.npy',self.ram_data['test']['labels'])
+			np.save('predicted.npy',early_stop['best']['predicted'])
+			np.save('labels.npy',self.ram_data['test']['labels'])
 			
 			predictions=early_stop['best']['predicted'].copy()
 			label_test=self.ram_data['test']['labels'].copy()
